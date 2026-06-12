@@ -52,6 +52,7 @@ flowchart RL
     profiles --> model
     validate["packages/validate"] --> model
     grammar["packages/grammar"] --> model
+    interop["packages/interop"] --> model
     ai["packages/ai"] --> model
     model["packages/model (core)"]
 ```
@@ -60,11 +61,12 @@ flowchart RL
 
 | If you change… | Re-check / re-test… |
 |---|---|
-| `packages/model` (core metamodel) | **everything** — validate, profiles, render, grammar, ai, apps/web, conformance |
+| `packages/model` (core metamodel) | **everything** — validate, profiles, render, grammar, interop, ai, apps/web, conformance |
 | `packages/validate` | profiles, apps/web, CI lint of `examples/` |
 | `packages/profiles` | render, apps/web, translation-table consumers |
 | `packages/render` | apps/web, golden-SVG snapshots |
 | `packages/grammar` | CLI, round-trip tests (model only) |
+| `packages/interop` | FHIR/research export, CLI export (model only; de-identified by default) |
 | `packages/ai` | apps/web AI panel (isolated; safe to remove) |
 | `docs/specification/psyuml-v0.1.0.md` | `traceability.json`, any REQ citing the changed section, dependent IMPACT docs |
 

@@ -40,9 +40,9 @@ demands before any 1.0.
 
 ### M1 · Core model + read-only renderer
 - **Goal:** the metamodel exists and renders.
-- **Deliverables:** `@psyuml/model` types + JSON Schema for the 8 element categories, typed connectors (§C), and the PT property bag (ARCH §3); `@psyuml/render` draws a **static State Map** and **Parts/Agents Map** from a `.psyuml` file, including bands/swimlanes; clinician⇄client and **monochrome** toggles; auto-legend. A library-choice spike (React Flow vs d3/Konva) is resolved here.
-- **Acceptance:** the spec's §E.1 and §E.2 ASCII examples reproduce as SVG; monochrome render loses no meaning (manual a11y check); golden-SVG snapshot tests pass.
-- **Spec refs:** §A, §B, §C, §D, §E.1, §E.2.
+- **Deliverables:** `@psyuml/model` types + JSON Schema for the 8 element categories, typed connectors (§C), and the PT property bag (ARCH §3) — **including `epistemicStatus`** (reported/observed/inferred/planned/symbolic) and **i18n labels** (stable `id` + `{BCP-47 → text}`, Source 3); `@psyuml/render` draws a **static State Map** and **Parts/Agents Map** from a `.psyuml` file, including bands/swimlanes; clinician⇄client and **monochrome** toggles; auto-legend. A library-choice spike (React Flow vs d3/Konva) is resolved here.
+- **Acceptance:** the spec's §E.1 and §E.2 ASCII examples reproduce as SVG; monochrome render loses no meaning (manual a11y check); golden-SVG snapshot tests pass; the same `.psyuml` **round-trips** model→JSON→model losslessly.
+- **Spec refs:** §A, §B, §C, §D, §E.1, §E.2. **REQ:** REQ-CORE-ONTOLOGY, REQ-NOTATION, REQ-EPISTEMIC-STATUS, REQ-I18N.
 
 ### M2 · GUI editor MVP (the headline deliverable)
 - **Goal:** a clinician can *build* a Tier-1 diagram by hand, save, and export.
@@ -54,9 +54,9 @@ demands before any 1.0.
 
 ### M3 · Validation + accessibility + "path of hope" lint
 - **Goal:** the editor enforces well-formedness and clinical-safety invariants.
-- **Deliverables:** `@psyuml/validate` with all three rule classes (ARCH §7): §A.2 well-formedness; §D accessibility; **path-of-hope** + disclaimer/crisis gating. Live squiggles + a "formulation health" panel; CI lints the example corpus.
-- **Acceptance:** a client-facing diagram with only negative loops is **blocked** from export; a client diagram without disclaimer+crisis fields cannot export; a color-only encoding is flagged.
-- **Spec refs:** §A.2, §D, §L.2; companion-paper idea A4.
+- **Deliverables:** `@psyuml/validate` with all four rule classes (ARCH §7): §A.2 well-formedness; §D accessibility (+ **alt-text/text-summary** per view, Source 3); **path-of-hope** + disclaimer/crisis gating; and the **clinical-hazard / safety-triage** rules (acute-risk→human-review banner; risky-ritual→documentation-only; typed-edge requirement; mixed-school provenance; PII-redact-by-default). Live squiggles + a "formulation health" panel; CI lints the example corpus.
+- **Acceptance:** a client-facing diagram with only negative loops is **blocked** from export; a client diagram without disclaimer+crisis fields cannot export; a color-only encoding is flagged; an acute-risk marker raises the escalation banner and disables autonomous formulation.
+- **Spec refs:** §A.2, §D, §L.2; ideas A4 (path-of-hope), Source 3 C3/C8. **REQ:** REQ-WELLFORMEDNESS, REQ-ACCESSIBILITY, REQ-PATH-OF-HOPE, REQ-ETHICS-GUARDRAILS, REQ-SAFETY-TRIAGE.
 
 ### M4 · School profiles + polymorphic re-render + translation
 - **Goal:** the same model renders in multiple schools without losing provenance.
@@ -66,11 +66,11 @@ demands before any 1.0.
 
 ## Phase 3 — Depth: psychodynamic profiles & longitudinal use
 
-### M5 · Research-derived profiles
-- **Goal:** add the four profiles harvested from the companion paper.
-- **Deliverables (each per §K extension rules — ARCH §5):** **Schema Mode Map** (circle nodes, size=dominance with redundant numeral, HealthyAdult-growth goal); **CAT SDR** (reciprocal roles, traps/dilemmas/snags, observing-eye); **Malan Two Triangles** (Conflict + Person with P/C/T + transference edges); **Karpman Drama Triangle** with **nested historical triangle** (`NestedWithin`).
-- **Acceptance:** each profile passes a §K collision check (no Tier-1 glyph clash), ships hand-drawn + color/non-color fallbacks, and has compatibility verdicts; a Mode Map's HealthyAdult node visibly grows across two versions (feeds M6).
-- **Spec refs:** §E.2, §E.4, §K; `idea-incorporation.md` §2.
+### M5 · Research-derived profiles + Body Map
+- **Goal:** add the four profiles harvested from Source 2, plus the Source-3 Body Map view.
+- **Deliverables (each per §K extension rules — ARCH §5):** **Schema Mode Map** (circle nodes, size=dominance with redundant numeral, HealthyAdult-growth goal); **CAT SDR** (reciprocal roles, traps/dilemmas/snags, observing-eye); **Malan Two Triangles** (Conflict + Person with P/C/T + transference edges); **Karpman Drama Triangle** with **nested historical triangle** (`NestedWithin`); **Body Map** view (body-located sensations, arousal curve, sensory/breath channels; titration/pacing notes).
+- **Acceptance:** each profile/view passes a §K collision check (no Tier-1 glyph clash), ships hand-drawn + color/non-color fallbacks, and has compatibility verdicts; a Mode Map's HealthyAdult node visibly grows across two versions (feeds M6).
+- **Spec refs:** §E.2, §E.4, §K; `idea-incorporation.md` §2, §5. **REQ:** REQ-RESEARCH-PROFILES, REQ-EXTENSION-MECH, REQ-BODY-MAP.
 
 ### M6 · Longitudinal: versioning + diff view
 - **Goal:** show change over time.
@@ -88,24 +88,24 @@ demands before any 1.0.
 
 ### M8 · Bounded AI-assist (optional)
 - **Goal:** narrative → *draft* model for human review.
-- **Deliverables:** `@psyuml/ai` panel: paste narrative → proposed nodes/edges/tags at low confidence → human accepts/edits; formulation-only guardrails (no diagnosis/severity); path-of-hope lint runs before save; Claude API integration (model-agnostic, latest capable model).
-- **Acceptance:** nothing is ever auto-applied; every AI-suggested node is `~conf:L~` until confirmed; removing the AI package leaves the editor fully functional.
-- **Spec refs:** §A.3 (formulation not nosology); `idea-incorporation.md` §3–4.
-- **Explicitly out of scope:** safeguard-bypass prompting; autonomous diagnosis.
+- **Deliverables:** `@psyuml/ai` panel running the Source-3 pipeline — consent → **PII minimization** → **safety triage** (§7 rule 4) → extraction → view planning → draft → validation → review; proposed nodes/edges/tags at low confidence (`~conf:L~`, `epistemicStatus=inferred`) → human accepts/edits; formulation-only guardrails (no diagnosis/severity); Claude API (model-agnostic, latest capable model); **privacy-by-default** (de-identify/redact exports, role-scoped, audit log).
+- **Acceptance:** nothing is ever auto-applied; safety triage halts and escalates on acute-risk/psychosis markers before any formulation; every AI-suggested node is low-confidence until confirmed; removing the AI package leaves the editor fully functional.
+- **Spec refs:** §A.3 (formulation not nosology); `idea-incorporation.md` §3–5. **REQ:** REQ-AI-ASSIST, REQ-PRIVACY.
+- **Explicitly out of scope:** safeguard-bypass prompting; autonomous diagnosis; live-care treatment recommendations.
 
-### M9 · Text DSL + parser + CLI
-- **Goal:** a text surface syntax and headless tooling.
-- **Deliverables:** `@psyuml/grammar` (text DSL ⇄ model round-trip); Mermaid export; a CLI (`psyuml lint|render|convert`); import of the §H examples as DSL.
-- **Acceptance:** every `examples/*.psyuml` round-trips DSL→model→DSL losslessly; CLI lints the corpus in CI.
-- **Spec refs:** §B/§C tables (authoritative notation); paper idea A8.
+### M9 · Text DSL + parser + CLI + interoperability export
+- **Goal:** a text surface syntax, headless tooling, and standards export.
+- **Deliverables:** `@psyuml/grammar` (text DSL ⇄ model round-trip); Mermaid export; a CLI (`psyuml lint|render|convert|export`); import of the §H examples as DSL; **`@psyuml/interop`** — FHIR (Observation, QuestionnaireResponse, CarePlan, Goal, Patient/RelatedPerson) + SNOMED-tagged, **de-identified** research export (Source 3).
+- **Acceptance:** every `examples/*.psyuml` round-trips DSL→model→DSL losslessly; CLI lints the corpus in CI; a FHIR export validates against its resource schemas and re-imports without meaning loss; exports are de-identified by default.
+- **Spec refs:** §B/§C tables (authoritative notation); paper idea A8; Source 3 C6. **REQ:** REQ-TEXT-DSL, REQ-INTEROP-FHIR.
 
 ## Phase 5 — Toward v1.0
 
 ### M10 · Conformance, usability, and release readiness
 - **Goal:** the artifacts the spec requires before leaving v0.x.
-- **Deliverables:** `conformance/` executable suite (spec §J rubric + §E per-type requirements); a docs site; a formal accessibility audit; a usability-test protocol for the Tier-1 crisis chart (spec Stage 4); semver/release flow via Changesets (spec §K).
-- **Acceptance:** conformance suite green; a11y audit passes; **v0.x → v1.0 stays gated** on the spec's Stage-4 evidence (layperson comprehension, inter-rater reliability, multi-school endorsement) — software-ready ≠ clinically-validated.
-- **Spec refs:** §J, §K, Recommendations Stage 4, Caveats.
+- **Deliverables:** `conformance/` executable suite (spec §J rubric + §E per-type requirements + the **round-trip invariant**); the **evaluation suite** (Source 3: comprehension, collaborative validity, editability, cross-school fidelity, safety, privacy, interoperability, accessibility); a docs site; a formal accessibility audit; a usability-test protocol for the Tier-1 crisis chart (spec Stage 4); semver/release flow via Changesets (spec §K).
+- **Acceptance:** conformance suite green (incl. round-trip); a11y audit passes; **v0.x → v1.0 stays gated** on the spec's Stage-4 evidence (layperson comprehension, inter-rater reliability, multi-school endorsement) — software-ready ≠ clinically-validated.
+- **Spec refs:** §J, §K, Recommendations Stage 4, Caveats. **REQ:** REQ-CONFORMANCE, REQ-EVAL-SUITE.
 
 ---
 
@@ -113,7 +113,8 @@ demands before any 1.0.
 - **Examples corpus** (`examples/`): the entire §H worked case ("R.", CPTSD) built as the canonical regression + demo set, one diagram per type.
 - **Accessibility:** monochrome snapshot tests and palette checks in CI from M1 onward.
 - **Docs:** keep spec ↔ code in sync; each profile documents its §K extension record.
-- **Privacy:** local-first by default; no clinical data leaves the device without explicit opt-in (ARCH §8).
+- **Privacy & governance:** local-first by default; de-identify/redact + role-scoped exports; audit log; conservative "human-supervised formulation infrastructure" posture, not live-care CDS (Source 3; ARCH §11).
+- **Epistemic honesty, i18n & alt-text:** carry `epistemicStatus` on every element; keep concept IDs separate from localized labels; emit a text summary + alt text for every view (Source 3; ARCH §3/§6/§13).
 
 ## Top risks & mitigations
 | Risk | Mitigation |
@@ -123,6 +124,8 @@ demands before any 1.0.
 | "Path of hope" / safety lint feels heavy-handed to clinicians | Severity is configurable per layer; hard-block only in the client-facing layer. |
 | AI-assist drifts toward diagnosis | Code-level guardrails + low-confidence-by-default + human-in-the-loop; out-of-scope items named in M8. |
 | Scope creep across 12 schools | Tier-1 core frozen; new schools enter only via the §K profile mechanism, Tier-3 by default. |
+| FHIR interop / regulatory classification pulls scope toward regulated CDS | `@psyuml/interop` is late (M9), optional, export-only, de-identified by default; v0.x stays documentation/reflection infrastructure, not live-care decision support (Source 3). |
+| Epistemic line-styles collide with school-specific line meanings | Render `epistemicStatus` on a redundant, **collision-checked** channel + status tag; validator blocks clashes (spec §J.4). |
 
 ## How to start (first concrete tasks)
 1. Land **M0** scaffold (monorepo, CI, glyph assets, color tokens).

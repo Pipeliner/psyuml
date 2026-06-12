@@ -1,9 +1,14 @@
-# Idea Incorporation — UPML/Fable paper → PsyUML implementation
+# Idea Incorporation — companion research papers → PsyUML implementation
 
-This note records, transparently, **which ideas from the companion research
-paper** ([`upml-fable-agent-architecture.ru.md`](./upml-fable-agent-architecture.ru.md))
+This note records, transparently, **which ideas from the companion research papers**
 are folded into the PsyUML implementation, which are **adapted**, and which are
 **deliberately rejected** — and why.
+
+Sources:
+- **Source 2** — [`upml-fable-agent-architecture.ru.md`](./upml-fable-agent-architecture.ru.md) (UPML/Fable, RU). Analyzed in §1–§4 below.
+- **Source 3** — [`psyml-fable-agent-spec.md`](./psyml-fable-agent-spec.md) (PsyML Fable-agent spec). Analyzed in §5 below.
+
+(Source 1 is the primary spec itself, `../specification/psyuml-v0.1.0.md`.)
 
 **Governing principle.** Where the companion paper conflicts with the PsyUML
 [Ethical-Use Statement (§L.2)](../specification/psyuml-v0.1.0.md) or with the
@@ -62,12 +67,52 @@ ACT-choice-point/Decision, CFT-bullseye/Resource — these profiles extend the s
 | **Unverified platform lore** — "Mythos 1 class", "fallback to Opus 4.8 in ~5% of sessions", "120,040-char leaked system prompt", specific Fable-internal percentages. | Treated as **unverified claims**, not engineering facts. The plan does not depend on any specific vendor-internal behavior. The AI-assist layer targets a documented public API and stays model-agnostic. |
 | **Hard dependency on the "Fable Showrunner" simulation environment.** | PsyUML must run as a standalone web app. "Showrunner / persistent agent" is, at most, one possible *deployment surface* later — not an architectural dependency. |
 
-## 5. Net effect on the plan
+## 5. Source 3 — PsyML Fable-agent spec (adopted; aligned with our ethics)
 
-The companion paper meaningfully **enriches** PsyUML in four concrete places:
-the metamodel gains a typed **property system** (PT) with redundant visual
-encodings; the catalog gains **four psychodynamic/schema profiles**; the tool
-gains **longitudinal versioning + diff**; and a **bounded AI-assist** authoring
-layer is added as a late, optional milestone. Everything safety-sensitive in the
-paper is either reframed honestly or rejected outright, with PsyUML's
-Ethical-Use Statement as the binding constraint.
+Source 3 ([`psyml-fable-agent-spec.md`](./psyml-fable-agent-spec.md)) **converges**
+with PsyUML's architecture ("one canonical graph + reversible views, disposable
+renderings") and is ethically careful — it already frames the agent as *decision/diagram
+support, not an autonomous therapist*. Almost everything is **adopted**; nothing is
+rejected outright. New ideas folded in:
+
+| # | Idea (Source 3) | How it lands in PsyUML | Plan ref / REQ |
+|---|---|---|---|
+| C1 | **Canonical graph; views are reversible projections; renderings disposable; round-trip is the key invariant** | Confirms A1; elevate **round-trip** (JSON ⇄ any view ⇄ JSON, lossless) to an explicit architectural invariant + conformance test. | ARCH §2, §12; REQ-CROSS-SCHOOL, REQ-CONFORMANCE |
+| C2 | **Epistemic status on every node/edge** — `reported \| observed \| inferred \| planned \| symbolic`; ritual/spiritual = `client-believed \| tradition-claimed \| symbolic`, **never `system-confirmed`** | New first-class `epistemicStatus` property; case formulation = working hypothesis. Rendered via a **redundant, collision-checked** channel (line style + tag), not by overloading glyphs. | ARCH §3, §13; **REQ-EPISTEMIC-STATUS** (M1) |
+| C3 | **Safety triage + clinical-hazard validation rules** — acute self-harm/violence/psychosis/severe-dissociation/medical-risk ⇒ stop autonomous formulation, escalate to human review; risky-ritual materials (fire/blood/substances/fasting/sleep-deprivation/sex/isolation/money/legal/weapons) ⇒ `documentation-only`; inferred ⇒ dashed+confidence; spiritual claims ⇒ require epistemic status; PII ⇒ redact by default; client-safe view strips clinician-only labels; mixed schools ⇒ tag provenance | New **clinical-hazard lint class** + a **risk/psychosis safety gate** in the AI-assist pipeline. | ARCH §7, §9; **REQ-SAFETY-TRIAGE** (M3); strengthens REQ-AI-ASSIST |
+| C4 | **Body Map view** — somatic: interoception, arousal curve, sensory channels, body-located sensations | New diagram **view** (a genuine gap — PsyUML has polyvagal *State* but no body map). | ARCH §5, §13; **REQ-BODY-MAP** (M5) |
+| C5 | **Risk/contraindication as first-class** + richer **edge vocabulary** (`interprets_as, protects, avoids, targets, witnessed_by, consented_by, contraindicated_by, uncertain_about`) + **forbid unlabeled arrows** (except free-sketch) | `«Risk»` stereotype on Context/Intervention; extend the RT vocabulary; validator rule requiring typed edges. | ARCH §3; folded into REQ-WELLFORMEDNESS / REQ-EPISTEMIC-STATUS |
+| C6 | **FHIR/SNOMED interoperability** — export to Observation, QuestionnaireResponse, CarePlan, Goal, Patient/RelatedPerson; de-identified research export | New `@psyuml/interop` package; conservative and **later** (regulation-sensitive). | ARCH §10, §13; **REQ-INTEROP-FHIR** (M9) |
+| C7 | **Multilingual** — stable concept IDs separate from language-specific labels; BCP 47 tags; Unicode | i18n baked into the model from the start (`label` becomes `{lang → text}` over a stable `id`). | ARCH §3, §13; **REQ-I18N** (M1) |
+| C8 | **Alt-text + text summary for every rendered view** (WCAG 2.2) | Renderer always emits a textual summary + alt text alongside SVG. | ARCH §6, §13; extends REQ-ACCESSIBILITY |
+| C9 | **Four personas + per-persona UX flows** (therapist / client / researcher / ritual practitioner); **researcher mode** = weighted/dynamic networks, de-identify, batch-compare, clearly labeled *exploratory* | Extends the dual-audience model to four personas; researcher mode reuses the §E.4 Borsboom network. | ARCH §13 |
+| C10 | **Privacy-by-default** (de-identification, role-based export, audit logs, redaction, consent) + **clinical-safety governance** (hazard log / safety case; FDA CDS context-sensitivity; "implement first as human-supervised formulation infrastructure") | Privacy NFRs + a conservative governance posture; no live-care treatment recommendations in v0.x. | ARCH §11, §13; **REQ-PRIVACY** (M8) |
+| C11 | **Evaluation suite** — comprehension, collaborative validity, editability, cross-school fidelity, safety, privacy, interoperability, accessibility | Becomes the conformance + Stage-4 metric set. | **REQ-EVAL-SUITE** (M10) |
+
+**Reconciliation (kept PsyUML as source of truth):**
+- **Glyph conflicts.** Source 3's primitive set assigns shapes differently from PsyUML §B
+  (it uses hexagon = self-state, circle = emotion/sensation, octagon = risk; PsyUML uses
+  hexagon = intervention, circle = agent). We **keep PsyUML §B glyphs** and adopt Source 3's
+  *concepts* (epistemic line styles, risk-as-entity) via stereotypes + a redundant,
+  collision-checked encoding — never by silently overloading a Tier-1 glyph (spec §J.4
+  semiotic clarity). The dashed/dotted **line-style** semantics (reported→solid,
+  inferred→dashed, symbolic/tradition-claimed→dotted) align well and are adopted for edges,
+  with the validator guarding against clashes with school-specific line meanings.
+- **Naming.** "PsyML" = a parallel name for the same endeavor; the project keeps **PsyUML**.
+- **Scope caution (not rejection).** FHIR interop and a formal clinical-safety case are real
+  but heavyweight and regulation-sensitive; they are sequenced **late** and kept optional, per
+  Source 3's own advice to ship first as human-supervised formulation infrastructure.
+
+## 6. Net effect on the plan
+
+Across the two companion papers, PsyUML is meaningfully **enriched** without changing its
+ethical core. From Source 2: a typed **property system** (PT) with redundant visual
+encodings, **four psychodynamic/schema profiles**, **longitudinal versioning + diff**, and a
+**bounded AI-assist**. From Source 3: a first-class **epistemic-status** dimension, a
+**clinical-hazard/safety-triage** lint class, a new **Body Map** view, **FHIR
+interoperability**, **i18n** and **alt-text** baked in, a **round-trip** invariant, four
+**personas**, and **privacy-by-default** with conservative governance. Everything
+safety-sensitive is reframed honestly or sequenced conservatively; the rejected items remain
+those from Source 2 (safeguard-bypass, autonomous diagnosis). PsyUML's Ethical-Use Statement
+(§L.2) stays the binding constraint, and the PsyUML spec stays the source of truth on any
+conflict (notably notation/glyphs).

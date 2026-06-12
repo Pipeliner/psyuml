@@ -96,12 +96,13 @@
     },
     {
       "id": "REQ-ACCESSIBILITY",
-      "title": "No meaning by color alone; monochrome-printable; min text size",
+      "title": "No meaning by color alone; monochrome-printable; min text size; alt-text + text summary per view",
       "spec": ["§D"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M3",
       "status": "planned",
-      "impl": ["packages/validate/**", "packages/render/**"]
+      "impl": ["packages/validate/**", "packages/render/**"],
+      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2)."
     },
     {
       "id": "REQ-PATH-OF-HOPE",
@@ -207,7 +208,7 @@
       "milestone": "M8",
       "status": "planned",
       "impl": ["packages/ai/**"],
-      "notes": "No diagnosis/severity scoring; no safeguard-bypass. See idea-incorporation §3–4."
+      "notes": "No diagnosis/severity scoring; no safeguard-bypass. Runs the Source-3 pipeline: consent -> PII-min -> safety triage -> extract -> plan -> draft -> validate -> review. See idea-incorporation §3–5."
     },
     {
       "id": "REQ-TEXT-DSL",
@@ -227,7 +228,77 @@
       "milestone": "M10",
       "status": "planned",
       "impl": ["conformance/**"],
-      "notes": "Leaving v0.x stays gated on the spec's Stage-4 clinical evidence."
+      "notes": "Leaving v0.x stays gated on the spec's Stage-4 clinical evidence. Conformance includes the round-trip invariant (Source 3)."
+    },
+    {
+      "id": "REQ-EPISTEMIC-STATUS",
+      "title": "Epistemic status on every node/edge (reported/observed/inferred/planned/symbolic)",
+      "spec": ["§A.3", "§B", "§C", "§D"],
+      "source": "docs/research/psyml-fable-agent-spec.md",
+      "milestone": "M1",
+      "status": "planned",
+      "impl": ["packages/model/**", "packages/render/**"],
+      "notes": "Source 3 C2. Formulation as working hypothesis. Rendered via a redundant, collision-checked line-style + tag; never system-confirmed for ritual/spiritual claims."
+    },
+    {
+      "id": "REQ-I18N",
+      "title": "Multilingual model: stable concept IDs separate from localized labels (BCP 47, Unicode)",
+      "spec": ["§D", "§B"],
+      "source": "docs/research/psyml-fable-agent-spec.md",
+      "milestone": "M1",
+      "status": "planned",
+      "impl": ["packages/model/**", "packages/render/**"],
+      "notes": "Source 3 C7. label = { BCP-47 -> text } over a stable id; clinician/client variants per language."
+    },
+    {
+      "id": "REQ-SAFETY-TRIAGE",
+      "title": "Clinical-hazard lint + risk/psychosis safety gate",
+      "spec": ["§L.2", "§F", "§A.3"],
+      "source": "docs/research/psyml-fable-agent-spec.md",
+      "milestone": "M3",
+      "status": "planned",
+      "impl": ["packages/validate/**"],
+      "notes": "Source 3 C3. Acute-risk/psychosis -> block autonomous formulation + human-review banner; risky-ritual materials -> documentation-only; typed-edge requirement; mixed-school provenance; PII redact-by-default. Gates the AI-assist pipeline."
+    },
+    {
+      "id": "REQ-BODY-MAP",
+      "title": "Body Map view (somatic: body-located sensations, arousal curve, sensory channels)",
+      "spec": ["§E.1", "§K"],
+      "source": "docs/research/psyml-fable-agent-spec.md",
+      "milestone": "M5",
+      "status": "planned",
+      "impl": ["packages/profiles/**", "packages/render/**"],
+      "notes": "Source 3 C4. New view filling a gap; Tier-3 per §K; titration/pacing notes."
+    },
+    {
+      "id": "REQ-PRIVACY",
+      "title": "Privacy-by-default: de-identification, role-scoped export, redaction, audit log, consent",
+      "spec": ["§L.2"],
+      "source": "docs/research/psyml-fable-agent-spec.md",
+      "milestone": "M8",
+      "status": "planned",
+      "impl": ["packages/interop/**", "apps/web/**"],
+      "notes": "Source 3 C10 (HIPAA/GDPR-informed). Local-first; no PHI leaves device without role-specific consent; conservative human-supervised-formulation posture, not live-care CDS."
+    },
+    {
+      "id": "REQ-INTEROP-FHIR",
+      "title": "FHIR/SNOMED + de-identified research export",
+      "spec": ["§J", "§K"],
+      "source": "docs/research/psyml-fable-agent-spec.md",
+      "milestone": "M9",
+      "status": "planned",
+      "impl": ["packages/interop/**"],
+      "notes": "Source 3 C6. Observation, QuestionnaireResponse, CarePlan, Goal, Patient/RelatedPerson; SNOMED where apt; de-identified by default; export-only, regulation-sensitive (late + optional)."
+    },
+    {
+      "id": "REQ-EVAL-SUITE",
+      "title": "Evaluation suite (comprehension, collaborative validity, editability, fidelity, safety, privacy, interop, accessibility)",
+      "spec": ["§J"],
+      "source": "docs/research/psyml-fable-agent-spec.md",
+      "milestone": "M10",
+      "status": "planned",
+      "impl": ["conformance/**"],
+      "notes": "Source 3 C11. Operationalizes the §J rubric + Stage-4 gate."
     }
   ]
 }

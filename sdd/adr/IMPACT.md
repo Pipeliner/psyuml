@@ -17,6 +17,7 @@ choices were made.
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `0001-adopt-spec-driven-development.md` | Records adopting the SDD harness + enforced impact docs | `../templates/adr.md` | the whole `sdd/` harness rationale | cross-cutting | low (append-only) |
+| `0002-incorporate-psyml-source3.md` | Records adopting Source-3 (PsyML) ideas; keeps PsyUML notation as source of truth | `../templates/adr.md`, `../../docs/research/psyml-fable-agent-spec.md` | REQ-EPISTEMIC-STATUS, REQ-SAFETY-TRIAGE, REQ-BODY-MAP, REQ-I18N, REQ-PRIVACY, REQ-INTEROP-FHIR, REQ-EVAL-SUITE | §B, §J, §K, §L.2 | low (append-only) |
 
 ## Change checklist
 - [ ] Don't rewrite history — supersede with a new ADR and mark the old one `superseded`.
