@@ -1,0 +1,132 @@
+# PsyUML — Implementation Roadmap
+
+> Companion to [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+> Language spec: [`specification/psyuml-v0.1.0.md`](./specification/psyuml-v0.1.0.md).
+
+**Agreed direction (from project setup):**
+- **Build scope:** *GUI editor first* — a visual, drag-and-drop diagram editor is the primary product, not a text-DSL-first toolchain.
+- **Stack:** *TypeScript + web* (see ARCHITECTURE §10).
+- **Deliverable of this step:** the planning docs in this repo (you are reading them).
+
+## Sequencing principle
+
+We build in **thin vertical slices**: every milestone renders *something real on
+screen* end-to-end (model → validate → render → edit), rather than completing one
+horizontal layer before the next. The 8-symbol Tier-1 core (spec §B) is the first
+slice; school overlays, longitudinal diff, ritual, and AI-assist are added on top
+without breaking earlier diagrams (spec §K versioning: Tier-1 core frozen within a
+MAJOR version).
+
+## Relationship to the spec's clinical staging
+
+The spec's **Recommendations (Stage 1–4)** are a *clinical adoption* plan
+(formulation aids now → supervised pilot → consented ritual use → validate before
+v1.0). This roadmap is the *software* plan that **serves** it: M1–M3 produce the
+low-risk Tier-1 aids of clinical Stage 1; M4–M6 produce the dual-layer/translation
+features piloted in Stage 2; M7 gates ritual behind Stage 3's consent/secular
+requirements; M10 builds the conformance + usability artifacts that Stage 4
+demands before any 1.0.
+
+---
+
+## Phase 0 — Foundations
+
+### M0 · Repo & toolchain skeleton
+- **Goal:** an installable, CI-green monorepo with empty-but-typed packages.
+- **Deliverables:** pnpm workspace; `packages/{model,validate,render,profiles}` + `apps/web` scaffolds; Vite + React app shell; ESLint/Prettier; Vitest + Playwright wired; GitHub Actions (lint, typecheck, test, build); Okabe–Ito color tokens + the 8 core glyphs as SVG assets; `CONTRIBUTING.md`, `LICENSE` (TBD with owner).
+- **Done when:** `pnpm i && pnpm build && pnpm test` passes in CI; the web app boots to an empty canvas.
+
+## Phase 1 — Render & edit the Tier-1 core
+
+### M1 · Core model + read-only renderer
+- **Goal:** the metamodel exists and renders.
+- **Deliverables:** `@psyuml/model` types + JSON Schema for the 8 element categories, typed connectors (§C), and the PT property bag (ARCH §3); `@psyuml/render` draws a **static State Map** and **Parts/Agents Map** from a `.psyuml` file, including bands/swimlanes; clinician⇄client and **monochrome** toggles; auto-legend. A library-choice spike (React Flow vs d3/Konva) is resolved here.
+- **Acceptance:** the spec's §E.1 and §E.2 ASCII examples reproduce as SVG; monochrome render loses no meaning (manual a11y check); golden-SVG snapshot tests pass.
+- **Spec refs:** §A, §B, §C, §D, §E.1, §E.2.
+
+### M2 · GUI editor MVP (the headline deliverable)
+- **Goal:** a clinician can *build* a Tier-1 diagram by hand, save, and export.
+- **Deliverables:** glyph **palette** (8 core symbols) with drag/drop; node/edge **properties panel** (labels, tier, dominance, valence, consolidation); manual layout + connect; save/load `.psyuml`; export SVG/PNG; covers the three client-facing diagrams (State Map, Resource/Anchor, Crisis/Decision chart) plus Parts Map.
+- **Acceptance:** a new user reproduces the §H.1 State Map and §E.8 crisis chart from scratch in the UI in < 5 min; round-trips through save/load with stable IDs.
+- **Spec refs:** §E.1, §E.8, §E.9; "Audience guide".
+
+## Phase 2 — Make it safe and cross-school
+
+### M3 · Validation + accessibility + "path of hope" lint
+- **Goal:** the editor enforces well-formedness and clinical-safety invariants.
+- **Deliverables:** `@psyuml/validate` with all three rule classes (ARCH §7): §A.2 well-formedness; §D accessibility; **path-of-hope** + disclaimer/crisis gating. Live squiggles + a "formulation health" panel; CI lints the example corpus.
+- **Acceptance:** a client-facing diagram with only negative loops is **blocked** from export; a client diagram without disclaimer+crisis fields cannot export; a color-only encoding is flagged.
+- **Spec refs:** §A.2, §D, §L.2; companion-paper idea A4.
+
+### M4 · School profiles + polymorphic re-render + translation
+- **Goal:** the same model renders in multiple schools without losing provenance.
+- **Deliverables:** `@psyuml/profiles` with `polyvagal, ifs, schema, cat, genogram, act, cft, narrative`; the **profile switcher** (re-label/re-style/re-layout the same nodes); provenance tags `{school:…}`; the **translation table** (§G.2 + paper Table 2) as data; genogram glyph set (McGoldrick–Gerson–Petry) in the renderer.
+- **Acceptance:** the §E.4 loop renders as CBT *and* CAT/SDR from one model; switching schools never mutates core data; opposed origin-claims stay visible as tags (§G.2 caveat).
+- **Spec refs:** §C (genogram), §E.3, §E.4, §G; paper ideas A1, A9.
+
+## Phase 3 — Depth: psychodynamic profiles & longitudinal use
+
+### M5 · Research-derived profiles
+- **Goal:** add the four profiles harvested from the companion paper.
+- **Deliverables (each per §K extension rules — ARCH §5):** **Schema Mode Map** (circle nodes, size=dominance with redundant numeral, HealthyAdult-growth goal); **CAT SDR** (reciprocal roles, traps/dilemmas/snags, observing-eye); **Malan Two Triangles** (Conflict + Person with P/C/T + transference edges); **Karpman Drama Triangle** with **nested historical triangle** (`NestedWithin`).
+- **Acceptance:** each profile passes a §K collision check (no Tier-1 glyph clash), ships hand-drawn + color/non-color fallbacks, and has compatibility verdicts; a Mode Map's HealthyAdult node visibly grows across two versions (feeds M6).
+- **Spec refs:** §E.2, §E.4, §K; `idea-incorporation.md` §2.
+
+### M6 · Longitudinal: versioning + diff view
+- **Goal:** show change over time.
+- **Deliverables:** immutable per-session versions; **diff view** (node/edge add·remove·change; dominance deltas; dashed→solid consolidation); Timeline/Trajectory diagram (§E.5); cross-diagram navigation via shared IDs (§H.10).
+- **Acceptance:** two saved versions of the §H worked case produce a readable progress diff (e.g. "Punishing Parent" dominance ↓, an Exit consolidated).
+- **Spec refs:** §E.5, §H.10; paper idea A6.
+
+## Phase 4 — Ritual, assist, and text surface
+
+### M7 · Ritual modality (first-class), gated by ethics
+- **Goal:** ritual structure diagrams with honest, consented framing.
+- **Deliverables:** Ritual Structure diagram with van Gennep phase bands (separation→liminal→incorporation); the worked templates (sigil, tarot-as-reflection, rite-of-passage/grief, banishing/boundary — spec §F.2–F.5); **mandatory secular variant** + honest non-medical evidence note as required fields; interop proof — the same intervention hexagon appears as a node in an Intervention Sequence (§E.6) *and* as a trajectory trigger (§E.5), per §F.6.
+- **Acceptance:** a ritual template cannot be saved/exported without its secular variant and framing fields (validator error); §F.6 interop demonstrated on the §H.7 grief rite.
+- **Spec refs:** §F, §L.2-r3,4,5; clinical Stage 3 gate.
+
+### M8 · Bounded AI-assist (optional)
+- **Goal:** narrative → *draft* model for human review.
+- **Deliverables:** `@psyuml/ai` panel: paste narrative → proposed nodes/edges/tags at low confidence → human accepts/edits; formulation-only guardrails (no diagnosis/severity); path-of-hope lint runs before save; Claude API integration (model-agnostic, latest capable model).
+- **Acceptance:** nothing is ever auto-applied; every AI-suggested node is `~conf:L~` until confirmed; removing the AI package leaves the editor fully functional.
+- **Spec refs:** §A.3 (formulation not nosology); `idea-incorporation.md` §3–4.
+- **Explicitly out of scope:** safeguard-bypass prompting; autonomous diagnosis.
+
+### M9 · Text DSL + parser + CLI
+- **Goal:** a text surface syntax and headless tooling.
+- **Deliverables:** `@psyuml/grammar` (text DSL ⇄ model round-trip); Mermaid export; a CLI (`psyuml lint|render|convert`); import of the §H examples as DSL.
+- **Acceptance:** every `examples/*.psyuml` round-trips DSL→model→DSL losslessly; CLI lints the corpus in CI.
+- **Spec refs:** §B/§C tables (authoritative notation); paper idea A8.
+
+## Phase 5 — Toward v1.0
+
+### M10 · Conformance, usability, and release readiness
+- **Goal:** the artifacts the spec requires before leaving v0.x.
+- **Deliverables:** `conformance/` executable suite (spec §J rubric + §E per-type requirements); a docs site; a formal accessibility audit; a usability-test protocol for the Tier-1 crisis chart (spec Stage 4); semver/release flow via Changesets (spec §K).
+- **Acceptance:** conformance suite green; a11y audit passes; **v0.x → v1.0 stays gated** on the spec's Stage-4 evidence (layperson comprehension, inter-rater reliability, multi-school endorsement) — software-ready ≠ clinically-validated.
+- **Spec refs:** §J, §K, Recommendations Stage 4, Caveats.
+
+---
+
+## Cross-cutting workstreams (run continuously)
+- **Examples corpus** (`examples/`): the entire §H worked case ("R.", CPTSD) built as the canonical regression + demo set, one diagram per type.
+- **Accessibility:** monochrome snapshot tests and palette checks in CI from M1 onward.
+- **Docs:** keep spec ↔ code in sync; each profile documents its §K extension record.
+- **Privacy:** local-first by default; no clinical data leaves the device without explicit opt-in (ARCH §8).
+
+## Top risks & mitigations
+| Risk | Mitigation |
+|---|---|
+| Genogram + arousal-band fidelity is hard in generic graph libs | SVG-first renderer; treat Mermaid as approximate export only (spec Caveats); M1 library spike de-risks early. |
+| Cross-school glyph reuse causes semiotic confusion | Mandatory provenance tags + §K collision check enforced in `validate` (spec §J.4 fix). |
+| "Path of hope" / safety lint feels heavy-handed to clinicians | Severity is configurable per layer; hard-block only in the client-facing layer. |
+| AI-assist drifts toward diagnosis | Code-level guardrails + low-confidence-by-default + human-in-the-loop; out-of-scope items named in M8. |
+| Scope creep across 12 schools | Tier-1 core frozen; new schools enter only via the §K profile mechanism, Tier-3 by default. |
+
+## How to start (first concrete tasks)
+1. Land **M0** scaffold (monorepo, CI, glyph assets, color tokens).
+2. Define the `@psyuml/model` JSON Schema for the 8 element categories + connectors + PT bag; encode the §H.1 State Map as the first `examples/*.psyuml`.
+3. Stand up the read-only **State Map** render (M1) with the monochrome toggle — the first on-screen proof.
+
+Then proceed milestone by milestone, keeping every step shippable and spec-traceable.

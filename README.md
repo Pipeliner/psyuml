@@ -1,0 +1,58 @@
+# PsyUML
+
+**A unified, cross-school, dual-audience visual modeling language for psychotherapy —
+and the tooling to draw it.** PsyUML is to psychotherapy case-formulation what
+UML/SysML is to software: a small, hand-drawable core ontology (8 element types,
+8 core symbols) that every diagram type instantiates, progressively enrichable
+with clinician annotations and school-specific overlays.
+
+It exists to fill a documented gap: in one audit of 150 psychiatric assessment
+letters, **94% contained no case formulation at all** (Abbas et al., *Academic
+Psychiatry* 2013). PsyUML aims to make a shareable, plain-language formulation
+something you can sketch in two minutes.
+
+> ⚠️ **Status: v0.1 draft specification + pre-code design.** PsyUML is **unvalidated**.
+> It is a design grounded in notation science and clinical source traditions, **not**
+> a tested clinical instrument. It **supports, never replaces, professional care.**
+> See the [Ethical-Use Statement](docs/specification/psyuml-v0.1.0.md) (§L.2).
+
+## What's in this repo (right now)
+
+This repository currently holds the **specification and the implementation plan**.
+No application code has been written yet — the next step is to build it per the roadmap.
+
+| Document | What it is |
+|---|---|
+| [`docs/specification/psyuml-v0.1.0.md`](docs/specification/psyuml-v0.1.0.md) | **The language spec** (v0.1.0) — core ontology, notation, all 9 diagram types, ritual modality, cross-school compatibility, worked case, ethics. The source of truth. |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the tooling is built: the one-model/many-school-views design, metamodel, rendering pipeline, validation, tech stack, repo layout. |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | The milestone plan (M0–M10), GUI-editor-first, each step shippable and spec-traceable. |
+| [`docs/research/upml-fable-agent-architecture.ru.md`](docs/research/upml-fable-agent-architecture.ru.md) | A companion research paper (RU), saved for reference. |
+| [`docs/research/idea-incorporation.md`](docs/research/idea-incorporation.md) | Which ideas from that paper were **adopted, adapted, or rejected** — and why. |
+
+## The product we're planning to build
+
+A **web-based, visual GUI editor** (TypeScript) where a clinician — and, in the
+client layer, a client — can build, render, and version PsyUML formulations:
+
+- Drag-and-drop the **8-symbol Tier-1 core**, then enrich with Tier-2/3 overlays.
+- **One model, many school views:** re-render the same map in IFS, schema, CAT/SDR,
+  polyvagal, genogram, Malan, Karpman, or ritual vocabularies — *without flattening*
+  the real theoretical disagreements between them (provenance tags preserve them).
+- **Dual-audience:** toggle a clinician layer and a plain, non-pathologizing client layer.
+- **Accessibility-first:** no meaning by color alone; monochrome-printable; hand-drawable.
+- **Safe-by-construction:** client-facing diagrams require a disclaimer + crisis
+  resources; a "path of hope" lint blocks hopeless-only diagrams in the client layer.
+- **Longitudinal:** version formulations across sessions and render a progress **diff**.
+
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the build sequence and
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design.
+
+## Design commitments (non-negotiable)
+
+- **Formulation-level, not diagnosis.** PsyUML asserts nothing nosological (spec §A.3); the planned AI-assist is a bounded, human-in-the-loop *draft* aid — never an autonomous analyst or diagnoser.
+- **Honest ritual framing.** Ritual is a first-class modality framed per the evidence: it reliably affects *subjective* anxiety, control, and meaning, and does **not** reliably change *objective* disease markers. Every ritual template ships a secular variant. (spec §F, §L.2-r3.)
+- **Collaborative & consent-based.** Diagrams are co-drawn; the client retains authorship and the right to relabel.
+
+## License
+
+TBD with the repository owner.
