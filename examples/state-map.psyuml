@@ -1,0 +1,91 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "state-map",
+  "meta": {
+    "title": "R. — nervous-system ladder",
+    "disclaimer": "This map supports, and does not replace, professional care.",
+    "crisisResources": "If you are in danger now, call your local emergency number or a crisis line (e.g. 988 in the US).",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    {
+      "id": "ventral",
+      "order": 0,
+      "pattern": "none",
+      "label": { "clinician": { "en": "Ventral / safe-social" }, "client": { "en": "Green — safe & social" } }
+    },
+    {
+      "id": "sympathetic",
+      "order": 1,
+      "pattern": "diagonal",
+      "label": { "clinician": { "en": "Sympathetic / mobilized" }, "client": { "en": "Amber — revved up" } }
+    },
+    {
+      "id": "dorsal",
+      "order": 2,
+      "pattern": "cross-hatch",
+      "label": { "clinician": { "en": "Dorsal / shutdown" }, "client": { "en": "Red — shut down" } }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "calm",
+      "kind": "state",
+      "bandId": "ventral",
+      "tier": 1,
+      "label": { "clinician": { "en": "Calm / connected" }, "client": { "en": "Calm and connected" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "anxious",
+      "kind": "state",
+      "bandId": "sympathetic",
+      "tier": 1,
+      "label": { "clinician": { "en": "Anxious / fight-flight" }, "client": { "en": "Wired" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "numb",
+      "kind": "state",
+      "bandId": "dorsal",
+      "tier": 1,
+      "label": { "clinician": { "en": "Numb / shutdown" }, "client": { "en": "Foggy" } },
+      "properties": { "epistemicStatus": "reported" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "sequential",
+      "source": "calm",
+      "target": "anxious",
+      "trigger": { "clinician": { "en": "criticism" }, "client": { "en": "being criticized" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "e2",
+      "kind": "sequential",
+      "source": "anxious",
+      "target": "numb",
+      "trigger": { "clinician": { "en": "overwhelm" }, "client": { "en": "too much" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "x1",
+      "kind": "exit",
+      "source": "numb",
+      "target": "anxious",
+      "label": { "clinician": { "en": "movement / orienting" }, "client": { "en": "move / look around" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "x2",
+      "kind": "exit",
+      "source": "anxious",
+      "target": "calm",
+      "label": { "clinician": { "en": "paced breathing / co-regulation" }, "client": { "en": "slow breathing" } },
+      "properties": { "epistemicStatus": "planned" }
+    }
+  ]
+}

@@ -1,18 +1,22 @@
+import stateMapSvg from '../../examples/state-map.svg?raw';
+
 /**
- * The PsyUML web editor (M0 shell). It boots to an empty canvas; the drag-and-drop
+ * The PsyUML web editor shell. M1 shows the first real render — a State Map
+ * (spec §E.1) drawn by @psyuml/render from the canonical model. The drag-and-drop
  * editor over the 8-symbol Tier-1 core lands in M2 (REQ-EDITOR-MVP).
  */
 export function App() {
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem', maxWidth: 720 }}>
+    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem', maxWidth: 760 }}>
       <h1>PsyUML</h1>
       <p>
-        Visual modeling language for psychotherapy. This is the M0 scaffold — an empty canvas. The
-        drag-and-drop editor lands in M2.
+        A visual modeling language for psychotherapy. Below is the first rendered diagram — a State
+        Map (spec §E.1), drawn from the canonical model. The interactive editor lands in M2.
       </p>
       <section
-        aria-label="canvas"
-        style={{ border: '2px dashed #999', borderRadius: 12, height: 320 }}
+        aria-label="State Map example render"
+        style={{ border: '1px solid #ddd', borderRadius: 12, padding: '1rem' }}
+        dangerouslySetInnerHTML={{ __html: stateMapSvg }}
       />
     </main>
   );

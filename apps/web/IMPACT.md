@@ -18,7 +18,8 @@ editor over the 8-symbol Tier-1 core.)
 | `package.json` | Workspace member manifest (`web`) | — | workspace resolution | — | low |
 | `index.html` | Vite entry; mounts `#root`, loads `main.tsx` | `main.tsx` | build | — | low |
 | `main.tsx` | React bootstrap (mounts `App`) | react-dom, `App.tsx` | build | — | low |
-| `App.tsx` | M0 shell UI (empty canvas) | react | — | REQ-EDITOR-MVP | low |
+| `App.tsx` | Shell UI; M1 displays the State Map render (`../../examples/state-map.svg?raw`) | react, `examples/state-map.svg` | — | REQ-EDITOR-MVP | low |
+| `vite-env.d.ts` | Vite client ambient types (enables `?raw` imports) | `vite/client` | typecheck | — | low |
 
 ## Change checklist
 - [ ] Keep the client layer plain/non-pathologizing; gate client exports on disclaimer + crisis fields (§L.2).

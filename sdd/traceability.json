@@ -43,7 +43,7 @@
       "spec": ["§E.1"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/render/**", "packages/profiles/**"],
       "tests": ["examples/state-map.psyuml"]
     },
@@ -236,7 +236,7 @@
       "spec": ["§A.3", "§B", "§C", "§D"],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M1",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/model/**", "packages/render/**"],
       "notes": "Source 3 C2. Formulation as working hypothesis. Rendered via a redundant, collision-checked line-style + tag; never system-confirmed for ritual/spiritual claims."
     },
@@ -246,7 +246,7 @@
       "spec": ["§D", "§B"],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M1",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/model/**", "packages/render/**"],
       "notes": "Source 3 C7. label = { BCP-47 -> text } over a stable id; clinician/client variants per language."
     },

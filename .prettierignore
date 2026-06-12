@@ -3,6 +3,7 @@ dist
 docs
 sdd
 assets
+examples
 .github
 *.md
 pnpm-lock.yaml

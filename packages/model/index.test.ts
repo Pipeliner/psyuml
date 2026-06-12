@@ -1,11 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { createEmptyModel, PSYUML_MODEL_VERSION } from './index';
+import { readFileSync } from 'node:fs';
+import {
+  createEmptyModel,
+  getText,
+  parseModel,
+  PSYUML_MODEL_VERSION,
+  serializeModel,
+} from './index';
 
-describe('createEmptyModel', () => {
-  it('returns an empty, versioned model', () => {
-    const model = createEmptyModel();
-    expect(model.version).toBe(PSYUML_MODEL_VERSION);
-    expect(model.nodes).toHaveLength(0);
-    expect(model.edges).toHaveLength(0);
+const example = readFileSync(new URL('../../examples/state-map.psyuml', import.meta.url), 'utf8');
+
+describe('model', () => {
+  it('creates an empty, versioned model', () => {
+    const m = createEmptyModel('state-map');
+    expect(m.version).toBe(PSYUML_MODEL_VERSION);
+    expect(m.diagram).toBe('state-map');
+    expect(m.nodes).toHaveLength(0);
+  });
+
+  it('parses the canonical State Map example', () => {
+    const m = parseModel(example);
+    expect(m.diagram).toBe('state-map');
+    expect(m.bands).toHaveLength(3);
+    expect(m.nodes).toHaveLength(3);
+    expect(m.edges).toHaveLength(4);
+    expect(m.nodes[0]?.properties.epistemicStatus).toBe('reported');
+  });
+
+  it('round-trips model -> JSON -> model losslessly', () => {
+    const m = parseModel(example);
+    const again = parseModel(serializeModel(m));
+    expect(again).toEqual(m);
+  });
+
+  it('resolves dual-audience, i18n labels with fallback', () => {
+    const m = parseModel(example);
+    const numb = m.nodes.find((n) => n.id === 'numb');
+    expect(numb).toBeDefined();
+    expect(getText(numb!.label, 'clinician')).toBe('Numb / shutdown');
+    expect(getText(numb!.label, 'client')).toBe('Foggy');
+    // a missing language falls back to the first available entry
+    expect(getText(numb!.label, 'clinician', 'fr')).toBe('Numb / shutdown');
+  });
+
+  it('rejects an invalid model (missing required diagram)', () => {
+    expect(() => parseModel({ version: '0.1.0' })).toThrow();
   });
 });
