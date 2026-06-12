@@ -1,0 +1,233 @@
+{
+  "version": "0.1.0",
+  "description": "Spec-Driven Development traceability registry. Each requirement links a PsyUML spec section (the source of truth) to a roadmap milestone and the implementation/test paths that will satisfy it. Validated by sdd/check.mjs. Statuses: planned | in-progress | implemented | deprecated. Impl/test paths are existence-checked only once a requirement leaves 'planned'.",
+  "milestones": [
+    { "id": "M0", "phase": 0, "title": "Repo & toolchain skeleton" },
+    { "id": "M1", "phase": 1, "title": "Core model + read-only renderer" },
+    { "id": "M2", "phase": 1, "title": "GUI editor MVP" },
+    { "id": "M3", "phase": 2, "title": "Validation + accessibility + path-of-hope lint" },
+    { "id": "M4", "phase": 2, "title": "School profiles + polymorphic re-render + translation" },
+    { "id": "M5", "phase": 3, "title": "Research-derived profiles" },
+    { "id": "M6", "phase": 3, "title": "Longitudinal: versioning + diff view" },
+    { "id": "M7", "phase": 4, "title": "Ritual modality (first-class), ethics-gated" },
+    { "id": "M8", "phase": 4, "title": "Bounded AI-assist (optional)" },
+    { "id": "M9", "phase": 4, "title": "Text DSL + parser + CLI" },
+    { "id": "M10", "phase": 5, "title": "Conformance, usability, release readiness" }
+  ],
+  "requirements": [
+    {
+      "id": "REQ-CORE-ONTOLOGY",
+      "title": "8-category core ontology + metamodel (OT/RT/PT)",
+      "spec": ["§A.1", "§A.2", "§A.3"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M1",
+      "status": "planned",
+      "impl": ["packages/model/**"],
+      "tests": ["packages/model/**/*.test.ts"],
+      "notes": "Nodes (8 element categories), typed connectors, and the property bag. Stereotypes per §K."
+    },
+    {
+      "id": "REQ-NOTATION",
+      "title": "Concrete notation: glyphs + connectors render to SVG",
+      "spec": ["§B", "§C"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M1",
+      "status": "planned",
+      "impl": ["packages/render/**"],
+      "tests": ["packages/render/**/*.test.ts"],
+      "notes": "Native SVG authoritative; Mermaid is approximate export only."
+    },
+    {
+      "id": "REQ-STATE-MAP",
+      "title": "State Map diagram type",
+      "spec": ["§E.1"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M1",
+      "status": "planned",
+      "impl": ["packages/render/**", "packages/profiles/**"],
+      "tests": ["examples/state-map.psyuml"]
+    },
+    {
+      "id": "REQ-PARTS-MAP",
+      "title": "Parts/Agents Map diagram type",
+      "spec": ["§E.2"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M1",
+      "status": "planned",
+      "impl": ["packages/render/**", "packages/profiles/**"]
+    },
+    {
+      "id": "REQ-EDITOR-MVP",
+      "title": "GUI editor: palette, properties panel, save/load, export",
+      "spec": ["§B", "Audience guide"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M2",
+      "status": "planned",
+      "impl": ["apps/web/**"],
+      "tests": ["apps/web/**/*.spec.ts"]
+    },
+    {
+      "id": "REQ-DECISION-NAV",
+      "title": "Decision/Navigation (crisis) chart, client-usable",
+      "spec": ["§E.8"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M2",
+      "status": "planned",
+      "impl": ["apps/web/**", "packages/render/**"]
+    },
+    {
+      "id": "REQ-RESOURCE-ANCHOR",
+      "title": "Resource/Anchor map",
+      "spec": ["§E.9"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M2",
+      "status": "planned",
+      "impl": ["apps/web/**", "packages/render/**"]
+    },
+    {
+      "id": "REQ-WELLFORMEDNESS",
+      "title": "Abstract-syntax well-formedness rules enforced",
+      "spec": ["§A.2", "§A.3"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M3",
+      "status": "planned",
+      "impl": ["packages/validate/**"],
+      "tests": ["packages/validate/**/*.test.ts"]
+    },
+    {
+      "id": "REQ-ACCESSIBILITY",
+      "title": "No meaning by color alone; monochrome-printable; min text size",
+      "spec": ["§D"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M3",
+      "status": "planned",
+      "impl": ["packages/validate/**", "packages/render/**"]
+    },
+    {
+      "id": "REQ-PATH-OF-HOPE",
+      "title": "Path-of-hope clinical-safety lint (no hopeless-only diagrams)",
+      "spec": ["§A.2", "§L.2"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M3",
+      "status": "planned",
+      "impl": ["packages/validate/**"],
+      "notes": "Generalizes §A.2-r5 to every diagram; hard-block in the client layer. Companion-paper idea A4."
+    },
+    {
+      "id": "REQ-ETHICS-GUARDRAILS",
+      "title": "Disclaimer + crisis fields gating; non-pathologizing client layer",
+      "spec": ["§L.2", "§A.2"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M3",
+      "status": "planned",
+      "impl": ["packages/validate/**", "apps/web/**"]
+    },
+    {
+      "id": "REQ-CROSS-SCHOOL",
+      "title": "School profiles + polymorphic re-render + translation table",
+      "spec": ["§G", "§E.3", "§E.4"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M4",
+      "status": "planned",
+      "impl": ["packages/profiles/**"],
+      "tests": ["packages/profiles/**/*.test.ts"],
+      "notes": "One immutable model, many views. Provenance tags preserve opposed origin-claims (§G.2 caveat)."
+    },
+    {
+      "id": "REQ-GENOGRAM",
+      "title": "Genogram relational set (McGoldrick–Gerson–Petry) adopted",
+      "spec": ["§C", "§E.3"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M4",
+      "status": "planned",
+      "impl": ["packages/profiles/**", "packages/render/**"]
+    },
+    {
+      "id": "REQ-EXTENSION-MECH",
+      "title": "Profiles & stereotypes extension mechanism",
+      "spec": ["§K"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M5",
+      "status": "planned",
+      "impl": ["packages/model/**", "packages/profiles/**"]
+    },
+    {
+      "id": "REQ-RESEARCH-PROFILES",
+      "title": "Schema Mode Map, CAT SDR, Malan Two Triangles, Karpman nested triangles",
+      "spec": ["§E.2", "§E.4", "§K"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M5",
+      "status": "planned",
+      "impl": ["packages/profiles/**"],
+      "notes": "Companion-paper profiles; each per §K extension rules. See idea-incorporation §2."
+    },
+    {
+      "id": "REQ-VERSIONING-DIFF",
+      "title": "Model versioning + diff view (longitudinal progress)",
+      "spec": ["§E.5", "§H.10"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M6",
+      "status": "planned",
+      "impl": ["packages/model/**", "apps/web/**"],
+      "notes": "Companion-paper idea A6. Versions documents, not the person."
+    },
+    {
+      "id": "REQ-TIMELINE",
+      "title": "Timeline/Trajectory diagram type",
+      "spec": ["§E.5"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M6",
+      "status": "planned",
+      "impl": ["packages/render/**", "packages/profiles/**"]
+    },
+    {
+      "id": "REQ-INTERVENTION-SEQ",
+      "title": "Intervention Sequence diagram type",
+      "spec": ["§E.6"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M7",
+      "status": "planned",
+      "impl": ["packages/render/**", "packages/profiles/**"]
+    },
+    {
+      "id": "REQ-RITUAL",
+      "title": "Ritual modality first-class, secular variant + honest framing required",
+      "spec": ["§F", "§L.2"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M7",
+      "status": "planned",
+      "impl": ["packages/profiles/**", "packages/validate/**"],
+      "notes": "Validator blocks ritual export without secular variant + non-medical framing fields."
+    },
+    {
+      "id": "REQ-AI-ASSIST",
+      "title": "Bounded narrative→draft-model assist (human-in-the-loop, formulation-only)",
+      "spec": ["§A.3", "§L.2"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M8",
+      "status": "planned",
+      "impl": ["packages/ai/**"],
+      "notes": "No diagnosis/severity scoring; no safeguard-bypass. See idea-incorporation §3–4."
+    },
+    {
+      "id": "REQ-TEXT-DSL",
+      "title": "Text DSL ⇄ model round-trip + CLI",
+      "spec": ["§B", "§C"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M9",
+      "status": "planned",
+      "impl": ["packages/grammar/**"],
+      "tests": ["packages/grammar/**/*.test.ts"]
+    },
+    {
+      "id": "REQ-CONFORMANCE",
+      "title": "Conformance suite + semver release flow (v1.0 readiness)",
+      "spec": ["§J", "§K"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M10",
+      "status": "planned",
+      "impl": ["conformance/**"],
+      "notes": "Leaving v0.x stays gated on the spec's Stage-4 clinical evidence."
+    }
+  ]
+}
