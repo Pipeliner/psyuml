@@ -18,16 +18,25 @@ something you can sketch in two minutes.
 
 ## What's in this repo (right now)
 
-This repository currently holds the **specification and the implementation plan**.
-No application code has been written yet — the next step is to build it per the roadmap.
+This repository holds the **specification, the implementation plan, an SDD harness**, and
+the **M0 scaffold** — an installable TypeScript monorepo (no editor UI yet; that lands in M2).
+
+```sh
+pnpm install
+pnpm run verify   # sdd:check + format:check + lint + typecheck + test + build
+pnpm run dev      # serve the empty-canvas editor shell
+```
 
 | Document | What it is |
 |---|---|
 | [`docs/specification/psyuml-v0.1.0.md`](docs/specification/psyuml-v0.1.0.md) | **The language spec** (v0.1.0) — core ontology, notation, all 9 diagram types, ritual modality, cross-school compatibility, worked case, ethics. The source of truth. |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the tooling is built: the one-model/many-school-views design, metamodel, rendering pipeline, validation, tech stack, repo layout. |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | The milestone plan (M0–M10), GUI-editor-first, each step shippable and spec-traceable. |
-| [`docs/research/upml-fable-agent-architecture.ru.md`](docs/research/upml-fable-agent-architecture.ru.md) | A companion research paper (RU), saved for reference. |
-| [`docs/research/idea-incorporation.md`](docs/research/idea-incorporation.md) | Which ideas from that paper were **adopted, adapted, or rejected** — and why. |
+| [`sdd/README.md`](sdd/README.md) | The Spec-Driven Development harness: traceability registry + per-directory `IMPACT.md` impact analysis, enforced by `sdd/check.mjs` in CI. |
+| [`docs/research/`](docs/research/) | Two companion research papers (saved verbatim) + [`idea-incorporation.md`](docs/research/idea-incorporation.md): which of their ideas were **adopted, adapted, or rejected** — and why. |
+
+Code lives in `packages/` (`@psyuml/model · validate · render · profiles`), `apps/web`
+(the editor shell), and `assets/` (color tokens + the 8 core glyphs).
 
 ## The product we're planning to build
 

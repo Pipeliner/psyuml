@@ -1,0 +1,8 @@
+node_modules
+dist
+docs
+sdd
+assets
+.github
+*.md
+pnpm-lock.yaml

@@ -81,8 +81,8 @@ node sdd/check.mjs
 
 It exits non-zero (and lists every violation) if a directory is missing its
 `IMPACT.md`, a file is undocumented, or `traceability.json` is malformed or points at
-missing sources. It runs in CI on every push/PR (`.github/workflows/sdd-check.yml`).
-Once `package.json` exists (M0), add `"sdd:check": "node sdd/check.mjs"`.
+missing sources. It runs in CI on every push/PR (`.github/workflows/ci.yml`, the `sdd`
+job) and is also wired as `pnpm run sdd:check` (part of `pnpm run verify`).
 
 ## Workflows
 

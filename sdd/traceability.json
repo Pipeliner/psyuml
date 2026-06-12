@@ -21,7 +21,7 @@
       "spec": ["§A.1", "§A.2", "§A.3"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/model/**"],
       "tests": ["packages/model/**/*.test.ts"],
       "notes": "Nodes (8 element categories), typed connectors, and the property bag. Stereotypes per §K."
@@ -32,7 +32,7 @@
       "spec": ["§B", "§C"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/render/**"],
       "tests": ["packages/render/**/*.test.ts"],
       "notes": "Native SVG authoritative; Mermaid is approximate export only."
@@ -90,7 +90,7 @@
       "spec": ["§A.2", "§A.3"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M3",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/validate/**"],
       "tests": ["packages/validate/**/*.test.ts"]
     },
@@ -129,7 +129,7 @@
       "spec": ["§G", "§E.3", "§E.4"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M4",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/profiles/**"],
       "tests": ["packages/profiles/**/*.test.ts"],
       "notes": "One immutable model, many views. Provenance tags preserve opposed origin-claims (§G.2 caveat)."

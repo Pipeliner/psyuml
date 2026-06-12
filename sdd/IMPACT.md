@@ -12,7 +12,7 @@ convention, templates, ADRs, and the checker that enforces them.
 ## Downstream (depends on this) — blast radius
 > **Blast radius: medium (process-wide).** Changing the checker's rules or the impact-doc
 > convention affects every directory and the CI gate, but not product runtime behavior.
-- `.github/workflows/sdd-check.yml` — runs `check.mjs` in CI.
+- `.github/workflows/ci.yml` (the `sdd` job) — runs `check.mjs` in CI.
 - Every `IMPACT.md` in the repo — conforms to `templates/impact.md` and is validated by `check.mjs`.
 - Contributors — follow the workflows in `README.md`.
 
