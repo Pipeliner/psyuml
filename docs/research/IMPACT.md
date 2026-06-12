@@ -4,7 +4,7 @@
 companion research papers (UPML/Fable, RU; and the PsyML Fable-agent spec) plus the
 adopt/adapt/reject analysis that feeds the plan.
 **Status:** active (reference)
-**Spec anchor / REQ:** REQ-PATH-OF-HOPE, REQ-RESEARCH-PROFILES, REQ-VERSIONING-DIFF, REQ-AI-ASSIST, REQ-EPISTEMIC-STATUS, REQ-SAFETY-TRIAGE, REQ-BODY-MAP, REQ-I18N, REQ-PRIVACY, REQ-INTEROP-FHIR, REQ-EVAL-SUITE
+**Spec anchor / REQ:** REQ-PATH-OF-HOPE, REQ-RESEARCH-PROFILES, REQ-VERSIONING-DIFF, REQ-AI-ASSIST, REQ-EPISTEMIC-STATUS, REQ-SAFETY-TRIAGE, REQ-BODY-MAP, REQ-I18N, REQ-PRIVACY, REQ-INTEROP-FHIR, REQ-EVAL-SUITE, REQ-STYLE-GUIDE, REQ-TEMPLATES, REQ-CASE-CORPUS, REQ-HANDBOOK, REQ-ADOPTION
 
 ## Upstream (this depends on)
 - `../specification/psyuml-v0.1.0.md` — `idea-incorporation.md` maps ideas onto spec sections and defers to the spec's ethics where they conflict.

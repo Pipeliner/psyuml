@@ -115,6 +115,7 @@ demands before any 1.0.
 - **Docs:** keep spec ↔ code in sync; each profile documents its §K extension record.
 - **Privacy & governance:** local-first by default; de-identify/redact + role-scoped exports; audit log; conservative "human-supervised formulation infrastructure" posture, not live-care CDS (Source 3; ARCH §11).
 - **Epistemic honesty, i18n & alt-text:** carry `epistemicStatus` on every element; keep concept IDs separate from localized labels; emit a text summary + alt text for every view (Source 3; ARCH §3/§6/§13).
+- **Materials & adoption (external-plan cross-check):** a notation **style guide** + clinician/client **cheat-sheets** + printable session **templates** (REQ-STYLE-GUIDE, REQ-TEMPLATES, M5); a **multi-school worked-case corpus** beyond "R." (REQ-CASE-CORPUS, M6); a **practitioner handbook** and **adoption pack** — workshop/facilitator materials, a notation-extension contributor guide, comprehension-test instruments (REQ-HANDBOOK, REQ-ADOPTION, M10). See `research/idea-incorporation.md` §7.
 
 ## Top risks & mitigations
 | Risk | Mitigation |

@@ -218,7 +218,8 @@
       "milestone": "M9",
       "status": "planned",
       "impl": ["packages/grammar/**"],
-      "tests": ["packages/grammar/**/*.test.ts"]
+      "tests": ["packages/grammar/**/*.test.ts"],
+      "notes": "Error messages designed for non-programmers (alt-plan cross-check, idea-incorporation §7)."
     },
     {
       "id": "REQ-CONFORMANCE",
@@ -299,6 +300,56 @@
       "status": "planned",
       "impl": ["conformance/**"],
       "notes": "Source 3 C11. Operationalizes the §J rubric + Stage-4 gate."
+    },
+    {
+      "id": "REQ-STYLE-GUIDE",
+      "title": "Notation style guide + clinician/client cheat-sheets",
+      "spec": ["§B", "§C", "§D"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M5",
+      "status": "planned",
+      "impl": ["docs/**", "assets/**"],
+      "notes": "Alt-plan cross-check (idea-incorporation §7): color semantics, line weights, emotional-valence + epistemic-status encoding, ritual cultural-sensitivity notes; quick-reference cheat sheets."
+    },
+    {
+      "id": "REQ-TEMPLATES",
+      "title": "Printable blank session templates",
+      "spec": ["§D", "§E"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M5",
+      "status": "planned",
+      "impl": ["packages/render/**", "examples/**"],
+      "notes": "Alt-plan cross-check: hand-drawable blank templates per diagram type for paper use in session."
+    },
+    {
+      "id": "REQ-CASE-CORPUS",
+      "title": "Multi-school worked-case corpus",
+      "spec": ["§H", "§E"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M6",
+      "status": "planned",
+      "impl": ["examples/**"],
+      "notes": "Alt-plan cross-check: case studies beyond the composite 'R.' (CBT panic, IFS, family genogram, grief-ritual, ...), each as .psyuml + golden."
+    },
+    {
+      "id": "REQ-HANDBOOK",
+      "title": "Practitioner handbook / tutorial",
+      "spec": ["§E", "§L"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M10",
+      "status": "planned",
+      "impl": ["docs/**"],
+      "notes": "Alt-plan cross-check: per-diagram how-tos, co-creating-in-session guidance, exercises, self-guided reflection; ethical guidance against pseudo-clinical overreach."
+    },
+    {
+      "id": "REQ-ADOPTION",
+      "title": "Adoption pack (workshops, extension guide, comprehension instruments)",
+      "spec": ["§J", "§K"],
+      "source": "docs/research/idea-incorporation.md",
+      "milestone": "M10",
+      "status": "planned",
+      "impl": ["docs/**"],
+      "notes": "Alt-plan cross-check: workshop decks + facilitator scripts; a notation-extension contributor guide (clinicians proposing symbols); comprehension-test instruments + pilot-study design. Extends REQ-EVAL-SUITE."
     }
   ]
 }

@@ -116,3 +116,31 @@ safety-sensitive is reframed honestly or sequenced conservatively; the rejected 
 those from Source 2 (safeguard-bypass, autonomous diagnosis). PsyUML's Ethical-Use Statement
 (§L.2) stays the binding constraint, and the PsyUML spec stays the source of truth on any
 conflict (notably notation/glyphs).
+
+## 7. External project-plan cross-check (alternative funding plan)
+
+A separately-authored 6-milestone project plan for "PsyUML" was reviewed for ideas worth
+lifting. It **independently converges** with this project's architecture (a multi-view language
+over one canonical model, a Mermaid-style text DSL + parser + SVG renderer, a school-
+compatibility matrix with translation guides, a §K-style extension mechanism, and
+Moody-Physics-of-Notations evaluation) — useful validation, but little of it is new to our
+spec/plan. The genuinely **additive deliverables** lifted from it:
+
+| Idea (alt plan) | Status here | Lifted as |
+|---|---|---|
+| **Notation style guide** — color semantics, line weights, emotional-valence encoding, cultural-sensitivity notes for ritual symbols | new (we have `assets/tokens.json` + glyphs but no written guide) | REQ-STYLE-GUIDE (M5) |
+| **Printable blank templates** for paper/session use + **clinician & client cheat-sheets** | new | REQ-TEMPLATES (M5) |
+| **Worked case studies across multiple schools** (CBT panic, IFS, family genogram, grief-ritual, …) | partial — we have the single composite case "R." (§H) | REQ-CASE-CORPUS (M6) — grow `examples/` beyond one case |
+| **Practitioner handbook / tutorial** — per-diagram how-tos, co-creating-in-session guidance, exercises with answers, self-guided-reflection chapter | new | REQ-HANDBOOK (M10) |
+| **Adoption pack** — workshop decks + facilitator scripts, a *notation-extension* contributor guide (for clinicians proposing symbols, distinct from the dev `CONTRIBUTING.md`), comprehension-test instruments + pilot-study design | new (extends REQ-EVAL-SUITE) | REQ-ADOPTION (M10) |
+| DSL **error messages designed for non-programmers** | refinement | folded into REQ-TEXT-DSL (M9) |
+
+**Confirmed already-covered (no action):** the core spec/metamodel, the diagram-type catalog,
+cross-school compatibility + translation tables (§G), the symbol SVG library (`assets/glyphs`),
+accessibility/readability (§D), the extension/versioning mechanism (§K), and the evaluation
+rubric (§J / REQ-EVAL-SUITE). A standalone "notation landscape review with citations" is
+largely covered by the spec's per-type originating-schools notes (§E) plus `docs/research/`, so
+it is not separately scheduled.
+
+Nothing in the alternative plan conflicts with PsyUML's ethics or architecture, so nothing is
+rejected; the lifted items are documentation/materials, sequenced late and kept optional.
