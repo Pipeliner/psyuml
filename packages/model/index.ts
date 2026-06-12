@@ -92,6 +92,8 @@ export const Node = z.object({
   id: z.string(),
   kind: NodeKind,
   label: Label,
+  /** Optional Tier-3 stereotype tag, e.g. manager / firefighter / exile / Self (spec §K). */
+  stereotype: z.string().optional(),
   tier: Tier.default(1),
   bandId: z.string().optional(),
   properties: Properties.default({}),

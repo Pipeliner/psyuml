@@ -53,7 +53,7 @@
       "spec": ["§E.2"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/render/**", "packages/profiles/**"]
     },
     {

@@ -198,3 +198,134 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
 
   return { svg, altText };
 }
+
+const PARTS_W = 680;
+const PARTS_H = 470;
+const r1 = (v: number): number => Math.round(v * 10) / 10;
+
+/** Render a Parts / Agents Map (spec §E.2): Self centred, protectors orbiting,
+ * exiles in a containment orbit behind a dissociative barrier. */
+export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const cx = PARTS_W / 2;
+  const cy = 175;
+  const orbitR = 140;
+  const nodeR = 34;
+
+  const self = model.nodes.find((n) => n.kind === 'self');
+  const exiles = model.nodes.filter((n) => n.stereotype === 'exile');
+  const protectors = model.nodes.filter((n) => n.kind !== 'self' && n.stereotype !== 'exile');
+
+  const pos = new Map<string, { x: number; y: number }>();
+  if (self) pos.set(self.id, { x: cx, y: cy });
+  protectors.forEach((p, i) => {
+    const t = protectors.length === 1 ? 0.5 : i / (protectors.length - 1);
+    const angle = ((200 + t * 140) * Math.PI) / 180;
+    pos.set(p.id, { x: r1(cx + orbitR * Math.cos(angle)), y: r1(cy + orbitR * Math.sin(angle)) });
+  });
+  const exileY = cy + 170;
+  exiles.forEach((e, i) => {
+    const span = exiles.length === 1 ? 0 : (i / (exiles.length - 1) - 0.5) * 200;
+    pos.set(e.id, { x: r1(cx + span), y: exileY });
+  });
+
+  const parts: string[] = [];
+
+  // Containment orbit around the exiles
+  if (exiles.length) {
+    parts.push(
+      `<ellipse cx="${cx}" cy="${exileY}" rx="130" ry="48" fill="none" stroke="#000" stroke-width="2" />`,
+    );
+  }
+
+  // Protect edges (containment): bowed dotted lines routed around the Self
+  for (const e of model.edges) {
+    if (e.kind !== 'containment') continue;
+    const a = pos.get(e.source);
+    const b = pos.get(e.target);
+    if (!a || !b) continue;
+    const mx = r1((a.x + b.x) / 2 + (a.x < cx ? -70 : 70));
+    const my = r1((a.y + b.y) / 2);
+    parts.push(
+      `<path d="M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3 4" opacity="0.7" />`,
+    );
+  }
+
+  // Dissociative barrier (double bar) between Self and the exiles
+  const barrier = model.edges.find((e) => e.kind === 'barrier');
+  if (barrier && self && exiles.length) {
+    const by = (cy + exileY) / 2;
+    parts.push(
+      `<line x1="${cx - 75}" y1="${by - 3}" x2="${cx + 75}" y2="${by - 3}" stroke="#000" stroke-width="2.5" />`,
+      `<line x1="${cx - 75}" y1="${by + 3}" x2="${cx + 75}" y2="${by + 3}" stroke="#000" stroke-width="2.5" />`,
+      `<text x="${cx}" y="${by - 8}" font-family="sans-serif" font-size="10" text-anchor="middle">dissociative barrier</text>`,
+    );
+  }
+
+  // Nodes
+  for (const n of model.nodes) {
+    const p = pos.get(n.id);
+    if (!p) continue;
+    const name = getText(n.label, layer, lang);
+    if (n.kind === 'self') {
+      parts.push(
+        `<circle cx="${p.x}" cy="${p.y}" r="30" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<circle cx="${p.x}" cy="${p.y}" r="23" fill="none" stroke="#000" stroke-width="2" />`,
+        `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#000" />`,
+        `<text x="${p.x}" y="${p.y + 50}" font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle">${esc(name)}</text>`,
+      );
+      continue;
+    }
+    if (n.stereotype) {
+      parts.push(
+        `<text x="${p.x}" y="${p.y - nodeR - 5}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">${esc(n.stereotype)}</text>`,
+      );
+    }
+    parts.push(
+      `<circle cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<text x="${p.x}" y="${p.y + 3}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(name)}</text>`,
+    );
+    const prov = n.properties.provenance;
+    if (prov && prov.length) {
+      parts.push(
+        `<text x="${p.x}" y="${p.y + nodeR + 13}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555">${esc(prov.join(' / '))}</text>`,
+      );
+    }
+  }
+
+  // Legend
+  parts.push(
+    `<text x="20" y="${PARTS_H - 16}" font-family="sans-serif" font-size="11">◎ Self · ○ part · ( ) containment orbit · ═ dissociative barrier · dotted = protects</text>`,
+  );
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="20" y="${PARTS_H - 2}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+  }
+
+  const protectorDesc = protectors.map(
+    (p) => `${getText(p.label, layer, lang)}${p.stereotype ? ` (${p.stereotype})` : ''}`,
+  );
+  const exileDesc = exiles.map((e) => getText(e.label, layer, lang));
+  const altText =
+    `Parts map${model.meta.title ? `: ${model.meta.title}` : ''}. Self at the centre. ` +
+    `Protectors around it: ${protectorDesc.join(', ') || 'none'}. ` +
+    `Exile(s): ${exileDesc.join(', ') || 'none'}${barrier ? ', behind a dissociative barrier from Self' : ''}. ` +
+    `Protectors guard the exile.`;
+
+  const titleText = model.meta.title
+    ? `<text x="20" y="23" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PARTS_W} ${PARTS_H}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Parts map')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${PARTS_W}" height="${PARTS_H}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

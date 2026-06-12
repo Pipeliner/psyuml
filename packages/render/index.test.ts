@@ -1,15 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
-import { renderStateMap } from './index';
+import { renderPartsMap, renderStateMap } from './index';
 
-const example = readFileSync(new URL('../../examples/state-map.psyuml', import.meta.url), 'utf8');
-const model = parseModel(example);
-const goldenUrl = new URL('../../examples/state-map.svg', import.meta.url);
+const read = (name: string): string =>
+  readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8');
+
+const stateModel = parseModel(read('state-map.psyuml'));
+const partsModel = parseModel(read('parts-map.psyuml'));
+
+/** Compare against a committed golden; generate it locally on first run. */
+function expectGolden(name: string, svg: string): void {
+  const url = new URL(`../../examples/${name}`, import.meta.url);
+  if (!existsSync(url)) {
+    if (process.env.CI) throw new Error(`Golden examples/${name} is missing in CI`);
+    writeFileSync(url, svg);
+  }
+  expect(svg).toBe(readFileSync(url, 'utf8'));
+}
 
 describe('renderStateMap', () => {
   it('emits an accessible svg with bands, states, and exits', () => {
-    const { svg, altText } = renderStateMap(model);
+    const { svg, altText } = renderStateMap(stateModel);
     expect(svg.startsWith('<svg')).toBe(true);
     expect(svg).toContain('role="img"');
     expect(svg).toContain('Sympathetic / mobilized');
@@ -20,23 +32,42 @@ describe('renderStateMap', () => {
   });
 
   it('renders the client layer with the client vocabulary', () => {
-    const { svg } = renderStateMap(model, { layer: 'client' });
+    const { svg } = renderStateMap(stateModel, { layer: 'client' });
     expect(svg).toContain('Foggy');
     expect(svg).toContain('Green — safe &amp; social');
     expect(svg).not.toContain('Numb / shutdown');
   });
 
   it('is monochrome by default; hue is redundant and opt-in', () => {
-    expect(renderStateMap(model).svg).not.toContain('#009E73');
-    expect(renderStateMap(model, { monochrome: false }).svg).toContain('#009E73');
+    expect(renderStateMap(stateModel).svg).not.toContain('#009E73');
+    expect(renderStateMap(stateModel, { monochrome: false }).svg).toContain('#009E73');
   });
 
   it('matches the committed golden SVG', () => {
-    const { svg } = renderStateMap(model);
-    if (!existsSync(goldenUrl)) {
-      if (process.env.CI) throw new Error('Golden examples/state-map.svg is missing in CI');
-      writeFileSync(goldenUrl, svg);
-    }
-    expect(svg).toBe(readFileSync(goldenUrl, 'utf8'));
+    expectGolden('state-map.svg', renderStateMap(stateModel).svg);
+  });
+});
+
+describe('renderPartsMap', () => {
+  it('emits self, protectors, an exile, and a dissociative barrier', () => {
+    const { svg, altText } = renderPartsMap(partsModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Controller');
+    expect(svg).toContain('Little one, age 6');
+    expect(svg).toContain('dissociative barrier');
+    expect(svg).toContain('manager');
+    expect(altText).toContain('Self at the centre');
+    expect(altText).toContain('behind a dissociative barrier');
+  });
+
+  it('renders the client layer vocabulary and preserves provenance tags', () => {
+    const { svg } = renderPartsMap(partsModel, { layer: 'client' });
+    expect(svg).toContain('the young hurt part');
+    expect(svg).toContain('IFS / schema / SD');
+    expect(svg).not.toContain('Little one, age 6');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('parts-map.svg', renderPartsMap(partsModel).svg);
   });
 });
