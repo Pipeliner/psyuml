@@ -7,7 +7,8 @@ editor over the 8-symbol Tier-1 core.)
 
 ## Upstream (this depends on)
 - `react`, `react-dom`, `vite` (built from the repo root via `../../vite.config.ts`).
-- Will consume `@psyuml/model`, `@psyuml/validate`, `@psyuml/render`, `@psyuml/profiles` from M1.
+- `@psyuml/model` + `@psyuml/render` (live render; M2). Editor state logic is in `editor.ts`.
+- Will consume `@psyuml/validate`, `@psyuml/profiles` as M2/M3/M4 land.
 
 ## Downstream (depends on this) — blast radius
 > **Blast radius: low.** A leaf app; nothing imports it. Built to `dist/web` (gitignored).
@@ -16,9 +17,11 @@ editor over the 8-symbol Tier-1 core.)
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Workspace member manifest (`web`) | — | workspace resolution | — | low |
-| `index.html` | Vite entry; mounts `#root`, loads `main.tsx` | `main.tsx` | build | — | low |
+| `index.html` | Vite entry; mounts `#root`, loads `main.tsx`; WCAG focus + target-size styles | `main.tsx` | build | WCAG 2.4.7/2.5.8 | low |
 | `main.tsx` | React bootstrap (mounts `App`) | react-dom, `App.tsx` | build | — | low |
-| `App.tsx` | Shell UI; M1 displays the State Map + Parts Map renders (`?raw` imports) | react, `examples/state-map.svg`, `examples/parts-map.svg` | — | REQ-EDITOR-MVP | low |
+| `App.tsx` | M2 editor: live render, layer/monochrome toggles, palette, save/export, text alt | `@psyuml/model`, `@psyuml/render`, `editor.ts`, `examples/*.psyuml` | — | REQ-EDITOR-MVP, REQ-UX-STORIES | medium |
+| `editor.ts` | Pure editor-state helpers (`addNode`, `nextId`) — testable in node | `@psyuml/model` | `App.tsx`, `editor.test.ts` | REQ-EDITOR-MVP, REQ-COLLAB | low |
+| `editor.test.ts` | Unit tests for editor helpers | `editor.ts` | CI `test` | — | low |
 | `vite-env.d.ts` | Vite client ambient types (enables `?raw` imports) | `vite/client` | typecheck | — | low |
 
 ## Change checklist

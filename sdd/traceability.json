@@ -62,9 +62,9 @@
       "spec": ["§B", "Audience guide"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M2",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["apps/web/**"],
-      "tests": ["apps/web/**/*.spec.ts"]
+      "tests": ["apps/web/**/*.test.ts"]
     },
     {
       "id": "REQ-UX-STORIES",

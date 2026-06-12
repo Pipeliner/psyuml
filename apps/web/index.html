@@ -4,6 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PsyUML</title>
+    <style>
+      /* WCAG 2.2: visible focus (2.4.7) + minimum target size (2.5.8, >=24px). */
+      body {
+        margin: 0;
+      }
+      button,
+      select,
+      summary {
+        min-height: 28px;
+        min-width: 28px;
+        padding: 4px 10px;
+        font-size: 14px;
+      }
+      :focus-visible {
+        outline: 3px solid #0072b2;
+        outline-offset: 2px;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

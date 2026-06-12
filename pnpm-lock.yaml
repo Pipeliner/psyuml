@@ -54,7 +54,14 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.19.21)
 
-  apps/web: {}
+  apps/web:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../../packages/model
+      '@psyuml/render':
+        specifier: workspace:*
+        version: link:../../packages/render
 
   packages/model:
     dependencies:
