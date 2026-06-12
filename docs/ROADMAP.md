@@ -44,11 +44,11 @@ demands before any 1.0.
 - **Acceptance:** the spec's §E.1 and §E.2 ASCII examples reproduce as SVG; monochrome render loses no meaning (manual a11y check); golden-SVG snapshot tests pass; the same `.psyuml` **round-trips** model→JSON→model losslessly.
 - **Spec refs:** §A, §B, §C, §D, §E.1, §E.2. **REQ:** REQ-CORE-ONTOLOGY, REQ-NOTATION, REQ-EPISTEMIC-STATUS, REQ-I18N.
 
-### M2 · GUI editor MVP (the headline deliverable)
-- **Goal:** a clinician can *build* a Tier-1 diagram by hand, save, and export.
-- **Deliverables:** glyph **palette** (8 core symbols) with drag/drop; node/edge **properties panel** (labels, tier, dominance, valence, consolidation); manual layout + connect; save/load `.psyuml`; export SVG/PNG; covers the three client-facing diagrams (State Map, Resource/Anchor, Crisis/Decision chart) plus Parts Map.
-- **Acceptance:** a new user reproduces the §H.1 State Map and §E.8 crisis chart from scratch in the UI in < 5 min; round-trips through save/load with stable IDs.
-- **Spec refs:** §E.1, §E.8, §E.9; "Audience guide".
+### M2 · GUI editor MVP (the headline deliverable) — built against the UX user stories
+- **Goal:** a clinician can *build* a Tier-1 diagram by hand (and co-edit it with a client), save, and export — satisfying the UX MUST requirements.
+- **Deliverables:** glyph **palette** (8 core symbols) with drag/drop; node/edge **properties panel** (labels, tier, dominance, valence, consolidation, epistemicStatus); manual layout + connect; save/load `.psyuml` (**local-first**, UX-M5); export SVG/PNG + **text/alt-text** export; covers the three client-facing diagrams (State Map, Resource/Anchor, Crisis/Decision chart) plus Parts Map. **Built against `docs/ux/`:** client/clinician **layer toggle** + **monochrome** toggle (UX-M2/M3); **full keyboard** operation + screen-reader text/outline of the formulation + ≥24×24px targets (UX-M1, WCAG 2.2 AA); **co-authorship** — free-text/verbatim labels, client can relabel/hide/correct, reversible (REQ-COLLAB, UX-M6); **emotional safety** — progressive reveal, save-incomplete, non-pathologizing defaults, standing disclaimer (REQ-CLIENT-SAFETY-UX, UX-M7); no outcome-claim copy (UX-M8).
+- **Acceptance:** a new user reproduces the §H.1 State Map and §E.8 crisis chart from scratch in the UI in < 5 min; round-trips through save/load with stable IDs; passes a WCAG 2.2 AA keyboard + colour-redundancy check; the client layer never shows clinician-only fields; nothing is auto-finalized.
+- **Spec refs:** §E.1, §E.8, §E.9; "Audience guide"; `docs/ux/ux-research-and-requirements.md`. **REQ:** REQ-EDITOR-MVP, REQ-UX-STORIES, REQ-COLLAB, REQ-CLIENT-SAFETY-UX, REQ-ACCESSIBILITY.
 
 ## Phase 2 — Make it safe and cross-school
 
@@ -115,6 +115,7 @@ demands before any 1.0.
 - **Docs:** keep spec ↔ code in sync; each profile documents its §K extension record.
 - **Privacy & governance:** local-first by default; de-identify/redact + role-scoped exports; audit log; conservative "human-supervised formulation infrastructure" posture, not live-care CDS (Source 3; ARCH §11).
 - **Epistemic honesty, i18n & alt-text:** carry `epistemicStatus` on every element; keep concept IDs separate from localized labels; emit a text summary + alt text for every view (Source 3; ARCH §3/§6/§13).
+- **UX requirements (research-grounded):** every persona-facing milestone is specified against `docs/ux/ux-research-and-requirements.md` (REQ-UX-STORIES) — accessibility (WCAG 2.2 AA), plain-language client layer, co-authorship & client ownership, emotional safety, crisis-for-constriction, local-first privacy, and **no outcome-claims**. The usability open questions are the Stage-4 gate (REQ-EVAL-SUITE).
 - **Materials & adoption (external-plan cross-check):** a notation **style guide** + clinician/client **cheat-sheets** + printable session **templates** (REQ-STYLE-GUIDE, REQ-TEMPLATES, M5); a **multi-school worked-case corpus** beyond "R." (REQ-CASE-CORPUS, M6); a **practitioner handbook** and **adoption pack** — workshop/facilitator materials, a notation-extension contributor guide, comprehension-test instruments (REQ-HANDBOOK, REQ-ADOPTION, M10). See `research/idea-incorporation.md` §7.
 
 ## Top risks & mitigations

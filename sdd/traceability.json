@@ -77,13 +77,34 @@
       "notes": "Deep-research synthesis (5 angles, primary-source-verified): 5 personas (therapist/client/solo/researcher/ritual), MoSCoW requirements (accessibility WCAG 2.2, plain-language client layer, colour-redundant, crisis-for-constriction, local-first privacy, co-authorship, emotional safety, no-diagnosis), risks/anti-requirements, and the usability-test open questions feeding REQ-EVAL-SUITE. Requirements authored; editor implementation lands in M2."
     },
     {
+      "id": "REQ-COLLAB",
+      "title": "Collaborative co-authorship + client ownership of the formulation",
+      "spec": ["§G", "§L.2"],
+      "source": "docs/ux/ux-research-and-requirements.md",
+      "milestone": "M2",
+      "status": "planned",
+      "impl": ["apps/web/**", "packages/model/**"],
+      "notes": "UX-M6 / P1.1 / P2.2: shared/concurrent editing, free-text + verbatim labels, visible authorship, client can relabel/hide/correct, reversible. Collaboration is the evidence-supported active ingredient (Thrower 2024; BPS 2011)."
+    },
+    {
+      "id": "REQ-CLIENT-SAFETY-UX",
+      "title": "Emotional-safety UX: progressive reveal, save-incomplete, non-pathologizing defaults",
+      "spec": ["§D", "§L.2"],
+      "source": "docs/ux/ux-research-and-requirements.md",
+      "milestone": "M2",
+      "status": "planned",
+      "impl": ["apps/web/**", "packages/render/**"],
+      "notes": "UX-M7 / P1.3 / P2.3: a poorly-handled formulation can distress (Redhead 2015) — progressive reveal, never force completion, soft wording, opt-in trauma detail, no unprompted 'verdict' diagram."
+    },
+    {
       "id": "REQ-DECISION-NAV",
       "title": "Decision/Navigation (crisis) chart, client-usable",
       "spec": ["§E.8"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M2",
       "status": "planned",
-      "impl": ["apps/web/**", "packages/render/**"]
+      "impl": ["apps/web/**", "packages/render/**"],
+      "notes": "UX-M4 (crisis-for-cognitive-constriction): one decision/step, escalation ladder, localized crisis resources on every screen, means-restriction step, no dead-ends, human escalation, large text (Stanley 2018; Morrison 2024). No AI handles crises."
     },
     {
       "id": "REQ-RESOURCE-ANCHOR",
@@ -112,7 +133,7 @@
       "milestone": "M3",
       "status": "planned",
       "impl": ["packages/validate/**", "packages/render/**"],
-      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2)."
+      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2). The editor itself meets WCAG 2.2 AA — keyboard operation, contrast, 200% zoom, target size, colour-redundant (UX-M1, docs/ux)."
     },
     {
       "id": "REQ-PATH-OF-HOPE",

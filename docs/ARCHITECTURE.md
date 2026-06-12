@@ -278,3 +278,41 @@ use-context-dependent, so v0.x is documentation/reflection infrastructure, not l
 **Evaluation suite (Source 3 → REQ-EVAL-SUITE, M10):** comprehension · collaborative validity
 · editability · cross-school fidelity · safety · privacy · interoperability · accessibility —
 operationalizing the spec's §J rubric and Stage-4 gate.
+
+## 14. UX requirements (binding for the editor) — from the UX research
+
+The full research synthesis + per-persona user stories live in
+[`ux/ux-research-and-requirements.md`](./ux/ux-research-and-requirements.md) (REQ-UX-STORIES);
+the evidence is verified against primary sources. The **MUST** requirements are **architectural
+constraints**, enforced in code (mirroring §7/§11), not left to authoring discipline:
+
+- **Accessibility = WCAG 2.2 AA, in the editor itself** (not just rendered output): every diagram
+  element has a text alternative **and** the whole formulation is available as a screen-reader-
+  navigable text/outline (1.1.1); **colour never the only cue** (1.4.1); contrast ≥4.5:1 text /
+  ≥3:1 strokes & controls (1.4.3/1.4.11); usable at 200% zoom (1.4.4); **full keyboard** create/
+  select/move/connect with visible focus (2.1.1); targets ≥24×24 px (2.5.8). *Binding standard.*
+- **Two real layers.** A ~5th–6th-grade **plain-language client layer** (≈6-symbol vocabulary,
+  dual-coded shape **+** integrated label, never legend-only) and a richer **clinician layer**
+  (cognitive fit). The renderer already takes `layer`; the editor must expose it and never leak
+  clinician-only fields into the client layer.
+- **Co-authorship & client ownership** (the active ingredient): shared/concurrent editing,
+  free-text & verbatim labels, visible authorship, client can relabel/hide/correct, reversible.
+  (New: REQ-COLLAB.)
+- **Emotional safety:** progressive reveal (hide/reveal nodes), save-incomplete (never force
+  completion), non-pathologizing defaults, opt-in trauma detail — because a poorly-handled
+  formulation can distress. (New: REQ-CLIENT-SAFETY-UX.)
+- **Crisis chart for cognitive constriction** (REQ-DECISION-NAV): one decision/step, escalation
+  ladder, **localized crisis resources on every screen**, means-restriction step, **no dead-ends**,
+  human escalation. No AI handles crises.
+- **Local-first privacy** (REQ-PRIVACY): no third-party analytics/advertising SDKs; on-device/
+  user-controlled storage by default; explicit, granular, revocable consent for any egress.
+- **No outcome over-claiming.** The evidence supports comprehension, collaboration, safety-
+  planning, and reflection — **not** outcome superiority (formulation→outcome is unproven). UI copy
+  and docs must not imply clinical efficacy; v0.x stays "unvalidated."
+
+**Persona flows** are refined by the research (see §13 table + the UX doc): solo/self-help is added
+as a flow designed for **brief, episodic use** with safety nets (deterioration → help-seeking) and
+**no gamification/dark patterns**; any AI is a **bounded, reviewable suggestion** only (WHO 2024;
+APA 2025). The editor (`apps/web`) is specified against the UX MoSCoW list; the usability open
+questions (can a distressed client use the crisis chart unaided? do clients read causal arrows
+given ~1/3 low graph literacy?) are the Stage-4 gate feeding REQ-EVAL-SUITE.
