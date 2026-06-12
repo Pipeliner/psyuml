@@ -67,6 +67,16 @@
       "tests": ["apps/web/**/*.spec.ts"]
     },
     {
+      "id": "REQ-UX-STORIES",
+      "title": "UX research → per-persona user stories + cross-cutting requirements",
+      "spec": ["Audience guide", "§D", "§E.8", "§L.2"],
+      "source": "docs/ux/ux-research-and-requirements.md",
+      "milestone": "M2",
+      "status": "in-progress",
+      "impl": ["docs/ux/**", "apps/web/**"],
+      "notes": "Deep-research synthesis (5 angles, primary-source-verified): 5 personas (therapist/client/solo/researcher/ritual), MoSCoW requirements (accessibility WCAG 2.2, plain-language client layer, colour-redundant, crisis-for-constriction, local-first privacy, co-authorship, emotional safety, no-diagnosis), risks/anti-requirements, and the usability-test open questions feeding REQ-EVAL-SUITE. Requirements authored; editor implementation lands in M2."
+    },
+    {
       "id": "REQ-DECISION-NAV",
       "title": "Decision/Navigation (crisis) chart, client-usable",
       "spec": ["§E.8"],

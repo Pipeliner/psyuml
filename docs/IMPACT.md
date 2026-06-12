@@ -19,6 +19,7 @@ truth), the tooling architecture, the build roadmap, and saved research.
 ## Subdirectories
 - `specification/` — the normative spec (see `docs/specification/IMPACT.md`).
 - `research/` — companion source material + the idea-incorporation record.
+- `ux/` — UX research synthesis + per-persona user stories & requirements (see `docs/ux/IMPACT.md`).
 
 ## Files
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
