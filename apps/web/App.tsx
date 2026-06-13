@@ -5,6 +5,7 @@ import {
   renderInterventionSeq,
   renderLoopMap,
   renderPartsMap,
+  renderRelationalField,
   renderResourceMap,
   renderRitual,
   renderStateMap,
@@ -19,11 +20,13 @@ import loopRaw from '../../examples/process-loop.psyuml?raw';
 import timelineRaw from '../../examples/timeline.psyuml?raw';
 import seqRaw from '../../examples/intervention-sequence.psyuml?raw';
 import ritualRaw from '../../examples/ritual.psyuml?raw';
+import relRaw from '../../examples/relational-field.psyuml?raw';
 import { addNode, setNodeHidden, setNodeLabel } from './editor';
 
 const EXAMPLES: Record<string, string> = {
   'state-map': stateRaw,
   'parts-map': partsRaw,
+  'relational-field': relRaw,
   'decision-nav': decisionRaw,
   'resource-anchor': resourceRaw,
   'process-loop': loopRaw,
@@ -59,6 +62,7 @@ export function App() {
     if (model.diagram === 'timeline') return renderTimeline(model, { layer });
     if (model.diagram === 'intervention-sequence') return renderInterventionSeq(model, { layer });
     if (model.diagram === 'ritual') return renderRitual(model, { layer });
+    if (model.diagram === 'relational-field') return renderRelationalField(model, { layer });
     return renderStateMap(model, { layer, monochrome });
   }, [model, layer, monochrome]);
 
@@ -102,6 +106,7 @@ export function App() {
           >
             <option value="state-map">State Map</option>
             <option value="parts-map">Parts / Agents Map</option>
+            <option value="relational-field">Relational Field</option>
             <option value="decision-nav">Crisis chart</option>
             <option value="resource-anchor">Resource / Anchor map</option>
             <option value="process-loop">Process / Loop</option>

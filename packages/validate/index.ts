@@ -31,6 +31,7 @@ export interface ValidateOptions {
 const CLIENT_FACING = new Set([
   'state-map',
   'parts-map',
+  'relational-field',
   'decision-nav',
   'resource-anchor',
   'timeline',

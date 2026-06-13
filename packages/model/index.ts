@@ -61,6 +61,11 @@ export const EdgeKind = z.enum([
   'invocation',
   'transference',
   'nestedWithin',
+  'close',
+  'conflict',
+  'fused',
+  'distant',
+  'cutoff',
 ]);
 export type EdgeKind = z.infer<typeof EdgeKind>;
 
@@ -76,6 +81,8 @@ export const Properties = z.object({
   epistemicStatus: EpistemicStatus.optional(),
   /** Provenance tags, e.g. "school:CAT" — preserve opposed origin-claims (spec §G.2). */
   provenance: z.array(z.string()).optional(),
+  /** Genogram index person (double border, spec §C). */
+  index: z.boolean().optional(),
 });
 export type Properties = z.infer<typeof Properties>;
 
@@ -96,6 +103,8 @@ export const Node = z.object({
   stereotype: z.string().optional(),
   tier: Tier.default(1),
   bandId: z.string().optional(),
+  /** Manual placement for hand-laid-out diagrams (genogram/relational field; future drag-drop). */
+  position: z.object({ x: z.number(), y: z.number() }).optional(),
   /** View flag for progressive reveal (UX-M7): hidden nodes + their edges are not rendered. */
   hidden: z.boolean().optional(),
   properties: Properties.default({}),

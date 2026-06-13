@@ -1007,3 +1007,167 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
 
   return { svg, altText };
 }
+
+/** McGoldrick relation line styles (spec §C): close=solid, distant=dashed,
+ * conflict=zigzag, fused=triple, cutoff=solid with two slash marks. */
+function relLine(kind: string, x1: number, y1: number, x2: number, y2: number): string {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  const px = -uy;
+  const py = ux;
+  if (kind === 'conflict') {
+    const segs = Math.max(4, Math.round(len / 14));
+    let d = `M ${r1(x1)},${r1(y1)}`;
+    for (let i = 1; i < segs; i += 1) {
+      const t = i / segs;
+      const off = i % 2 === 0 ? 5 : -5;
+      d += ` L ${r1(x1 + dx * t + px * off)},${r1(y1 + dy * t + py * off)}`;
+    }
+    return `<path d="${d} L ${r1(x2)},${r1(y2)}" fill="none" stroke="#000" stroke-width="1.5" />`;
+  }
+  if (kind === 'fused') {
+    const ln = (k: number): string =>
+      `<line x1="${r1(x1 + px * k)}" y1="${r1(y1 + py * k)}" x2="${r1(x2 + px * k)}" y2="${r1(y2 + py * k)}" stroke="#000" stroke-width="1.5" />`;
+    return ln(-3) + ln(0) + ln(3);
+  }
+  const dash = kind === 'distant' ? ' stroke-dasharray="6 5"' : '';
+  let out = `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="#000" stroke-width="2"${dash} />`;
+  if (kind === 'cutoff') {
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const tick = (c: number): string =>
+      `<line x1="${r1(mx + ux * c - px * 7)}" y1="${r1(my + uy * c - py * 7)}" x2="${r1(mx + ux * c + px * 7)}" y2="${r1(my + uy * c + py * 7)}" stroke="#000" stroke-width="2" />`;
+    out += tick(-4) + tick(4);
+  }
+  return out;
+}
+
+/** Genogram person/system glyph (spec §C): male=square, female=circle, other=diamond,
+ * system=dashed rounded rect; index person gets a double border. */
+function personGlyph(
+  stereotype: string | undefined,
+  index: boolean,
+  cx: number,
+  cy: number,
+): string {
+  const r = 22;
+  let out: string;
+  if (stereotype === 'male') {
+    out = `<rect x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" fill="#fff" stroke="#000" stroke-width="2" />`;
+    if (index)
+      out += `<rect x="${cx - r - 4}" y="${cy - r - 4}" width="${2 * r + 8}" height="${2 * r + 8}" fill="none" stroke="#000" stroke-width="2" />`;
+  } else if (stereotype === 'unknown' || stereotype === 'nonbinary') {
+    out = `<polygon points="${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}" fill="#fff" stroke="#000" stroke-width="2" />`;
+    if (index)
+      out += `<polygon points="${cx},${cy - r - 4} ${cx + r + 4},${cy} ${cx},${cy + r + 4} ${cx - r - 4},${cy}" fill="none" stroke="#000" stroke-width="2" />`;
+  } else if (stereotype === 'system') {
+    out = `<rect x="${cx - 50}" y="${cy - 18}" width="100" height="36" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" stroke-dasharray="4 3" />`;
+  } else {
+    out = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="#000" stroke-width="2" />`;
+    if (index)
+      out += `<circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="none" stroke="#000" stroke-width="2" />`;
+  }
+  return out;
+}
+
+const REL_SHORT = 30;
+
+/** Render a Relational Field / genogram (spec §E.3) from manually-placed people +
+ * external systems, with the McGoldrick relation set and an ecomap overlay. */
+export function renderRelationalField(
+  model: PsyumlModel,
+  options: RenderOptions = {},
+): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+  const nodes = model.nodes;
+
+  const pos = new Map<string, { x: number; y: number }>();
+  nodes.forEach((n, i) => {
+    pos.set(n.id, n.position ? { x: n.position.x, y: n.position.y } : { x: 80 + i * 130, y: 130 });
+  });
+  let maxX = 0;
+  let maxY = 0;
+  for (const p of pos.values()) {
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  const width = Math.max(560, maxX + 90);
+  const height = Math.max(300, maxY + 70) + 44;
+
+  const parts: string[] = [];
+
+  // Relations (under the nodes)
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
+    const ux = (t.x - s.x) / len;
+    const uy = (t.y - s.y) / len;
+    parts.push(
+      relLine(
+        e.kind,
+        s.x + ux * REL_SHORT,
+        s.y + uy * REL_SHORT,
+        t.x - ux * REL_SHORT,
+        t.y - uy * REL_SHORT,
+      ),
+    );
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      parts.push(
+        `<text x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 4}" text-anchor="middle" font-family="sans-serif" font-size="9">${esc(lbl)}</text>`,
+      );
+    }
+  }
+
+  // People + systems
+  for (const n of nodes) {
+    const p = pos.get(n.id);
+    if (!p) continue;
+    parts.push(personGlyph(n.stereotype, n.properties.index === true, p.x, p.y));
+    const labelDy = n.stereotype === 'system' ? 4 : 36;
+    parts.push(
+      `<text x="${p.x}" y="${p.y + labelDy}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(n.label, layer, lang))}</text>`,
+    );
+  }
+
+  const ly = height - 26;
+  parts.push(
+    `<text x="12" y="${ly}" font-family="sans-serif" font-size="10">□ male · ○ female · ◇ other · ▭ system · ═ fused · zigzag = conflict · dashed = distant · ‖ cutoff</text>`,
+  );
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="12" y="${ly + 14}" font-family="sans-serif" font-size="9" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+  }
+
+  const nm = (id: string): string => {
+    const node = nodes.find((x) => x.id === id);
+    return node ? getText(node.label, layer, lang) : id;
+  };
+  const rels = model.edges.map((e) => `${nm(e.source)} (${e.kind}) ${nm(e.target)}`);
+  const altText =
+    `Relational field${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `People & systems: ${nodes.map((n) => getText(n.label, layer, lang)).join(', ')}. ` +
+    `Relationships: ${rels.join('; ') || 'none'}.`;
+
+  const titleText = model.meta.title
+    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Relational field')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

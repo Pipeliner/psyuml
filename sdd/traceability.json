@@ -179,12 +179,13 @@
     },
     {
       "id": "REQ-GENOGRAM",
-      "title": "Genogram relational set (McGoldrick–Gerson–Petry) adopted",
+      "title": "Relational Field / genogram (McGoldrick–Gerson–Petry set) — diagram type §E.3",
       "spec": ["§C", "§E.3"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M4",
-      "status": "planned",
-      "impl": ["packages/profiles/**", "packages/render/**"]
+      "status": "in-progress",
+      "impl": ["packages/render/**", "packages/model/**", "examples/**"],
+      "notes": "renderRelationalField: manual node positions; gender glyphs (male square / female circle / other diamond / system dashed); index double-border; McGoldrick relation line styles (close solid, distant dashed, conflict zigzag, fused triple, cutoff slashed) + ecomap. Completes the 9-type diagram catalog. Cross-school re-render/translation table still under REQ-CROSS-SCHOOL."
     },
     {
       "id": "REQ-EXTENSION-MECH",

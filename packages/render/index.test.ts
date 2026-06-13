@@ -6,6 +6,7 @@ import {
   renderInterventionSeq,
   renderLoopMap,
   renderPartsMap,
+  renderRelationalField,
   renderResourceMap,
   renderRitual,
   renderStateMap,
@@ -23,6 +24,7 @@ const loopModel = parseModel(read('process-loop.psyuml'));
 const timelineModel = parseModel(read('timeline.psyuml'));
 const seqModel = parseModel(read('intervention-sequence.psyuml'));
 const ritualModel = parseModel(read('ritual.psyuml'));
+const relModel = parseModel(read('relational-field.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -191,5 +193,20 @@ describe('renderRitual', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('ritual.svg', renderRitual(ritualModel).svg);
+  });
+});
+
+describe('renderRelationalField', () => {
+  it('draws genogram glyphs + relation line styles from positions', () => {
+    const { svg, altText } = renderRelationalField(relModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('R. (34)');
+    expect(svg).toContain('Father');
+    expect(altText).toContain('Relational field');
+    expect(altText).toContain('(cutoff)');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('relational-field.svg', renderRelationalField(relModel).svg);
   });
 });
