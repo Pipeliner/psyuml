@@ -57,12 +57,14 @@ flowchart RL
     web["apps/web (GUI editor)"] --> render
     web --> validate
     web --> profiles
+    web --> diff
     web --> model
     render["packages/render"] --> profiles
     render --> model
     profiles["packages/profiles"] --> validate
     profiles --> model
     validate["packages/validate"] --> model
+    diff["packages/diff"] --> model
     grammar["packages/grammar"] --> model
     interop["packages/interop"] --> model
     ai["packages/ai"] --> model
@@ -77,6 +79,7 @@ flowchart RL
 | `packages/validate` | profiles, apps/web, CI lint of `examples/` |
 | `packages/profiles` | render, apps/web, translation-table consumers |
 | `packages/render` | apps/web, golden-SVG snapshots |
+| `packages/diff` | apps/web Compare panel (model only; pure) |
 | `packages/grammar` | CLI, round-trip tests (model only) |
 | `packages/interop` | FHIR/research export, CLI export (model only; de-identified by default) |
 | `packages/ai` | apps/web AI panel (isolated; safe to remove) |

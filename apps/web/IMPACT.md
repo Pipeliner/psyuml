@@ -7,7 +7,7 @@ editor over the 8-symbol Tier-1 core.)
 
 ## Upstream (this depends on)
 - `react`, `react-dom`, `vite` (built from the repo root via `../../vite.config.ts`).
-- `@psyuml/model`, `@psyuml/render`, `@psyuml/validate`, `@psyuml/profiles` (live render + lint + cross-school vocabulary; M2/M3/M4). Editor state logic is in `editor.ts`.
+- `@psyuml/model`, `@psyuml/render`, `@psyuml/validate`, `@psyuml/profiles`, `@psyuml/diff` (live render + lint + cross-school vocabulary + longitudinal compare; M2/M3/M4/M6). Editor state logic is in `editor.ts`.
 
 ## Downstream (depends on this) — blast radius
 > **Blast radius: low.** A leaf app; nothing imports it. Built to `dist/web` (gitignored).
@@ -18,7 +18,7 @@ editor over the 8-symbol Tier-1 core.)
 | `package.json` | Workspace member manifest (`web`) | — | workspace resolution | — | low |
 | `index.html` | Vite entry; mounts `#root`, loads `main.tsx`; WCAG focus + target-size styles | `main.tsx` | build | WCAG 2.4.7/2.5.8 | low |
 | `main.tsx` | React bootstrap (mounts `App`) | react-dom, `App.tsx` | build | — | low |
-| `App.tsx` | Editor: live render (all 11 diagrams), layer/monochrome/**school** toggles, **acute-risk/psychosis flags**, palette, node panel (rename/hide), text alt, formulation-health panel + export gating, **clinical-escalation banner**, save/export | `@psyuml/model`, `@psyuml/render`, `@psyuml/validate`, `@psyuml/profiles`, `editor.ts`, `examples/*.psyuml` | — | REQ-EDITOR-MVP, REQ-UX-STORIES, REQ-COLLAB, REQ-CLIENT-SAFETY-UX, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE, REQ-CROSS-SCHOOL | medium |
+| `App.tsx` | Editor: live render (all 11 diagrams), layer/monochrome/**school** toggles, **acute-risk/psychosis flags**, palette, node panel (rename/hide), text alt, formulation-health panel + export gating, **clinical-escalation banner**, **Compare-with (longitudinal diff)** panel, save/export | `@psyuml/model`, `@psyuml/render`, `@psyuml/validate`, `@psyuml/profiles`, `@psyuml/diff`, `editor.ts`, `examples/*.psyuml` | — | REQ-EDITOR-MVP, REQ-UX-STORIES, REQ-COLLAB, REQ-CLIENT-SAFETY-UX, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE, REQ-CROSS-SCHOOL, REQ-VERSIONING-DIFF | medium |
 | `editor.ts` | Pure editor-state helpers (`addNode`, `nextId`, `setNodeLabel`, `setNodeHidden`, `setSafetyFlag`) — testable in node | `@psyuml/model` | `App.tsx`, `editor.test.ts` | REQ-EDITOR-MVP, REQ-COLLAB, REQ-CLIENT-SAFETY-UX, REQ-SAFETY-TRIAGE | low |
 | `editor.test.ts` | Unit tests for editor helpers | `editor.ts` | CI `test` | — | low |
 | `vite-env.d.ts` | Vite client ambient types (enables `?raw` imports) | `vite/client` | typecheck | — | low |

@@ -56,6 +56,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@psyuml/diff':
+        specifier: workspace:*
+        version: link:../../packages/diff
       '@psyuml/model':
         specifier: workspace:*
         version: link:../../packages/model
@@ -80,6 +83,12 @@ importers:
       '@psyuml/validate':
         specifier: workspace:*
         version: link:../packages/validate
+
+  packages/diff:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../model
 
   packages/model:
     dependencies:

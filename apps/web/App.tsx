@@ -15,6 +15,7 @@ import {
 } from '@psyuml/render';
 import { requiresHumanEscalation, validate } from '@psyuml/validate';
 import { roleLabelsFor, TRANSLATABLE_SCHOOLS } from '@psyuml/profiles';
+import { diffModels, isEmptyDiff, summarizeDiff } from '@psyuml/diff';
 import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
 import decisionRaw from '../../examples/decision-nav.psyuml?raw';
@@ -61,6 +62,8 @@ export function App() {
   const [layer, setLayer] = useState<'clinician' | 'client'>('clinician');
   const [monochrome, setMonochrome] = useState(true);
   const [school, setSchool] = useState('');
+  const [compareWith, setCompareWith] = useState<PsyumlModel | null>(null);
+  const [compareError, setCompareError] = useState<string | null>(null);
 
   const { svg, altText } = useMemo(() => {
     const roleLabels = school ? roleLabelsFor(school) : undefined;
@@ -84,6 +87,13 @@ export function App() {
   const report = useMemo(() => validate(model, { layer }), [model, layer]);
   const exportBlocked = !report.ok;
   const escalate = requiresHumanEscalation(model);
+
+  // Longitudinal diff (M6): compare the loaded earlier version (before) to now (after).
+  const diff = useMemo(
+    () => (compareWith ? diffModels(compareWith, model, { layer }) : null),
+    [compareWith, model, layer],
+  );
+  const diffLines = useMemo(() => (diff ? summarizeDiff(diff, layer) : []), [diff, layer]);
 
   return (
     <main
@@ -115,7 +125,11 @@ export function App() {
           Diagram{' '}
           <select
             value={model.diagram}
-            onChange={(e) => setModel(parseModel(EXAMPLES[e.target.value] ?? stateRaw))}
+            onChange={(e) => {
+              setModel(parseModel(EXAMPLES[e.target.value] ?? stateRaw));
+              setCompareWith(null);
+              setCompareError(null);
+            }}
           >
             <option value="state-map">State Map</option>
             <option value="parts-map">Parts / Agents Map</option>
@@ -206,7 +220,62 @@ export function App() {
         >
           Export SVG
         </button>
+        <label title="Load an earlier saved .psyuml version to see what changed">
+          Compare with…{' '}
+          <input
+            type="file"
+            accept=".psyuml,application/json"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              file
+                .text()
+                .then((text) => {
+                  setCompareWith(parseModel(text));
+                  setCompareError(null);
+                })
+                .catch(() => {
+                  setCompareWith(null);
+                  setCompareError('Could not read that file as a .psyuml model.');
+                });
+            }}
+          />
+        </label>
       </div>
+
+      {compareError && (
+        <p role="alert" style={{ color: '#d55e00', fontSize: 14 }}>
+          {compareError}
+        </p>
+      )}
+
+      {diff && (
+        <section
+          aria-label="Changes since the loaded version"
+          style={{
+            border: '1px solid #ddd',
+            borderLeft: '4px solid #0072b2',
+            borderRadius: 8,
+            padding: '8px 12px',
+            marginBottom: 12,
+            fontSize: 14,
+          }}
+        >
+          <strong>Changes since the loaded version</strong>
+          <button type="button" onClick={() => setCompareWith(null)} style={{ marginLeft: 8 }}>
+            clear
+          </button>
+          {isEmptyDiff(diff) ? (
+            <p style={{ margin: '6px 0 0' }}>No tracked changes.</p>
+          ) : (
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+              {diffLines.map((line, i) => (
+                <li key={`${i}-${line}`}>{line}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {escalate && (
         <section

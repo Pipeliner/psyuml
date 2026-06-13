@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@psyuml/diff": "workspace:*",
     "@psyuml/model": "workspace:*",
     "@psyuml/profiles": "workspace:*",
     "@psyuml/render": "workspace:*",
