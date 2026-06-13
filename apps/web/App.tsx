@@ -1,5 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
-import { getText, parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
+import {
+  getText,
+  parseModel,
+  serializeModel,
+  type EpistemicStatus,
+  type PsyumlModel,
+} from '@psyuml/model';
 import { fromDSL, toDSL } from '@psyuml/grammar';
 import {
   renderBodyMap,
@@ -35,13 +41,28 @@ import twoTriRaw from '../../examples/two-triangles.psyuml?raw';
 import catSdrRaw from '../../examples/cat-sdr.psyuml?raw';
 import {
   addNode,
+  removeNode,
   restoreVersion,
+  setMeta,
+  setNodeEpistemic,
   setNodeHidden,
   setNodeLabel,
   setSafetyFlag,
   snapshotModel,
   type Version,
 } from './editor';
+
+/** Epistemic-status options for the per-node "how sure?" control (plain-language hints). */
+const EPISTEMIC_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: '— certainty —' },
+  { value: 'reported', label: 'reported (they said)' },
+  { value: 'observed', label: 'observed (seen)' },
+  { value: 'inferred', label: 'inferred (a guess)' },
+  { value: 'planned', label: 'planned (intended)' },
+  { value: 'symbolic', label: 'symbolic' },
+  { value: 'client-believed', label: 'client believes' },
+  { value: 'tradition-claimed', label: 'tradition says' },
+];
 
 // Keyed by example, not by diagram type, so school-specific profiles (e.g. the Karpman
 // drama triangle, which is a Relational Field instance, spec §E.3) can sit alongside the
@@ -474,8 +495,41 @@ export function App() {
         </div>
       </details>
 
+      <details style={{ marginTop: 12 }}>
+        <summary>Diagram details — title, disclaimer, crisis line</summary>
+        <div style={{ display: 'grid', gap: 8, marginTop: 8, maxWidth: 560 }}>
+          <label style={{ display: 'grid', gap: 2, fontSize: 14 }}>
+            Title
+            <input
+              aria-label="Diagram title"
+              value={model.meta.title ?? ''}
+              onChange={(e) => setModel(setMeta(model, { title: e.target.value }))}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: 2, fontSize: 14 }}>
+            Disclaimer (required to share with a client)
+            <textarea
+              aria-label="Diagram disclaimer"
+              rows={2}
+              value={model.meta.disclaimer ?? ''}
+              onChange={(e) => setModel(setMeta(model, { disclaimer: e.target.value }))}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: 2, fontSize: 14 }}>
+            Crisis resources (required on a crisis chart)
+            <input
+              aria-label="Crisis resources"
+              value={model.meta.crisisResources ?? ''}
+              onChange={(e) => setModel(setMeta(model, { crisisResources: e.target.value }))}
+            />
+          </label>
+        </div>
+      </details>
+
       <section aria-label="Nodes" style={{ marginTop: 16 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 6 }}>Nodes — rename in your words, or hide</h2>
+        <h2 style={{ fontSize: 16, marginBottom: 6 }}>
+          Nodes — rename in your words, mark how sure you are, hide, or remove
+        </h2>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
           {model.nodes.map((n) => {
             const nodeIssues = report.issues.filter((iss) => iss.nodeId === n.id);
@@ -496,6 +550,19 @@ export function App() {
                   onChange={(e) => setModel(setNodeLabel(model, n.id, e.target.value, layer))}
                   style={{ flex: 1, minWidth: 0, padding: '4px 8px' }}
                 />
+                <select
+                  aria-label={`Certainty for node ${n.id}`}
+                  value={n.properties.epistemicStatus ?? ''}
+                  onChange={(e) =>
+                    setModel(setNodeEpistemic(model, n.id, e.target.value as EpistemicStatus | ''))
+                  }
+                >
+                  {EPISTEMIC_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
                 <label style={{ whiteSpace: 'nowrap' }}>
                   <input
                     type="checkbox"
@@ -504,6 +571,14 @@ export function App() {
                   />{' '}
                   show
                 </label>
+                <button
+                  type="button"
+                  aria-label={`Remove node ${n.id}`}
+                  title="Remove this node"
+                  onClick={() => setModel(removeNode(model, n.id))}
+                >
+                  ✕
+                </button>
               </li>
             );
           })}

@@ -4,7 +4,10 @@ import { parseModel } from '@psyuml/model';
 import {
   addNode,
   nextId,
+  removeNode,
   restoreVersion,
+  setMeta,
+  setNodeEpistemic,
   setNodeHidden,
   setNodeLabel,
   setSafetyFlag,
@@ -60,6 +63,27 @@ describe('editor', () => {
     expect(hidden.nodes.find((x) => x.id === 'numb')?.hidden).toBe(true);
     const shown = setNodeHidden(hidden, 'numb', false);
     expect(shown.nodes.find((x) => x.id === 'numb')?.hidden).toBe(false);
+  });
+
+  it('setNodeEpistemic marks a node as a guess, and clears it with ""', () => {
+    const guessed = setNodeEpistemic(stateModel, 'numb', 'inferred');
+    expect(guessed.nodes.find((x) => x.id === 'numb')?.properties.epistemicStatus).toBe('inferred');
+    const cleared = setNodeEpistemic(guessed, 'numb', '');
+    expect(cleared.nodes.find((x) => x.id === 'numb')?.properties.epistemicStatus).toBeUndefined();
+  });
+
+  it('removeNode drops the node and every edge touching it (and does not mutate input)', () => {
+    const before = stateModel.nodes.length;
+    const m = removeNode(stateModel, 'calm');
+    expect(m.nodes.some((n) => n.id === 'calm')).toBe(false);
+    expect(m.edges.every((e) => e.source !== 'calm' && e.target !== 'calm')).toBe(true);
+    expect(stateModel.nodes).toHaveLength(before); // input untouched
+  });
+
+  it('setMeta lets a user add the disclaimer the client gate requires', () => {
+    const m = setMeta(stateModel, { disclaimer: 'My own note: supports, not replaces, care.' });
+    expect(m.meta.disclaimer).toContain('supports, not replaces');
+    expect(setMeta(stateModel, { title: 'R., session 3' }).meta.title).toBe('R., session 3');
   });
 
   it('snapshotModel captures an immutable version that restores losslessly', () => {

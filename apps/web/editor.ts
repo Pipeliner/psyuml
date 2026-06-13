@@ -2,10 +2,11 @@
  * Pure editor-state helpers for the web app (kept out of React so they are
  * unit-testable in node). They never mutate the input model.
  *
- * Traceability: REQ-EDITOR-MVP, REQ-COLLAB (client can add/edit), REQ-CLIENT-SAFETY-UX,
+ * Traceability: REQ-EDITOR-MVP, REQ-COLLAB (client can add/edit/remove), REQ-CLIENT-SAFETY-UX,
+ * REQ-EPISTEMIC-STATUS (mark a node as a guess), REQ-ETHICS-GUARDRAILS (edit disclaimer/crisis),
  * REQ-VERSIONING-DIFF (in-session snapshots).
  */
-import { parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
+import { parseModel, serializeModel, type EpistemicStatus, type PsyumlModel } from '@psyuml/model';
 
 /** An immutable in-session snapshot of a formulation (M6 versioning). */
 export interface Version {
@@ -87,6 +88,53 @@ export function setNodeHidden(model: PsyumlModel, id: string, hidden: boolean): 
     ...model,
     nodes: model.nodes.map((n) => (n.id === id ? { ...n, hidden } : n)),
   });
+}
+
+/**
+ * Set (or clear, with `''`) a node's epistemic status — "is this observed, reported, or
+ * just a guess?". Central to diagramming an only-partially-understood situation: mark the
+ * uncertain bits as `inferred` rather than overclaiming (REQ-EPISTEMIC-STATUS, UX honesty).
+ */
+export function setNodeEpistemic(
+  model: PsyumlModel,
+  id: string,
+  status: EpistemicStatus | '',
+): PsyumlModel {
+  return parseModel({
+    ...model,
+    nodes: model.nodes.map((n) => {
+      if (n.id !== id) return n;
+      const properties = { ...n.properties };
+      if (status) properties.epistemicStatus = status;
+      else delete properties.epistemicStatus;
+      return { ...n, properties };
+    }),
+  });
+}
+
+/**
+ * Remove a node and every edge touching it, returning a new validated model. Lets a user
+ * drop something they added by mistake or don't relate to (co-authorship; reversible via
+ * an earlier snapshot). Never mutates the input.
+ */
+export function removeNode(model: PsyumlModel, id: string): PsyumlModel {
+  return parseModel({
+    ...model,
+    nodes: model.nodes.filter((n) => n.id !== id),
+    edges: model.edges.filter((e) => e.source !== id && e.target !== id),
+  });
+}
+
+/**
+ * Patch diagram-level metadata (title / disclaimer / crisis resources), returning a new
+ * validated model. This is how a user satisfies the client-facing disclaimer + crisis gates
+ * from inside the editor (REQ-ETHICS-GUARDRAILS) rather than hitting an unfixable export block.
+ */
+export function setMeta(
+  model: PsyumlModel,
+  patch: { title?: string; disclaimer?: string; crisisResources?: string },
+): PsyumlModel {
+  return parseModel({ ...model, meta: { ...model.meta, ...patch } });
 }
 
 /**

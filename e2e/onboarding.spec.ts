@@ -44,6 +44,11 @@ test.describe('new user: diagramming a partially understood situation', () => {
     await showToggle.check();
     await expect(diagram(page)).toContainText('a part I am not ready to face');
 
+    // 4b) Mark the uncertain bit as a guess, not a fact (epistemic honesty).
+    const lastCertainty = lastRow.getByRole('combobox');
+    await lastCertainty.selectOption('inferred');
+    await expect(lastCertainty).toHaveValue('inferred');
+
     // 5) A realization mid-session -> add a part.
     const before = await nodes(page).getByRole('listitem').count();
     await page.getByRole('button', { name: 'Add part' }).click();
@@ -95,5 +100,30 @@ test.describe('new user: diagramming a partially understood situation', () => {
 
     await page.getByRole('checkbox', { name: /Acute risk/i }).uncheck();
     await expect(banner).toHaveCount(0);
+  });
+
+  test('remove a node drops it from the list and the diagram', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: 'Diagram' }).selectOption('parts-map');
+    const list = nodes(page).getByRole('listitem');
+    const count = await list.count();
+    const lastRow = list.last();
+    const label = await lastRow.getByRole('textbox').inputValue();
+    await lastRow.getByRole('button', { name: /Remove node/i }).click();
+    await expect(list).toHaveCount(count - 1);
+    await expect(diagram(page)).not.toContainText(label);
+  });
+
+  test('diagram details: editing title + disclaimer flows into the model', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: 'Diagram' }).selectOption('parts-map');
+    await page.getByText('Diagram details — title, disclaimer, crisis line').click();
+    await page.getByLabel('Diagram title', { exact: true }).fill('JOURNEY-TITLE-XYZ');
+    await page.getByLabel('Diagram disclaimer', { exact: true }).fill('MY-OWN-DISCLAIMER-XYZ');
+    // It flows into the model — visible in the text (DSL) view.
+    await page.getByText('Text (DSL) — read, copy, or edit as text').click();
+    const dsl = page.getByLabel('PsyUML text DSL');
+    await expect(dsl).toHaveValue(/JOURNEY-TITLE-XYZ/);
+    await expect(dsl).toHaveValue(/MY-OWN-DISCLAIMER-XYZ/);
   });
 });

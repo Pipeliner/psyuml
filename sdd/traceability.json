@@ -64,7 +64,8 @@
       "milestone": "M2",
       "status": "in-progress",
       "impl": ["apps/web/**"],
-      "tests": ["apps/web/**/*.test.ts"]
+      "tests": ["apps/web/**/*.test.ts", "e2e/**/*.spec.ts"],
+      "notes": "M2: example-keyed picker over 12 diagram types; live render with layer/monochrome/school toggles; node panel — add / rename / mark certainty / hide / remove; Diagram-details editor (title/disclaimer/crisis); save/load .psyuml; SVG export; Text (DSL) view/edit; version snapshots + compare/diff. A Playwright onboarding journey drives it end-to-end."
     },
     {
       "id": "REQ-UX-STORIES",
@@ -85,7 +86,8 @@
       "milestone": "M2",
       "status": "in-progress",
       "impl": ["apps/web/**", "packages/model/**"],
-      "notes": "UX-M6 / P1.1 / P2.2: shared/concurrent editing, free-text + verbatim labels, visible authorship, client can relabel/hide/correct, reversible. Collaboration is the evidence-supported active ingredient (Thrower 2024; BPS 2011). M2: in-place label editing per layer (node panel); real-time concurrent editing is later."
+      "tests": ["apps/web/**/*.test.ts", "e2e/**/*.spec.ts"],
+      "notes": "UX-M6 / P1.1 / P2.2: shared/concurrent editing, free-text + verbatim labels, visible authorship, client can relabel/hide/correct, reversible. Collaboration is the evidence-supported active ingredient (Thrower 2024; BPS 2011). M2: in-place per-layer label editing, per-node remove (removeNode cascades incident edges), hide/reveal (reversible), and certainty marking — all reversible via an earlier snapshot. Real-time concurrent editing is later."
     },
     {
       "id": "REQ-CLIENT-SAFETY-UX",
@@ -165,8 +167,9 @@
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M3",
       "status": "in-progress",
-      "impl": ["packages/validate/**", "apps/web/**"],
-      "notes": "M3: client-facing diagrams require a standing disclaimer (error if missing); the editor gates export on a clean validation report. Standing non-diagnosis disclaimer shown in the editor."
+      "impl": ["packages/validate/**", "apps/web/**", "sdd/adr/0005-client-facing-diagram-classification.md"],
+      "tests": ["packages/validate/**/*.test.ts", "apps/web/**/*.test.ts", "e2e/**/*.spec.ts"],
+      "notes": "M3: client-facing diagrams require a standing disclaimer (error if missing); the editor gates export on a clean validation report. Standing non-diagnosis + 'Unvalidated v0.x' note shown in the editor. ADR-0005 records the client-facing classification (process-loop added; two-triangles excluded as a clinician aid). The editor's Diagram-details panel (editor.ts setMeta) lets a user add the title/disclaimer/crisis line in-UI, so a client diagram can be un-blocked for export instead of hitting an unfixable gate."
     },
     {
       "id": "REQ-CROSS-SCHOOL",
@@ -288,8 +291,9 @@
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M1",
       "status": "in-progress",
-      "impl": ["packages/model/**", "packages/render/**"],
-      "notes": "Source 3 C2. Formulation as working hypothesis. Rendered via a redundant, collision-checked line-style + tag; never system-confirmed for ritual/spiritual claims."
+      "impl": ["packages/model/**", "packages/render/**", "apps/web/**"],
+      "tests": ["apps/web/**/*.test.ts", "e2e/**/*.spec.ts"],
+      "notes": "Source 3 C2. Formulation as working hypothesis. Rendered via a redundant, collision-checked line-style + tag; never system-confirmed for ritual/spiritual claims. Editor: a per-node 'certainty' control (editor.ts setNodeEpistemic) lets a user mark a node reported/observed/inferred(a guess)/planned/etc. — the core move for diagramming an only-partially-understood situation (covered by the Playwright onboarding journey)."
     },
     {
       "id": "REQ-I18N",
@@ -331,7 +335,7 @@
       "status": "in-progress",
       "impl": ["packages/privacy/**", "packages/cli/**"],
       "tests": ["packages/privacy/**/*.test.ts", "packages/cli/**/*.test.ts"],
-      "notes": "Source 3 C10 (HIPAA/GDPR-informed). Local-first; no PHI leaves device without role-specific consent; conservative human-supervised-formulation posture, not live-care CDS. M8: @psyuml/privacy ships deidentify(model,{terms}) — scrubs node/edge/band/trigger labels + title (emails, links, phone-like runs, caller-supplied name terms) and reports each redaction, while preserving the public-safe disclaimer + crisis line; never mutates input. Exposed as `psyuml redact` (writes de-identified JSON, prints the count to stderr). This is the PII-minimization step for AI-assist (M8) and the basis for a de-identified interop export (M9). Still to come: role-scoped export + an audit log, and consent gating in the AI pipeline."
+      "notes": "Source 3 C10 (HIPAA/GDPR-informed). Local-first; no PHI leaves device without role-specific consent; conservative human-supervised-formulation posture, not live-care CDS. M8: @psyuml/privacy ships deidentify(model,{terms}) — scrubs node/edge/band/trigger labels + title (emails, links, phone-like runs, caller-supplied name terms) and reports each redaction, while preserving the public-safe disclaimer + crisis line; never mutates input. Exposed as `psyuml redact` (writes de-identified JSON, prints the count to stderr). This is the PII-minimization step for AI-assist (M8) and the basis for a de-identified interop export (M9). Hardened after a cold-eyes test: name terms match via (?<!\\w)..(?!\\w) lookarounds rather than \\b, so a term ending in a non-word char (e.g. the initials 'R.') is actually redacted — previously it silently matched nothing; the CLI also warns when a --term matches nothing. Still to come: role-scoped export + an audit log, and consent gating in the AI pipeline."
     },
     {
       "id": "REQ-INTEROP-FHIR",
