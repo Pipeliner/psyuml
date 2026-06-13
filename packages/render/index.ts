@@ -556,3 +556,120 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
 
   return { svg, altText };
 }
+
+const LOOP_W = 560;
+const LNODE_W = 140;
+const LNODE_H = 44;
+
+/** Render a Process / Loop map (spec §E.4): a maintaining cycle on a ring, with
+ * reciprocal (double-headed) links, a reinforcing/balancing centre badge, and exits. */
+export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+  const nodes = model.nodes;
+  const n = Math.max(1, nodes.length);
+  const cx = LOOP_W / 2;
+  const cy = 250;
+  const radius = Math.max(120, n * 26);
+
+  const pos = new Map<string, { x: number; y: number }>();
+  nodes.forEach((node, i) => {
+    const a = ((-90 + (i * 360) / n) * Math.PI) / 180;
+    pos.set(node.id, { x: r1(cx + radius * Math.cos(a)), y: r1(cy + radius * Math.sin(a)) });
+  });
+  const height = cy + radius + LNODE_H + 56;
+
+  const nodeName = (id: string): string => {
+    const node = nodes.find((x) => x.id === id);
+    return node ? getText(node.label, layer, lang) : id;
+  };
+
+  const parts: string[] = [];
+  const SHORT = 64;
+
+  // Edges (chords, endpoints pulled to the node boundary)
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
+    const ux = (t.x - s.x) / len;
+    const uy = (t.y - s.y) / len;
+    const x1 = r1(s.x + ux * SHORT);
+    const y1 = r1(s.y + uy * SHORT);
+    const x2 = r1(t.x - ux * SHORT);
+    const y2 = r1(t.y - uy * SHORT);
+    const isExit = e.kind === 'exit';
+    const dash = isExit ? ' stroke-dasharray="6 5"' : '';
+    const markerStart = e.kind === 'reciprocal' ? ' marker-start="url(#arrow)"' : '';
+    parts.push(
+      `<path d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="2"${dash}${markerStart} marker-end="url(#arrow)" />`,
+    );
+    const lblSrc = e.trigger ?? e.label;
+    let txt = lblSrc ? getText(lblSrc, layer, lang) : '';
+    if (isExit) txt = txt ? `${txt} (EXIT)` : 'EXIT';
+    if (txt) {
+      parts.push(
+        `<text x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(txt)}</text>`,
+      );
+    }
+  }
+
+  // Reinforcing / balancing loop badge in the centre
+  const loop = model.edges.find((e) => e.loop);
+  if (loop) {
+    parts.push(
+      `<circle cx="${cx}" cy="${cy}" r="18" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<text x="${cx}" y="${cy + 5}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loop.loop ?? '')}</text>`,
+    );
+  }
+
+  // Nodes (resources = diamonds, others = rounded rects)
+  for (const node of nodes) {
+    const p = pos.get(node.id);
+    if (!p) continue;
+    if (node.kind === 'resource') {
+      parts.push(
+        `<polygon points="${p.x},${p.y - LNODE_H / 2} ${p.x + LNODE_W / 2},${p.y} ${p.x},${p.y + LNODE_H / 2} ${p.x - LNODE_W / 2},${p.y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      );
+    } else {
+      parts.push(
+        `<rect x="${p.x - LNODE_W / 2}" y="${p.y - LNODE_H / 2}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
+      );
+    }
+    parts.push(
+      `<text x="${p.x}" y="${p.y + 4}" text-anchor="middle" font-family="sans-serif" font-size="11">${esc(getText(node.label, layer, lang))}</text>`,
+    );
+  }
+
+  const links = model.edges
+    .filter((e) => e.kind !== 'exit')
+    .map(
+      (e) =>
+        `${nodeName(e.source)} ${e.kind === 'reciprocal' ? '<->' : '->'} ${nodeName(e.target)}${e.loop ? ' (reinforcing)' : ''}`,
+    );
+  const exits = model.edges
+    .filter((e) => e.kind === 'exit')
+    .map((e) => `${nodeName(e.source)} to ${nodeName(e.target)}`);
+  const altText =
+    `Maintaining loop${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Links: ${links.join('; ') || 'none'}. Ways out: ${exits.join('; ') || 'none'}.`;
+
+  const titleText = model.meta.title
+    ? `<text x="16" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+  const defs =
+    '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${LOOP_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Loop map')}</title><desc>${esc(altText)}</desc>` +
+    defs +
+    `<rect x="0" y="0" width="${LOOP_W}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

@@ -117,6 +117,16 @@
       "notes": "M2: renderResourceMap (categorized anchors under People/Skills/Values/Soothing, CFT footer) + resource-anchor example shipped and wired into the editor."
     },
     {
+      "id": "REQ-PROCESS-LOOP",
+      "title": "Process/Loop diagram type (maintaining cycles)",
+      "spec": ["§E.4"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M4",
+      "status": "in-progress",
+      "impl": ["packages/render/**", "examples/**"],
+      "notes": "renderLoopMap (ring layout, reciprocal double-headed links, reinforcing/balancing centre badge, dashed exits) + process-loop example, wired into the editor; path-of-hope validation applies (a loop must show a way out)."
+    },
+    {
       "id": "REQ-WELLFORMEDNESS",
       "title": "Abstract-syntax well-formedness rules enforced",
       "spec": ["§A.2", "§A.3"],

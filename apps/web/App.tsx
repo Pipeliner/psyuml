@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { getText, parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
 import {
   renderDecisionChart,
+  renderLoopMap,
   renderPartsMap,
   renderResourceMap,
   renderStateMap,
@@ -11,6 +12,7 @@ import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
 import decisionRaw from '../../examples/decision-nav.psyuml?raw';
 import resourceRaw from '../../examples/resource-anchor.psyuml?raw';
+import loopRaw from '../../examples/process-loop.psyuml?raw';
 import { addNode, setNodeHidden, setNodeLabel } from './editor';
 
 const EXAMPLES: Record<string, string> = {
@@ -18,6 +20,7 @@ const EXAMPLES: Record<string, string> = {
   'parts-map': partsRaw,
   'decision-nav': decisionRaw,
   'resource-anchor': resourceRaw,
+  'process-loop': loopRaw,
 };
 
 function downloadText(filename: string, text: string, type: string): void {
@@ -43,6 +46,7 @@ export function App() {
     if (model.diagram === 'parts-map') return renderPartsMap(model, { layer, monochrome });
     if (model.diagram === 'decision-nav') return renderDecisionChart(model, { layer });
     if (model.diagram === 'resource-anchor') return renderResourceMap(model, { layer });
+    if (model.diagram === 'process-loop') return renderLoopMap(model, { layer });
     return renderStateMap(model, { layer, monochrome });
   }, [model, layer, monochrome]);
 
@@ -88,6 +92,7 @@ export function App() {
             <option value="parts-map">Parts / Agents Map</option>
             <option value="decision-nav">Crisis chart</option>
             <option value="resource-anchor">Resource / Anchor map</option>
+            <option value="process-loop">Process / Loop</option>
           </select>
         </label>
 

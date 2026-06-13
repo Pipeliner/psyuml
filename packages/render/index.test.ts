@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
-import { renderDecisionChart, renderPartsMap, renderResourceMap, renderStateMap } from './index';
+import {
+  renderDecisionChart,
+  renderLoopMap,
+  renderPartsMap,
+  renderResourceMap,
+  renderStateMap,
+} from './index';
 
 const read = (name: string): string =>
   readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8');
@@ -10,6 +16,7 @@ const stateModel = parseModel(read('state-map.psyuml'));
 const partsModel = parseModel(read('parts-map.psyuml'));
 const decisionModel = parseModel(read('decision-nav.psyuml'));
 const resourceModel = parseModel(read('resource-anchor.psyuml'));
+const loopModel = parseModel(read('process-loop.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -113,5 +120,21 @@ describe('renderResourceMap', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('resource-anchor.svg', renderResourceMap(resourceModel).svg);
+  });
+});
+
+describe('renderLoopMap', () => {
+  it('draws a maintaining cycle with a reinforcing badge and an exit', () => {
+    const { svg, altText } = renderLoopMap(loopModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Panic / shame');
+    expect(svg).toContain('(EXIT)');
+    expect(altText).toContain('Maintaining loop');
+    expect(altText).toContain('reinforcing');
+    expect(altText).toContain('Ways out');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('process-loop.svg', renderLoopMap(loopModel).svg);
   });
 });
