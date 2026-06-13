@@ -87,6 +87,18 @@ importers:
         specifier: workspace:*
         version: link:../packages/validate
 
+  packages/ai:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../model
+      '@psyuml/privacy':
+        specifier: workspace:*
+        version: link:../privacy
+      '@psyuml/validate':
+        specifier: workspace:*
+        version: link:../validate
+
   packages/cli:
     dependencies:
       '@psyuml/grammar':

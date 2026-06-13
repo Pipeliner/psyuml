@@ -68,13 +68,15 @@ flowchart RL
     diff["packages/diff"] --> model
     grammar["packages/grammar"] --> model
     privacy["packages/privacy"] --> model
+    ai["packages/ai"] --> validate
+    ai --> privacy
+    ai --> model
     cli["packages/cli"] --> validate
     cli --> render
     cli --> grammar
     cli --> privacy
     cli --> model
     interop["packages/interop"] --> model
-    ai["packages/ai"] --> model
     model["packages/model (core)"]
 ```
 

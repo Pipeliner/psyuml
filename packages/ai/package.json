@@ -1,0 +1,16 @@
+{
+  "name": "@psyuml/ai",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@psyuml/model": "workspace:*",
+    "@psyuml/privacy": "workspace:*",
+    "@psyuml/validate": "workspace:*"
+  }
+}

@@ -52,35 +52,53 @@ const PHONE_RE = /\+?\d[\d ()\-.]{6,}\d/g;
 
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** De-identify the free-text fields of a model. */
-export function deidentify(model: PsyumlModel, options: DeidentifyOptions = {}): DeidentifyResult {
+export interface TextRedaction {
+  kind: RedactionKind;
+  original: string;
+}
+
+/**
+ * De-identify a single free-text string (e.g. a session narrative before AI extraction).
+ * Structured PII (links, emails, phone-like runs) is removed first, then caller-supplied
+ * name `terms` — otherwise redacting a term inside an email would break detection.
+ */
+export function redactText(
+  text: string,
+  options: DeidentifyOptions = {},
+): { text: string; redactions: TextRedaction[] } {
   const ph = { ...DEFAULT_PLACEHOLDERS, ...options.placeholders };
   const terms = (options.terms ?? []).filter((t) => t.trim().length > 0);
+  const redactions: TextRedaction[] = [];
+  let out = text;
+  out = out.replace(URL_RE, (m) => {
+    redactions.push({ kind: 'url', original: m });
+    return ph.url;
+  });
+  out = out.replace(EMAIL_RE, (m) => {
+    redactions.push({ kind: 'email', original: m });
+    return ph.email;
+  });
+  out = out.replace(PHONE_RE, (m) => {
+    redactions.push({ kind: 'phone', original: m });
+    return ph.phone;
+  });
+  for (const t of terms) {
+    out = out.replace(new RegExp(`\\b${escapeRegExp(t)}\\b`, 'gi'), (m) => {
+      redactions.push({ kind: 'term', original: m });
+      return ph.term;
+    });
+  }
+  return { text: out, redactions };
+}
+
+/** De-identify the free-text fields of a model. */
+export function deidentify(model: PsyumlModel, options: DeidentifyOptions = {}): DeidentifyResult {
   const redactions: Redaction[] = [];
 
   const scrub = (text: string, path: string): string => {
-    // Structured PII first, then name terms — otherwise a term inside an email/url
-    // (e.g. redacting "jo" in "jo@x.io") would break detection and leak the rest.
-    let out = text;
-    out = out.replace(URL_RE, (m) => {
-      redactions.push({ path, kind: 'url', original: m });
-      return ph.url;
-    });
-    out = out.replace(EMAIL_RE, (m) => {
-      redactions.push({ path, kind: 'email', original: m });
-      return ph.email;
-    });
-    out = out.replace(PHONE_RE, (m) => {
-      redactions.push({ path, kind: 'phone', original: m });
-      return ph.phone;
-    });
-    for (const t of terms) {
-      out = out.replace(new RegExp(`\\b${escapeRegExp(t)}\\b`, 'gi'), (m) => {
-        redactions.push({ path, kind: 'term', original: m });
-        return ph.term;
-      });
-    }
-    return out;
+    const r = redactText(text, options);
+    for (const red of r.redactions) redactions.push({ path, ...red });
+    return r.text;
   };
 
   const scrubDict = (dict: Record<string, string>, base: string): Record<string, string> => {

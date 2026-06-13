@@ -254,9 +254,10 @@
       "spec": ["§A.3", "§L.2"],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M8",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/ai/**"],
-      "notes": "No diagnosis/severity scoring; no safeguard-bypass. Runs the Source-3 pipeline: consent -> PII-min -> safety triage -> extract -> plan -> draft -> validate -> review. See idea-incorporation §3–5."
+      "tests": ["packages/ai/**/*.test.ts"],
+      "notes": "No diagnosis/severity scoring; no safeguard-bypass. M8: @psyuml/ai ships assist(narrative,{model,consented,terms},extractor?) — the GUARDRAILS of the Source-3 pipeline, enforced + tested with no live model call: consent gate (no consent -> nothing processed); PII minimization via @psyuml/privacy.redactText BEFORE the extractor sees the text; safety triage that HALTS and escalates before extraction (when requiresHumanEscalation(model) or a coarse acute-risk/psychosis marker trips); every suggestion wrapped low-confidence (confidence 'L', epistemicStatus 'inferred'); nothing auto-applied (applySuggestions is a separate explicit accept step). The narrative->suggestions step is a pluggable Extractor (default noopExtractor) so a model-agnostic LLM extractor drops in without changing the safety envelope, and the package is isolated (removing it leaves the editor working). Still to come: an actual LLM-backed extractor + an editor AI panel + an audit log. Out of scope (kept out): diagnosis/severity, safeguard-bypass, autonomous formulation, live-care advice (idea-incorporation §3–5)."
     },
     {
       "id": "REQ-TEXT-DSL",
