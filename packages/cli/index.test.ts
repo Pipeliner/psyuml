@@ -84,14 +84,24 @@ describe('psyuml cli', () => {
         version: '0.1.0',
         diagram: 'state-map',
         meta: { disclaimer: 'x' },
-        nodes: [{ id: 'a', kind: 'state', label: { clinician: { en: 'email jo@x.io' } } }],
+        nodes: [
+          { id: 'a', kind: 'state', label: { clinician: { en: 'ask Jo or email jo@x.io' } } },
+        ],
       }),
     });
     const code = run(['redact', 'pii.psyuml', '--term', 'Jo'], io);
     expect(code).toBe(0);
     expect(io.stdout.join('\n')).toContain('[email]');
+    expect(io.stdout.join('\n')).toContain('[name]');
     expect(io.stdout.join('\n')).not.toContain('jo@x.io');
     expect(io.stderr.join('\n')).toContain('redacted');
+  });
+
+  it('redact warns when a --term matched nothing (no silent privacy failure)', () => {
+    const io = fakeIO();
+    const code = run(['redact', 'examples/state-map.psyuml', '--term', 'Nonexistent'], io);
+    expect(code).toBe(0);
+    expect(io.stderr.join('\n')).toContain('matched nothing: Nonexistent');
   });
 
   it('help and version succeed; unknown command and no-files fail', () => {

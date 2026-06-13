@@ -31,6 +31,16 @@ describe('deidentify', () => {
     expect(out.redactions.filter((r) => r.kind === 'term')).toHaveLength(2);
   });
 
+  it('redacts a term ending in a non-word char, e.g. initials "R." (regression)', () => {
+    const out = deidentify(make('R. arrived; ask R. directly. Not Rabbit though.'), {
+      terms: ['R.'],
+    });
+    expect(out.model.nodes[0]?.label.clinician.en).toBe(
+      '[name] arrived; ask [name] directly. Not Rabbit though.',
+    );
+    expect(out.redactions.filter((r) => r.kind === 'term')).toHaveLength(2);
+  });
+
   it('redacts nothing when there is no PII and no terms given', () => {
     const { redactions } = deidentify(make('Calm and connected'));
     expect(redactions).toEqual([]);

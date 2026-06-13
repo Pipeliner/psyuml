@@ -83,7 +83,11 @@ export function redactText(
     return ph.phone;
   });
   for (const t of terms) {
-    out = out.replace(new RegExp(`\\b${escapeRegExp(t)}\\b`, 'gi'), (m) => {
+    // Use word-adjacency lookarounds rather than \b: a term ending (or starting) in a
+    // non-word char — e.g. a client's initials "R." — has no \b at that edge, so \bR.\b
+    // never matches and PII would silently survive. (?<![\w]) / (?![\w]) still prevents
+    // matching inside a larger word (so "Rachel" won't hit "Rachelle").
+    out = out.replace(new RegExp(`(?<![\\w])${escapeRegExp(t)}(?![\\w])`, 'gi'), (m) => {
       redactions.push({ kind: 'term', original: m });
       return ph.term;
     });

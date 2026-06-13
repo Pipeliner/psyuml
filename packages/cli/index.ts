@@ -207,6 +207,15 @@ function cmdRedact(args: string[], io: CliIO): number {
     io.out(json);
   }
   io.err(`redacted ${redactions.length} item(s)`);
+  // Surface a --term that matched nothing, so a misspelled/ill-formed term can't masquerade
+  // as a successful de-identification (defense-in-depth for the privacy guarantee).
+  const matchedTerms = new Set(
+    redactions.filter((r) => r.kind === 'term').map((r) => r.original.toLowerCase()),
+  );
+  const unmatched = terms.filter((t) => !matchedTerms.has(t.toLowerCase()));
+  if (unmatched.length > 0) {
+    io.err(`note: these --term values matched nothing: ${unmatched.join(', ')}`);
+  }
   return 0;
 }
 
