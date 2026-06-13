@@ -1,15 +1,22 @@
 import { useMemo, useState } from 'react';
 import { parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
-import { renderDecisionChart, renderPartsMap, renderStateMap } from '@psyuml/render';
+import {
+  renderDecisionChart,
+  renderPartsMap,
+  renderResourceMap,
+  renderStateMap,
+} from '@psyuml/render';
 import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
 import decisionRaw from '../../examples/decision-nav.psyuml?raw';
+import resourceRaw from '../../examples/resource-anchor.psyuml?raw';
 import { addNode } from './editor';
 
 const EXAMPLES: Record<string, string> = {
   'state-map': stateRaw,
   'parts-map': partsRaw,
   'decision-nav': decisionRaw,
+  'resource-anchor': resourceRaw,
 };
 
 function downloadText(filename: string, text: string, type: string): void {
@@ -34,6 +41,7 @@ export function App() {
   const { svg, altText } = useMemo(() => {
     if (model.diagram === 'parts-map') return renderPartsMap(model, { layer, monochrome });
     if (model.diagram === 'decision-nav') return renderDecisionChart(model, { layer });
+    if (model.diagram === 'resource-anchor') return renderResourceMap(model, { layer });
     return renderStateMap(model, { layer, monochrome });
   }, [model, layer, monochrome]);
 
@@ -75,6 +83,7 @@ export function App() {
             <option value="state-map">State Map</option>
             <option value="parts-map">Parts / Agents Map</option>
             <option value="decision-nav">Crisis chart</option>
+            <option value="resource-anchor">Resource / Anchor map</option>
           </select>
         </label>
 

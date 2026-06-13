@@ -112,8 +112,9 @@
       "spec": ["§E.9"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M2",
-      "status": "planned",
-      "impl": ["apps/web/**", "packages/render/**"]
+      "status": "in-progress",
+      "impl": ["apps/web/**", "packages/render/**"],
+      "notes": "M2: renderResourceMap (categorized anchors under People/Skills/Values/Soothing, CFT footer) + resource-anchor example shipped and wired into the editor."
     },
     {
       "id": "REQ-WELLFORMEDNESS",

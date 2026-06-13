@@ -468,3 +468,76 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
 
   return { svg, altText };
 }
+
+const RES_W = 720;
+
+/** Render a Resource / Anchor map (spec §E.9): a categorized inventory of strengths,
+ * supports, skills, values, and soothing-system boosters (◇ anchors under categories). */
+export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const categories = model.nodes.filter((n) => n.stereotype === 'category');
+  const itemsOf = (catId: string) => {
+    const ids = new Set(
+      model.edges
+        .filter((e) => e.kind === 'containment' && e.source === catId)
+        .map((e) => e.target),
+    );
+    return model.nodes.filter((n) => ids.has(n.id));
+  };
+  const cols = Math.max(1, categories.length);
+  const colW = RES_W / cols;
+
+  const parts: string[] = [];
+  const altCats: string[] = [];
+  let maxItems = 0;
+  categories.forEach((cat, c) => {
+    const items = itemsOf(cat.id);
+    maxItems = Math.max(maxItems, items.length);
+    const hx = c * colW + 16;
+    parts.push(
+      `<text x="${hx}" y="58" font-family="sans-serif" font-size="13" font-weight="700">${esc(getText(cat.label, layer, lang))}</text>`,
+    );
+    items.forEach((it, i) => {
+      const y = 86 + i * 28;
+      const dx = c * colW + 24;
+      parts.push(
+        `<polygon points="${dx},${y - 6} ${dx + 7},${y} ${dx},${y + 6} ${dx - 7},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<text x="${dx + 14}" y="${y + 4}" font-family="sans-serif" font-size="12">${esc(getText(it.label, layer, lang))}</text>`,
+      );
+    });
+    altCats.push(
+      `${getText(cat.label, layer, lang)} (${items.map((it) => getText(it.label, layer, lang)).join(', ') || 'none'})`,
+    );
+  });
+
+  const height = 86 + maxItems * 28 + 50;
+  const fy = height - 26;
+  parts.push(
+    `<text x="16" y="${fy}" font-family="sans-serif" font-size="11">CFT systems: Threat · Drive · Soothing — grow the soothing system.</text>`,
+  );
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="16" y="${fy + 16}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+  }
+
+  const altText =
+    `Resource and anchor map${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Categories — ${altCats.join('; ') || 'none'}. Grow the soothing system.`;
+
+  const titleText = model.meta.title
+    ? `<text x="16" y="24" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${RES_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Resource map')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${RES_W}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

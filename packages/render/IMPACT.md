@@ -17,7 +17,7 @@ alt-text. (M0: placeholder; M1: the real pipeline.)
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/render`) | — | workspace resolution | — | low |
-| `index.ts` | Render API (`renderStateMap`, `renderPartsMap`, `renderDecisionChart`) | model, profiles, assets | apps/web | §B, §C, §D, §E.8 / REQ-NOTATION, REQ-DECISION-NAV | medium |
+| `index.ts` | Render API (`renderStateMap`, `renderPartsMap`, `renderDecisionChart`, `renderResourceMap`) | model, profiles, assets | apps/web | §B–§D, §E.8, §E.9 / REQ-NOTATION, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR | medium |
 | `index.test.ts` | Unit tests | `index.ts` | CI `test` | — | low |
 
 ## Change checklist

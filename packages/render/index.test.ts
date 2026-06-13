@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
-import { renderDecisionChart, renderPartsMap, renderStateMap } from './index';
+import { renderDecisionChart, renderPartsMap, renderResourceMap, renderStateMap } from './index';
 
 const read = (name: string): string =>
   readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8');
@@ -9,6 +9,7 @@ const read = (name: string): string =>
 const stateModel = parseModel(read('state-map.psyuml'));
 const partsModel = parseModel(read('parts-map.psyuml'));
 const decisionModel = parseModel(read('decision-nav.psyuml'));
+const resourceModel = parseModel(read('resource-anchor.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -91,5 +92,26 @@ describe('renderDecisionChart', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('decision-nav.svg', renderDecisionChart(decisionModel).svg);
+  });
+});
+
+describe('renderResourceMap', () => {
+  it('groups anchors under categories with a CFT footer', () => {
+    const { svg, altText } = renderResourceMap(resourceModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('People who help me');
+    expect(svg).toContain('Partner');
+    expect(svg).toContain('CFT systems');
+    expect(altText).toContain('Resource and anchor map');
+    expect(altText).toContain('soothing system');
+  });
+
+  it('renders the client layer vocabulary', () => {
+    const { svg } = renderResourceMap(resourceModel, { layer: 'client' });
+    expect(svg).toContain('What matters to me');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('resource-anchor.svg', renderResourceMap(resourceModel).svg);
   });
 });
