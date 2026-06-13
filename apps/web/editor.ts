@@ -4,9 +4,16 @@
  *
  * Traceability: REQ-EDITOR-MVP, REQ-COLLAB (client can add/edit/remove), REQ-CLIENT-SAFETY-UX,
  * REQ-EPISTEMIC-STATUS (mark a node as a guess), REQ-ETHICS-GUARDRAILS (edit disclaimer/crisis),
- * REQ-VERSIONING-DIFF (in-session snapshots).
+ * REQ-NOTATION (author typed connectors / edges, §C), REQ-VERSIONING-DIFF (in-session snapshots).
  */
-import { parseModel, serializeModel, type EpistemicStatus, type PsyumlModel } from '@psyuml/model';
+import {
+  parseModel,
+  serializeModel,
+  type EdgeKind,
+  type EpistemicStatus,
+  type NodeKind,
+  type PsyumlModel,
+} from '@psyuml/model';
 
 /** An immutable in-session snapshot of a formulation (M6 versioning). */
 export interface Version {
@@ -41,26 +48,58 @@ export function nextId(prefix: string, model: PsyumlModel): string {
  * State maps get a state in the first band; parts maps get an agent (protector).
  * Nothing is auto-finalized; the label is editable by either layer (co-authorship).
  */
-export function addNode(model: PsyumlModel, label: string): PsyumlModel {
+export function addNode(
+  model: PsyumlModel,
+  label: string,
+  opts: { kind?: NodeKind; stereotype?: string } = {},
+): PsyumlModel {
   const isParts = model.diagram === 'parts-map';
-  const node = isParts
-    ? {
-        id: nextId('part', model),
-        kind: 'agent',
-        stereotype: 'manager',
-        tier: 3,
-        label: { clinician: { en: label } },
-        properties: { epistemicStatus: 'reported' },
-      }
-    : {
-        id: nextId('state', model),
-        kind: 'state',
-        bandId: model.bands[0]?.id,
-        tier: 1,
-        label: { clinician: { en: label } },
-        properties: { epistemicStatus: 'reported' },
-      };
+  const kind: NodeKind = opts.kind ?? (isParts ? 'agent' : 'state');
+  const stereotype = opts.stereotype ?? (isParts && kind === 'agent' ? 'manager' : undefined);
+  const node: Record<string, unknown> = {
+    id: nextId(opts.kind ?? (isParts ? 'part' : 'state'), model),
+    kind,
+    tier: isParts ? 3 : 1,
+    label: { clinician: { en: label } },
+    properties: { epistemicStatus: 'reported' },
+  };
+  if (stereotype) node.stereotype = stereotype;
+  // States default into the first band so they render in a zone; other kinds float.
+  if (kind === 'state' && model.bands[0]) node.bandId = model.bands[0].id;
   return parseModel({ ...model, nodes: [...model.nodes, node] });
+}
+
+/** First unused `e${n}` edge id in the model. */
+export function nextEdgeId(model: PsyumlModel): string {
+  const ids = new Set(model.edges.map((e) => e.id));
+  let i = 1;
+  while (ids.has(`e${i}`)) i += 1;
+  return `e${i}`;
+}
+
+/**
+ * Connect two nodes with a typed edge, returning a new validated model. This is the GUI's
+ * way to author the *relationships* — transitions, protective containment, exits, branches —
+ * that a diagram is mostly about. parseModel enforces well-formedness (endpoints exist);
+ * any softer concern (e.g. a relation touching a state) surfaces in the health panel, not here.
+ */
+export function addEdge(
+  model: PsyumlModel,
+  opts: { source: string; target: string; kind: EdgeKind; label?: string },
+): PsyumlModel {
+  const edge: Record<string, unknown> = {
+    id: nextEdgeId(model),
+    kind: opts.kind,
+    source: opts.source,
+    target: opts.target,
+  };
+  if (opts.label && opts.label.trim()) edge.label = { clinician: { en: opts.label } };
+  return parseModel({ ...model, edges: [...model.edges, edge] });
+}
+
+/** Remove an edge by id, returning a new validated model. */
+export function removeEdge(model: PsyumlModel, id: string): PsyumlModel {
+  return parseModel({ ...model, edges: model.edges.filter((e) => e.id !== id) });
 }
 
 /** Set a node's label for the given layer (in 'en'); returns a new validated model. */

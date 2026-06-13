@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
 import {
+  addEdge,
   addNode,
   nextId,
+  removeEdge,
   removeNode,
   restoreVersion,
   setMeta,
@@ -78,6 +80,38 @@ describe('editor', () => {
     expect(m.nodes.some((n) => n.id === 'calm')).toBe(false);
     expect(m.edges.every((e) => e.source !== 'calm' && e.target !== 'calm')).toBe(true);
     expect(stateModel.nodes).toHaveLength(before); // input untouched
+  });
+
+  it('addNode can create a node of a chosen kind/stereotype (not just the diagram default)', () => {
+    const m = addNode(stateModel, 'A way out', { kind: 'resource' });
+    const added = m.nodes[m.nodes.length - 1];
+    expect(added?.kind).toBe('resource');
+    const part = addNode(partsModel, 'Hurt Child', { kind: 'agent', stereotype: 'exile' });
+    expect(part.nodes[part.nodes.length - 1]?.stereotype).toBe('exile');
+  });
+
+  it('addEdge connects two nodes with a typed, optionally-labelled link', () => {
+    const before = stateModel.edges.length;
+    const m = addEdge(stateModel, {
+      source: 'calm',
+      target: 'numb',
+      kind: 'exit',
+      label: 'breathe',
+    });
+    const added = m.edges[m.edges.length - 1];
+    expect(m.edges).toHaveLength(before + 1);
+    expect(added?.kind).toBe('exit');
+    expect(added?.source).toBe('calm');
+    expect(added?.target).toBe('numb');
+    expect(added?.label?.clinician.en).toBe('breathe');
+    expect(stateModel.edges).toHaveLength(before); // input untouched
+  });
+
+  it('removeEdge drops a link by id', () => {
+    const linked = addEdge(stateModel, { source: 'calm', target: 'numb', kind: 'sequential' });
+    const id = linked.edges[linked.edges.length - 1]!.id;
+    const m = removeEdge(linked, id);
+    expect(m.edges.some((e) => e.id === id)).toBe(false);
   });
 
   it('setMeta lets a user add the disclaimer the client gate requires', () => {

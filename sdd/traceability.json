@@ -33,9 +33,9 @@
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
       "status": "in-progress",
-      "impl": ["packages/render/**"],
-      "tests": ["packages/render/**/*.test.ts"],
-      "notes": "Native SVG authoritative; Mermaid is approximate export only."
+      "impl": ["packages/render/**", "apps/web/**"],
+      "tests": ["packages/render/**/*.test.ts", "e2e/**/*.spec.ts"],
+      "notes": "Native SVG authoritative; Mermaid is approximate export only. The editor authors the typed connector set (§C) directly: a Links panel adds/labels/removes edges of any kind (sequential/exit/containment/reciprocal/transference/…) between nodes — no DSL required (e2e-covered)."
     },
     {
       "id": "REQ-STATE-MAP",
@@ -65,7 +65,7 @@
       "status": "in-progress",
       "impl": ["apps/web/**"],
       "tests": ["apps/web/**/*.test.ts", "e2e/**/*.spec.ts"],
-      "notes": "M2: example-keyed picker over 12 diagram types; live render with layer/monochrome/school toggles; node panel — add / rename / mark certainty / hide / remove; Diagram-details editor (title/disclaimer/crisis); save/load .psyuml; SVG export; Text (DSL) view/edit; version snapshots + compare/diff. A Playwright onboarding journey drives it end-to-end."
+      "notes": "M2: example-keyed picker over 12 diagram types; live render with layer/monochrome/school toggles. Structured authoring closes the gaps a build-a-diagram agent test found: an add-node form makes a node of any kind/stereotype (was: add-only on 2 types, generic only); a Links panel connects two nodes with a typed, labelled edge and removes edges (was: NO way to author relationships in the GUI — the unanimous #1 gap); node panel does rename / mark certainty / hide / remove; Diagram-details editor sets title/disclaimer/crisis. Plus save/load .psyuml, SVG export, Text (DSL) view/edit (Apply step clarified after agents read it as read-only), version snapshots + compare/diff. A Playwright onboarding journey drives it end-to-end, including building a link in the GUI."
     },
     {
       "id": "REQ-UX-STORIES",

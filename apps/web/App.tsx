@@ -3,7 +3,9 @@ import {
   getText,
   parseModel,
   serializeModel,
+  type EdgeKind,
   type EpistemicStatus,
+  type NodeKind,
   type PsyumlModel,
 } from '@psyuml/model';
 import { fromDSL, toDSL } from '@psyuml/grammar';
@@ -40,7 +42,9 @@ import dramaRaw from '../../examples/drama-triangle.psyuml?raw';
 import twoTriRaw from '../../examples/two-triangles.psyuml?raw';
 import catSdrRaw from '../../examples/cat-sdr.psyuml?raw';
 import {
+  addEdge,
   addNode,
+  removeEdge,
   removeNode,
   restoreVersion,
   setMeta,
@@ -51,6 +55,33 @@ import {
   snapshotModel,
   type Version,
 } from './editor';
+
+const NODE_KINDS: NodeKind[] = [
+  'state',
+  'agent',
+  'self',
+  'resource',
+  'intervention',
+  'context',
+  'temporal',
+];
+const EDGE_KINDS: EdgeKind[] = [
+  'sequential',
+  'excitatory',
+  'inhibitory',
+  'reciprocal',
+  'exit',
+  'barrier',
+  'containment',
+  'invocation',
+  'transference',
+  'nestedWithin',
+  'close',
+  'conflict',
+  'fused',
+  'distant',
+  'cutoff',
+];
 
 /** Epistemic-status options for the per-node "how sure?" control (plain-language hints). */
 const EPISTEMIC_OPTIONS: { value: string; label: string }[] = [
@@ -125,9 +156,6 @@ export function App() {
     return renderStateMap(model, { layer, monochrome });
   }, [model, layer, monochrome, school]);
 
-  const canAdd = model.diagram === 'state-map' || model.diagram === 'parts-map';
-  const addLabel = model.diagram === 'parts-map' ? 'Add part' : 'Add state';
-
   const report = useMemo(() => validate(model, { layer }), [model, layer]);
   const exportBlocked = !report.ok;
   const escalate = requiresHumanEscalation(model);
@@ -143,6 +171,19 @@ export function App() {
   const dsl = useMemo(() => toDSL(model), [model]);
   const dslRef = useRef<HTMLTextAreaElement>(null);
   const [dslError, setDslError] = useState<string | null>(null);
+
+  // Structured authoring (add node of any kind; connect/remove links).
+  const [newNodeLabel, setNewNodeLabel] = useState('');
+  const [newNodeKind, setNewNodeKind] = useState<NodeKind>('state');
+  const [newNodeStereo, setNewNodeStereo] = useState('');
+  const [linkFrom, setLinkFrom] = useState('');
+  const [linkTo, setLinkTo] = useState('');
+  const [linkKind, setLinkKind] = useState<EdgeKind>('sequential');
+  const [linkLabel, setLinkLabel] = useState('');
+  const nodeName = (id: string): string => {
+    const n = model.nodes.find((x) => x.id === id);
+    return n ? getText(n.label, layer) : id;
+  };
 
   return (
     <main
@@ -250,15 +291,6 @@ export function App() {
           Psychosis
         </label>
 
-        <button
-          type="button"
-          disabled={!canAdd}
-          onClick={() =>
-            setModel(addNode(model, addLabel === 'Add part' ? 'New part' : 'New state'))
-          }
-        >
-          {addLabel}
-        </button>
         <button
           type="button"
           disabled={exportBlocked}
@@ -457,7 +489,11 @@ export function App() {
       </details>
 
       <details style={{ marginTop: 12 }}>
-        <summary>Text (DSL) — read, copy, or edit as text</summary>
+        <summary>Edit as text (DSL) — type, then click “Apply text” to update</summary>
+        <p style={{ fontSize: 13, color: '#555', margin: '6px 0 0' }}>
+          Typing here does <strong>not</strong> change the diagram until you click{' '}
+          <strong>Apply text</strong> below.
+        </p>
         <textarea
           key={dsl}
           ref={dslRef}
@@ -528,8 +564,60 @@ export function App() {
 
       <section aria-label="Nodes" style={{ marginTop: 16 }}>
         <h2 style={{ fontSize: 16, marginBottom: 6 }}>
-          Nodes — rename in your words, mark how sure you are, hide, or remove
+          Nodes — add, rename in your words, mark how sure you are, hide, or remove
         </h2>
+        <div
+          role="group"
+          aria-label="Add node"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 6,
+            alignItems: 'center',
+            marginBottom: 8,
+          }}
+        >
+          <input
+            aria-label="New node label"
+            placeholder="New node label…"
+            value={newNodeLabel}
+            onChange={(e) => setNewNodeLabel(e.target.value)}
+            style={{ padding: '4px 8px' }}
+          />
+          <select
+            aria-label="New node kind"
+            value={newNodeKind}
+            onChange={(e) => setNewNodeKind(e.target.value as NodeKind)}
+          >
+            {NODE_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+          <input
+            aria-label="New node stereotype (optional)"
+            placeholder="stereotype (optional)"
+            value={newNodeStereo}
+            onChange={(e) => setNewNodeStereo(e.target.value)}
+            style={{ padding: '4px 8px', width: 150 }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setModel(
+                addNode(model, newNodeLabel.trim() || 'New node', {
+                  kind: newNodeKind,
+                  stereotype: newNodeStereo.trim() || undefined,
+                }),
+              );
+              setNewNodeLabel('');
+              setNewNodeStereo('');
+            }}
+          >
+            Add node
+          </button>
+        </div>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
           {model.nodes.map((n) => {
             const nodeIssues = report.issues.filter((iss) => iss.nodeId === n.id);
@@ -583,6 +671,92 @@ export function App() {
             );
           })}
         </ul>
+      </section>
+
+      <section aria-label="Links" style={{ marginTop: 16 }}>
+        <h2 style={{ fontSize: 16, marginBottom: 6 }}>Links — connect two nodes</h2>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
+          {model.edges.map((e) => (
+            <li key={e.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14 }}>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                {nodeName(e.source)} —{e.kind}→ {nodeName(e.target)}
+                {e.label ? ` (${getText(e.label, layer)})` : ''}
+              </span>
+              <button
+                type="button"
+                aria-label={`Remove link ${e.id}`}
+                title="Remove this link"
+                onClick={() => setModel(removeEdge(model, e.id))}
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+          {model.edges.length === 0 && (
+            <li style={{ fontSize: 14, color: '#555' }}>No links yet.</li>
+          )}
+        </ul>
+        <div
+          role="group"
+          aria-label="Add link"
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 8 }}
+        >
+          <select
+            aria-label="Link from"
+            value={linkFrom}
+            onChange={(e) => setLinkFrom(e.target.value)}
+          >
+            <option value="">from…</option>
+            {model.nodes.map((n) => (
+              <option key={n.id} value={n.id}>
+                {getText(n.label, layer)}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Link type"
+            value={linkKind}
+            onChange={(e) => setLinkKind(e.target.value as EdgeKind)}
+          >
+            {EDGE_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+          <select aria-label="Link to" value={linkTo} onChange={(e) => setLinkTo(e.target.value)}>
+            <option value="">to…</option>
+            {model.nodes.map((n) => (
+              <option key={n.id} value={n.id}>
+                {getText(n.label, layer)}
+              </option>
+            ))}
+          </select>
+          <input
+            aria-label="Link label (optional)"
+            placeholder="label (optional)"
+            value={linkLabel}
+            onChange={(e) => setLinkLabel(e.target.value)}
+            style={{ padding: '4px 8px', width: 150 }}
+          />
+          <button
+            type="button"
+            disabled={!linkFrom || !linkTo || linkFrom === linkTo}
+            onClick={() => {
+              setModel(
+                addEdge(model, {
+                  source: linkFrom,
+                  target: linkTo,
+                  kind: linkKind,
+                  label: linkLabel.trim() || undefined,
+                }),
+              );
+              setLinkLabel('');
+            }}
+          >
+            Add link
+          </button>
+        </div>
       </section>
     </main>
   );

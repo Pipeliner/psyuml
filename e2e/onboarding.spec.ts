@@ -49,11 +49,13 @@ test.describe('new user: diagramming a partially understood situation', () => {
     await lastCertainty.selectOption('inferred');
     await expect(lastCertainty).toHaveValue('inferred');
 
-    // 5) A realization mid-session -> add a part.
+    // 5) A realization mid-session -> add a part of the right kind via the add-node form.
     const before = await nodes(page).getByRole('listitem').count();
-    await page.getByRole('button', { name: 'Add part' }).click();
+    await page.getByLabel('New node label').fill('A newly-noticed part');
+    await page.getByLabel('New node kind').selectOption('agent');
+    await page.getByRole('button', { name: 'Add node' }).click();
     await expect(nodes(page).getByRole('listitem')).toHaveCount(before + 1);
-    await expect(diagram(page)).toContainText('New part');
+    await expect(diagram(page)).toContainText('A newly-noticed part');
 
     // 6) Show it to the client in plain language — it still renders.
     await page.getByRole('combobox', { name: 'Layer' }).selectOption('client');
@@ -81,7 +83,7 @@ test.describe('new user: diagramming a partially understood situation', () => {
     await expect(changes).toContainText('clearer now: my steady center');
 
     // 10) The same model as editable text (DSL), for a power user.
-    await page.getByText('Text (DSL) — read, copy, or edit as text').click();
+    await page.getByText(/Edit as text \(DSL\)/).click();
     await expect(page.getByLabel('PsyUML text DSL')).toHaveValue(/diagram parts-map/);
   });
 
@@ -121,9 +123,34 @@ test.describe('new user: diagramming a partially understood situation', () => {
     await page.getByLabel('Diagram title', { exact: true }).fill('JOURNEY-TITLE-XYZ');
     await page.getByLabel('Diagram disclaimer', { exact: true }).fill('MY-OWN-DISCLAIMER-XYZ');
     // It flows into the model — visible in the text (DSL) view.
-    await page.getByText('Text (DSL) — read, copy, or edit as text').click();
+    await page.getByText(/Edit as text \(DSL\)/).click();
     const dsl = page.getByLabel('PsyUML text DSL');
     await expect(dsl).toHaveValue(/JOURNEY-TITLE-XYZ/);
     await expect(dsl).toHaveValue(/MY-OWN-DISCLAIMER-XYZ/);
+  });
+
+  test('build a link between two nodes in the GUI — no DSL needed', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: 'Diagram' }).selectOption('parts-map');
+    const links = page.getByRole('region', { name: 'Links' });
+    const before = await links.getByRole('listitem').count();
+
+    // Connect the first two nodes with a typed, labelled link — entirely via the GUI.
+    await page.getByLabel('Link from').selectOption({ index: 1 }); // index 0 is the "from…" placeholder
+    await page.getByLabel('Link to').selectOption({ index: 2 });
+    await page.getByLabel('Link type').selectOption('containment');
+    await page.getByLabel('Link label (optional)').fill('protects');
+    await page.getByRole('button', { name: 'Add link' }).click();
+
+    await expect(links.getByRole('listitem')).toHaveCount(before + 1);
+    await expect(links).toContainText('containment');
+    await expect(links).toContainText('protects');
+
+    // And it is removable from the GUI too (reversible).
+    await links
+      .getByRole('button', { name: /Remove link/i })
+      .last()
+      .click();
+    await expect(links.getByRole('listitem')).toHaveCount(before);
   });
 });
