@@ -95,7 +95,7 @@ demands before any 1.0.
 
 ### M9 · Text DSL + parser + CLI + interoperability export
 - **Goal:** a text surface syntax, headless tooling, and standards export.
-- **Deliverables:** `@psyuml/grammar` (text DSL ⇄ model round-trip); Mermaid export; a CLI (`psyuml lint|render|convert|export`); import of the §H examples as DSL; **`@psyuml/interop`** — FHIR (Observation, QuestionnaireResponse, CarePlan, Goal, Patient/RelatedPerson) + SNOMED-tagged, **de-identified** research export (Source 3).
+- **Deliverables:** `@psyuml/grammar` (text DSL ⇄ model round-trip) ✅; a CLI — shipped as `psyuml lint|render|convert|redact` ✅ (an `export` subcommand arrives with interop, below); Mermaid export; import of the §H examples as DSL; **`@psyuml/interop`** (planned) — FHIR (Observation, QuestionnaireResponse, CarePlan, Goal, Patient/RelatedPerson) + SNOMED-tagged, **de-identified** research export (Source 3).
 - **Acceptance:** every `examples/*.psyuml` round-trips DSL→model→DSL losslessly; CLI lints the corpus in CI; a FHIR export validates against its resource schemas and re-imports without meaning loss; exports are de-identified by default.
 - **Spec refs:** §B/§C tables (authoritative notation); paper idea A8; Source 3 C6. **REQ:** REQ-TEXT-DSL, REQ-INTEROP-FHIR.
 

@@ -76,15 +76,19 @@ flowchart RL
     cli --> grammar
     cli --> privacy
     cli --> model
-    interop["packages/interop"] --> model
+    interop["packages/interop (PLANNED — not yet in repo)"] -.-> model
     model["packages/model (core)"]
 ```
+
+> **Planned, not present:** `packages/interop` (FHIR/research export, REQ-INTEROP-FHIR, M9)
+> is shown dashed because it is a *future* package — the directory does not exist yet. Every
+> other node above is real and on disk.
 
 **Reverse-dependency (blast radius) quick reference:**
 
 | If you change… | Re-check / re-test… |
 |---|---|
-| `packages/model` (core metamodel) | **everything** — validate, profiles, render, grammar, interop, ai, apps/web, conformance |
+| `packages/model` (core metamodel) | **everything** — validate, profiles, render, diff, grammar, privacy, ai, cli, apps/web, conformance |
 | `packages/validate` | profiles, apps/web, CI lint of `examples/` |
 | `packages/profiles` | render, apps/web, translation-table consumers |
 | `packages/render` | apps/web, golden-SVG snapshots |
@@ -92,8 +96,8 @@ flowchart RL
 | `packages/grammar` | CLI, round-trip tests (model only) |
 | `packages/privacy` | CLI `redact`, AI-assist (M8), interop export (model only) |
 | `packages/cli` | the `psyuml` binary (bundled); no in-repo importers |
-| `packages/interop` | FHIR/research export, CLI export (model only; de-identified by default) |
-| `packages/ai` | apps/web AI panel (isolated; safe to remove) |
+| `packages/interop` *(planned — not yet in repo)* | FHIR/research export; will be model-only + de-identified by default |
+| `packages/ai` | isolated guardrail lib; no in-repo importer yet (safe to remove) |
 | `docs/specification/psyuml-v0.1.0.md` | `traceability.json`, any REQ citing the changed section, dependent IMPACT docs |
 
 `model` is the highest-blast-radius module by design (everything depends on it and it

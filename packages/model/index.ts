@@ -37,7 +37,13 @@ export type EpistemicStatus = z.infer<typeof EpistemicStatus>;
 export const Tier = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 export type Tier = z.infer<typeof Tier>;
 
-/** The 8 core element categories that are node-like (spec §A.1). */
+/**
+ * The node-like element kinds. Of the 8 core ontology categories (spec §A.1: State,
+ * Agent/Part, Relation, Process/Transition, Intervention, Resource/Anchor, Context,
+ * Temporal Structure), two — Relation and Process/Transition — are connectors and live in
+ * `EdgeKind`; the rest are node-like here (with `self` as the distinguished Agent core),
+ * so this enum has 7 members, not 8.
+ */
 export const NodeKind = z.enum([
   'state',
   'agent',

@@ -11,34 +11,42 @@ letters, **94% contained no case formulation at all** (Abbas et al., *Academic
 Psychiatry* 2013). PsyUML aims to make a shareable, plain-language formulation
 something you can sketch in two minutes.
 
-> ⚠️ **Status: v0.1 draft specification + pre-code design.** PsyUML is **unvalidated**.
-> It is a design grounded in notation science and clinical source traditions, **not**
-> a tested clinical instrument. It **supports, never replaces, professional care.**
+> ⚠️ **Clinical status: unvalidated v0.x.** PsyUML is a design grounded in notation
+> science and clinical source traditions, **not** a tested clinical instrument. The
+> *software* is working, but leaving v0.x for a clinical 1.0 stays gated on real-world
+> evidence (layperson comprehension, inter-rater reliability, multi-school endorsement).
+> It **supports, never replaces, professional care**, and does not diagnose.
 > See the [Ethical-Use Statement](docs/specification/psyuml-v0.1.0.md) (§L.2).
 
-## What's in this repo (right now)
+## What's in this repo
 
-This repository holds the **specification, the implementation plan, an SDD harness**, and
-the **M0 scaffold** — an installable TypeScript monorepo (no editor UI yet; that lands in M2).
+The **language spec**, an **SDD harness**, and **working tooling** — a TypeScript monorepo
+implementing the editor, the libraries, a conformance suite, and a CLI (roadmap M1–M9).
 
 ```sh
 pnpm install
-pnpm run verify   # sdd:check + format:check + lint + typecheck + test + build
-pnpm run dev      # serve the empty-canvas editor shell
+pnpm run verify              # sdd:check + format:check + lint + typecheck + test + build
+pnpm run dev                 # run the web editor (apps/web)
+
+pnpm run build:cli           # bundle the CLI to dist/cli/psyuml.mjs
+node dist/cli/psyuml.mjs help        # lint | render | convert | redact
+node dist/cli/psyuml.mjs lint examples/*.psyuml
 ```
 
 | Document | What it is |
 |---|---|
-| [`docs/specification/psyuml-v0.1.0.md`](docs/specification/psyuml-v0.1.0.md) | **The language spec** (v0.1.0) — core ontology, notation, all 9 diagram types, ritual modality, cross-school compatibility, worked case, ethics. The source of truth. |
+| [`docs/specification/psyuml-v0.1.0.md`](docs/specification/psyuml-v0.1.0.md) | **The language spec** (v0.1.0) — core ontology, notation, the diagram types, ritual modality, cross-school compatibility, worked case, ethics. The source of truth. |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the tooling is built: the one-model/many-school-views design, metamodel, rendering pipeline, validation, tech stack, repo layout. |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | The milestone plan (M0–M10), GUI-editor-first, each step shippable and spec-traceable. |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | The milestone plan (M0–M10) and what's implemented vs. still planned. |
 | [`sdd/README.md`](sdd/README.md) | The Spec-Driven Development harness: traceability registry + per-directory `IMPACT.md` impact analysis, enforced by `sdd/check.mjs` in CI. |
 | [`docs/research/`](docs/research/) | Two companion research papers (saved verbatim) + [`idea-incorporation.md`](docs/research/idea-incorporation.md): which of their ideas were **adopted, adapted, or rejected** — and why. |
 
-Code lives in `packages/` (`@psyuml/model · validate · render · profiles`), `apps/web`
-(the editor shell), and `assets/` (color tokens + the 8 core glyphs).
+Code lives in `packages/` (`@psyuml/model · validate · render · profiles · diff · grammar ·
+privacy · ai · cli`), `apps/web` (the editor), `conformance/` (the executable spec suite),
+and `assets/` (color tokens + the 8 core glyphs). For the precise state of each requirement,
+see `sdd/traceability.json` (statuses) and the per-directory `IMPACT.md` files.
 
-## The product we're planning to build
+## What it does
 
 A **web-based, visual GUI editor** (TypeScript) where a clinician — and, in the
 client layer, a client — can build, render, and version PsyUML formulations:
@@ -58,7 +66,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the build sequence and
 
 ## Design commitments (non-negotiable)
 
-- **Formulation-level, not diagnosis.** PsyUML asserts nothing nosological (spec §A.3); the planned AI-assist is a bounded, human-in-the-loop *draft* aid — never an autonomous analyst or diagnoser.
+- **Formulation-level, not diagnosis.** PsyUML asserts nothing nosological (spec §A.3); the AI-assist is a bounded, human-in-the-loop *draft* aid — never an autonomous analyst or diagnoser. Its guardrails (consent → PII-minimization → safety-triage halt → low-confidence, never auto-applied) ship in `@psyuml/ai`; the narrative→suggestion model is a pluggable seam (default no-op, so no LLM runs unless one is plugged in).
 - **Honest ritual framing.** Ritual is a first-class modality framed per the evidence: it reliably affects *subjective* anxiety, control, and meaning, and does **not** reliably change *objective* disease markers. Every ritual template ships a secular variant. (spec §F, §L.2-r3.)
 - **Collaborative & consent-based.** Diagrams are co-drawn; the client retains authorship and the right to relabel.
 
