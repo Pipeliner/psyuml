@@ -202,9 +202,9 @@
       "spec": ["§E.2", "§E.4", "§K"],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M5",
-      "status": "planned",
-      "impl": ["packages/profiles/**"],
-      "notes": "Companion-paper profiles; each per §K extension rules. See idea-incorporation §2."
+      "status": "in-progress",
+      "impl": ["packages/render/**", "examples/**"],
+      "notes": "Companion-paper profiles; each per §K extension rules (idea-incorporation §2). M5: Schema Mode Map shipped (renderModeMap — circle size = dominance with redundant numeral, §D; Healthy-Adult growth target; vulnerable-child wound marker). CAT SDR / Malan two-triangles / Karpman nested still to come."
     },
     {
       "id": "REQ-VERSIONING-DIFF",

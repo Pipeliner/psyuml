@@ -1,0 +1,21 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "mode-map",
+  "meta": {
+    "title": "Schema modes",
+    "disclaimer": "This map supports, and does not replace, professional care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "nodes": [
+    { "id": "punitive", "kind": "agent", "stereotype": "critic", "tier": 3, "position": { "x": 200, "y": 70 }, "label": { "clinician": { "en": "Punitive Parent" } }, "properties": { "dominance": 0.6, "epistemicStatus": "inferred" } },
+    { "id": "vchild", "kind": "agent", "stereotype": "vulnerable-child", "tier": 3, "position": { "x": 200, "y": 230 }, "label": { "clinician": { "en": "Vulnerable Child" } }, "properties": { "dominance": 0.8, "epistemicStatus": "inferred" } },
+    { "id": "detached", "kind": "agent", "stereotype": "coping", "tier": 3, "position": { "x": 440, "y": 150 }, "label": { "clinician": { "en": "Detached Protector" } }, "properties": { "dominance": 0.7, "epistemicStatus": "reported" } },
+    { "id": "healthy", "kind": "self", "stereotype": "healthy-adult", "tier": 1, "position": { "x": 440, "y": 320 }, "label": { "clinician": { "en": "Healthy Adult" } }, "properties": { "dominance": 0.3, "epistemicStatus": "observed" } }
+  ],
+  "edges": [
+    { "id": "m1", "kind": "sequential", "source": "punitive", "target": "vchild", "label": { "clinician": { "en": "attacks" } }, "properties": {} },
+    { "id": "m2", "kind": "sequential", "source": "vchild", "target": "detached", "label": { "clinician": { "en": "activates" } }, "properties": {} },
+    { "id": "m3", "kind": "sequential", "source": "healthy", "target": "vchild", "label": { "clinician": { "en": "nurtures" } }, "properties": {} }
+  ]
+}

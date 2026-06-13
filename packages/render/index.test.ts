@@ -5,6 +5,7 @@ import {
   renderDecisionChart,
   renderInterventionSeq,
   renderLoopMap,
+  renderModeMap,
   renderPartsMap,
   renderRelationalField,
   renderResourceMap,
@@ -25,6 +26,7 @@ const timelineModel = parseModel(read('timeline.psyuml'));
 const seqModel = parseModel(read('intervention-sequence.psyuml'));
 const ritualModel = parseModel(read('ritual.psyuml'));
 const relModel = parseModel(read('relational-field.psyuml'));
+const modeModel = parseModel(read('mode-map.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -217,5 +219,21 @@ describe('renderRelationalField', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('relational-field.svg', renderRelationalField(relModel).svg);
+  });
+});
+
+describe('renderModeMap', () => {
+  it('sizes modes by dominance (redundant numeral) and marks the Healthy Adult', () => {
+    const { svg, altText } = renderModeMap(modeModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Vulnerable Child');
+    expect(svg).toContain('↑ grow');
+    expect(svg).toContain('dom 0.80');
+    expect(altText).toContain('Schema mode map');
+    expect(altText).toContain('grow the Healthy Adult');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('mode-map.svg', renderModeMap(modeModel).svg);
   });
 });

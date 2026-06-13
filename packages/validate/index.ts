@@ -31,6 +31,7 @@ export interface ValidateOptions {
 const CLIENT_FACING = new Set([
   'state-map',
   'parts-map',
+  'mode-map',
   'relational-field',
   'decision-nav',
   'resource-anchor',
@@ -40,7 +41,7 @@ const CLIENT_FACING = new Set([
 ]);
 // Path-of-hope applies to maintaining-cycle diagrams (spec §A.2-r5). Timelines are
 // trajectories whose preferred-future column is the structural hope, so they are excluded.
-const CYCLE_DIAGRAMS = new Set(['state-map', 'parts-map', 'process-loop']);
+const CYCLE_DIAGRAMS = new Set(['state-map', 'parts-map', 'process-loop', 'mode-map']);
 
 export function validate(model: PsyumlModel, options: ValidateOptions = {}): ValidationResult {
   const layer = options.layer ?? 'clinician';

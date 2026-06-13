@@ -1174,3 +1174,130 @@ export function renderRelationalField(
 
   return { svg, altText };
 }
+
+const MODE_MIN_R = 18;
+const MODE_MAX_EXTRA = 28;
+
+/** Render a Schema Mode Map (§K): discrete mode circles sized by `dominance` (with a
+ * redundant printed value, §D); the Healthy Adult is the growth target (double ring + ↑). */
+export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+  const nodes = model.nodes;
+
+  const pos = new Map<string, { x: number; y: number }>();
+  nodes.forEach((n, i) => {
+    pos.set(n.id, n.position ? { x: n.position.x, y: n.position.y } : { x: 120 + i * 150, y: 160 });
+  });
+  let maxX = 0;
+  let maxY = 0;
+  for (const p of pos.values()) {
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  const width = Math.max(560, maxX + 120);
+  const height = Math.max(300, maxY + 80) + 40;
+
+  const radius = (n: MNode): number =>
+    MODE_MIN_R + (n.properties.dominance ?? 0.4) * MODE_MAX_EXTRA;
+  const nodeName = (id: string): string => {
+    const n = nodes.find((x) => x.id === id);
+    return n ? getText(n.label, layer, lang) : id;
+  };
+
+  const parts: string[] = [];
+
+  // Mode-trigger edges (under the nodes)
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const sNode = nodes.find((x) => x.id === e.source);
+    const tNode = nodes.find((x) => x.id === e.target);
+    const rs = sNode ? radius(sNode) : 20;
+    const rt = tNode ? radius(tNode) : 20;
+    const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
+    const ux = (t.x - s.x) / len;
+    const uy = (t.y - s.y) / len;
+    const x1 = r1(s.x + ux * rs);
+    const y1 = r1(s.y + uy * rs);
+    const x2 = r1(t.x - ux * rt);
+    const y2 = r1(t.y - uy * rt);
+    parts.push(
+      `<path d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
+    );
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      parts.push(
+        `<text x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9">${esc(lbl)}</text>`,
+      );
+    }
+  }
+
+  // Mode circles (size = dominance, with a redundant numeral)
+  for (const n of nodes) {
+    const p = pos.get(n.id);
+    if (!p) continue;
+    const r = radius(n);
+    const isHealthy = n.kind === 'self' || n.stereotype === 'healthy-adult';
+    parts.push(
+      `<circle cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#fff" stroke="#000" stroke-width="2" />`,
+    );
+    if (isHealthy) {
+      parts.push(
+        `<circle cx="${p.x}" cy="${p.y}" r="${r1(r - 4)}" fill="none" stroke="#000" stroke-width="2" />`,
+        `<text x="${p.x}" y="${r1(p.y - r - 6)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700">↑ grow</text>`,
+      );
+    }
+    const st = n.stereotype ?? '';
+    if (st.includes('child') || st.includes('vulnerable')) {
+      const ty = p.y - r - 4;
+      parts.push(
+        `<polygon points="${p.x},${r1(ty - 9)} ${p.x + 8},${r1(ty + 3)} ${p.x - 8},${r1(ty + 3)}" fill="#fff" stroke="#000" stroke-width="1.5" />`,
+      );
+    }
+    parts.push(
+      `<text x="${p.x}" y="${r1(p.y + 3)}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(n.label, layer, lang))}</text>`,
+    );
+    const dom = n.properties.dominance;
+    if (dom !== undefined) {
+      parts.push(
+        `<text x="${p.x}" y="${r1(p.y + r + 12)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555">dom ${dom.toFixed(2)}</text>`,
+      );
+    }
+  }
+
+  const ly = height - 24;
+  parts.push(
+    `<text x="12" y="${ly}" font-family="sans-serif" font-size="10">Circle size = mode dominance (number shown). Goal: grow the Healthy Adult, shrink maladaptive modes.</text>`,
+  );
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="12" y="${ly + 14}" font-family="sans-serif" font-size="9" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+  }
+
+  const altText =
+    `Schema mode map${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Modes by dominance: ${nodes.map((n) => `${getText(n.label, layer, lang)} ${(n.properties.dominance ?? 0).toFixed(2)}`).join(', ')}. ` +
+    `Triggers: ${model.edges.map((e) => `${nodeName(e.source)}${e.label ? ` (${getText(e.label, layer, lang)})` : ''} -> ${nodeName(e.target)}`).join('; ') || 'none'}. ` +
+    `Goal: grow the Healthy Adult.`;
+
+  const titleText = model.meta.title
+    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+  const defs =
+    '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Schema mode map')}</title><desc>${esc(altText)}</desc>` +
+    defs +
+    `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

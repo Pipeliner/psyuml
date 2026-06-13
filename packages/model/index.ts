@@ -136,6 +136,7 @@ export const DiagramType = z.enum([
   'decision-nav',
   'resource-anchor',
   'body-map',
+  'mode-map',
 ]);
 export type DiagramType = z.infer<typeof DiagramType>;
 

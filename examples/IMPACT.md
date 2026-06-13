@@ -24,7 +24,7 @@ Files are **covered in bulk** by the `sdd:cover` directive above (they don't eac
 - `*.svg` — **generated** golden renders (produced by `packages/render/index.test.ts`; never
   hand-edited). Byte-compared in CI.
 
-| Diagram types present | state-map · parts-map · relational-field · process-loop · timeline · intervention-sequence · ritual · decision-nav · resource-anchor |
+| Diagram types present | state-map · parts-map · mode-map · relational-field · process-loop · timeline · intervention-sequence · ritual · decision-nav · resource-anchor |
 |---|---|
 
 ## Change checklist
