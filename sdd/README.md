@@ -35,6 +35,18 @@ PsyUML spec (§A–§L)  ──►  Requirement (REQ-…)  ──►  Milestone 
 build/vendor dirs (`node_modules`, `dist`, …). The checker requires an `IMPACT.md`
 in each tracked directory and that **every file is mentioned** in it.
 
+**Bulk coverage for generated/fixture files.** A directory whose files are generated or
+are many similar fixtures can declare glob coverage instead of a row per file:
+
+```
+<!-- sdd:cover: *.svg, *.psyuml -->
+```
+
+Any file matching a covered glob counts as documented (e.g. `examples/` covers its
+`*.psyuml` fixtures + generated `*.svg` goldens). Use this only for generated artifacts or
+homogeneous fixtures — **source files should still be enumerated** so their blast radius is
+captured. Globs support `*.ext` (suffix), `prefix*` (prefix), and exact names.
+
 ## System-level impact map (module dependency DAG)
 
 From `../docs/ARCHITECTURE.md` §10. An arrow `A ──► B` means **A depends on B**, so a

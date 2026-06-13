@@ -51,6 +51,30 @@ function extractMentions(text) {
   return set;
 }
 
+function extractCovers(text) {
+  // `<!-- sdd:cover: *.svg, *.psyuml -->` declares globs whose matching files count
+  // as documented in bulk — for generated artifacts / fixtures that don't each need
+  // a per-file row. Source files should still be enumerated.
+  const covers = [];
+  const re = /<!--\s*sdd:cover:\s*([^>]+?)\s*-->/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    for (const g of m[1].split(',')) {
+      const t = g.trim();
+      if (t) covers.push(t);
+    }
+  }
+  return covers;
+}
+
+function matchesCover(file, covers) {
+  return covers.some((g) => {
+    if (g.startsWith('*.')) return file.endsWith(g.slice(1));
+    if (g.endsWith('*')) return file.startsWith(g.slice(0, -1));
+    return g === file;
+  });
+}
+
 function walk(absDir, relDir) {
   dirCount++;
   const impactAbs = path.join(absDir, IMPACT);
@@ -58,7 +82,9 @@ function walk(absDir, relDir) {
   if (!hasImpact) {
     errors.push(`missing ${IMPACT} in directory: ${rel(relDir)}/`);
   }
-  const mentions = hasImpact ? extractMentions(readFileSync(impactAbs, 'utf8')) : new Set();
+  const impactText = hasImpact ? readFileSync(impactAbs, 'utf8') : '';
+  const mentions = extractMentions(impactText);
+  const covers = extractCovers(impactText);
 
   const files = [];
   const subdirs = [];
@@ -72,7 +98,7 @@ function walk(absDir, relDir) {
 
   for (const f of files) {
     fileCount++;
-    if (!(mentions.has(f) || mentions.has(path.basename(f)))) {
+    if (!(mentions.has(f) || mentions.has(path.basename(f)) || matchesCover(f, covers))) {
       errors.push(`undocumented file (not mentioned in ${rel(relDir)}/${IMPACT}): ${rel(relDir)}/${f}`);
     }
   }

@@ -18,6 +18,10 @@
 |---|---|---|---|---|---|
 | `<file>` | … | … | … | §… / REQ-… | low / med / high |
 
+<!-- Optional: bulk-cover generated artifacts / homogeneous fixtures instead of per-file rows.
+     Source files should still be enumerated above. Example:
+     sdd:cover: *.svg, *.psyuml -->
+
 ## Change checklist
 - [ ] Updated every downstream dependent listed above.
 - [ ] Updated `sdd/traceability.json` if impl/test paths or status changed.
