@@ -326,9 +326,10 @@
       "spec": ["§L.2"],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M8",
-      "status": "planned",
-      "impl": ["packages/interop/**", "apps/web/**"],
-      "notes": "Source 3 C10 (HIPAA/GDPR-informed). Local-first; no PHI leaves device without role-specific consent; conservative human-supervised-formulation posture, not live-care CDS."
+      "status": "in-progress",
+      "impl": ["packages/privacy/**", "packages/cli/**"],
+      "tests": ["packages/privacy/**/*.test.ts", "packages/cli/**/*.test.ts"],
+      "notes": "Source 3 C10 (HIPAA/GDPR-informed). Local-first; no PHI leaves device without role-specific consent; conservative human-supervised-formulation posture, not live-care CDS. M8: @psyuml/privacy ships deidentify(model,{terms}) — scrubs node/edge/band/trigger labels + title (emails, links, phone-like runs, caller-supplied name terms) and reports each redaction, while preserving the public-safe disclaimer + crisis line; never mutates input. Exposed as `psyuml redact` (writes de-identified JSON, prints the count to stderr). This is the PII-minimization step for AI-assist (M8) and the basis for a de-identified interop export (M9). Still to come: role-scoped export + an audit log, and consent gating in the AI pipeline."
     },
     {
       "id": "REQ-INTEROP-FHIR",

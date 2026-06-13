@@ -67,9 +67,11 @@ flowchart RL
     validate["packages/validate"] --> model
     diff["packages/diff"] --> model
     grammar["packages/grammar"] --> model
+    privacy["packages/privacy"] --> model
     cli["packages/cli"] --> validate
     cli --> render
     cli --> grammar
+    cli --> privacy
     cli --> model
     interop["packages/interop"] --> model
     ai["packages/ai"] --> model
@@ -86,6 +88,7 @@ flowchart RL
 | `packages/render` | apps/web, golden-SVG snapshots |
 | `packages/diff` | apps/web Compare panel (model only; pure) |
 | `packages/grammar` | CLI, round-trip tests (model only) |
+| `packages/privacy` | CLI `redact`, AI-assist (M8), interop export (model only) |
 | `packages/cli` | the `psyuml` binary (bundled); no in-repo importers |
 | `packages/interop` | FHIR/research export, CLI export (model only; de-identified by default) |
 | `packages/ai` | apps/web AI panel (isolated; safe to remove) |

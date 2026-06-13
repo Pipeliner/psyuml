@@ -78,6 +78,22 @@ describe('psyuml cli', () => {
     expect(io.stdout.join('\n')).toContain('"diagram": "state-map"');
   });
 
+  it('redact de-identifies labels and reports the count on stderr', () => {
+    const io = fakeIO({
+      'pii.psyuml': JSON.stringify({
+        version: '0.1.0',
+        diagram: 'state-map',
+        meta: { disclaimer: 'x' },
+        nodes: [{ id: 'a', kind: 'state', label: { clinician: { en: 'email jo@x.io' } } }],
+      }),
+    });
+    const code = run(['redact', 'pii.psyuml', '--term', 'Jo'], io);
+    expect(code).toBe(0);
+    expect(io.stdout.join('\n')).toContain('[email]');
+    expect(io.stdout.join('\n')).not.toContain('jo@x.io');
+    expect(io.stderr.join('\n')).toContain('redacted');
+  });
+
   it('help and version succeed; unknown command and no-files fail', () => {
     const help = fakeIO();
     expect(run(['help'], help)).toBe(0);

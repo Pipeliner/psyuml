@@ -95,6 +95,9 @@ importers:
       '@psyuml/model':
         specifier: workspace:*
         version: link:../model
+      '@psyuml/privacy':
+        specifier: workspace:*
+        version: link:../privacy
       '@psyuml/render':
         specifier: workspace:*
         version: link:../render
@@ -119,6 +122,12 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.25.76
+
+  packages/privacy:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../model
 
   packages/profiles: {}
 

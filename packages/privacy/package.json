@@ -1,0 +1,14 @@
+{
+  "name": "@psyuml/privacy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@psyuml/model": "workspace:*"
+  }
+}

@@ -7,7 +7,7 @@ script. Lets validation gate CI / pre-commit the same way the editor gates expor
 **Spec anchor / REQ:** REQ-TEXT-DSL (CLI), REQ-WELLFORMEDNESS, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE, REQ-ACCESSIBILITY
 
 ## Upstream (this depends on)
-- `@psyuml/model` (parse/serialize), `@psyuml/validate` (lint), `@psyuml/render` (render), `@psyuml/grammar` (DSL convert).
+- `@psyuml/model` (parse/serialize), `@psyuml/validate` (lint), `@psyuml/render` (render), `@psyuml/grammar` (DSL convert), `@psyuml/privacy` (redact).
 - `../../scripts/build-cli.mjs` bundles `bin.ts` (esbuild, already in the toolchain) → `dist/cli/psyuml.mjs`.
 
 ## Downstream (depends on this) — blast radius
@@ -18,7 +18,7 @@ script. Lets validation gate CI / pre-commit the same way the editor gates expor
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Workspace manifest (`@psyuml/cli`) | — | workspace resolution | — | low |
-| `index.ts` | `run(argv, io)` — `lint` (validate, exit≠0 on error), `render` (→SVG), `convert` (JSON⇄DSL); auto-detects JSON vs DSL input | model, validate, render, grammar | bin.ts, tests | §J, §B/§C / REQ-TEXT-DSL | low |
+| `index.ts` | `run(argv, io)` — `lint` (validate, exit≠0 on error), `render` (→SVG), `convert` (JSON⇄DSL), `redact` (de-identify); auto-detects JSON vs DSL input | model, validate, render, grammar, privacy | bin.ts, tests | §J, §B/§C / REQ-TEXT-DSL, REQ-PRIVACY | low |
 | `bin.ts` | Node wiring (fs + process streams) → `run`; bundled to `dist/cli/psyuml.mjs` | `index.ts`, `node:fs` | the built binary | — | low |
 | `index.test.ts` | Unit tests over `run` with a fake IO (clean/error lint, render, convert both ways, help/version) | `index.ts`, `examples/*.psyuml` | CI `test` | REQ-TEXT-DSL | low |
 

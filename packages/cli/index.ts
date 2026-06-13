@@ -16,6 +16,7 @@
 import { parseModel, PSYUML_MODEL_VERSION, serializeModel, type PsyumlModel } from '@psyuml/model';
 import { validate } from '@psyuml/validate';
 import { fromDSL, toDSL } from '@psyuml/grammar';
+import { deidentify } from '@psyuml/privacy';
 import {
   renderBodyMap,
   renderDecisionChart,
@@ -65,6 +66,7 @@ usage:
   psyuml lint <files...> [--layer clinician|client]
   psyuml render <file> [--layer clinician|client] [--color] [-o out.svg]
   psyuml convert <file> [-o out]      # JSON .psyuml <-> text DSL (auto-detected)
+  psyuml redact <file> [--term NAME ...] [-o out]   # de-identify before export
   psyuml help | version
 
 Input is auto-detected: a leading "{" is parsed as JSON; otherwise as the text DSL.
@@ -83,6 +85,7 @@ interface Args {
   layer: Layer;
   out?: string;
   color: boolean;
+  terms: string[];
 }
 
 function parseArgs(args: string[]): Args {
@@ -90,15 +93,17 @@ function parseArgs(args: string[]): Args {
   let layer: Layer = 'clinician';
   let out: string | undefined;
   let color = false;
+  const terms: string[] = [];
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
     if (a === '--layer') layer = args[(i += 1)] === 'client' ? 'client' : 'clinician';
     else if (a === '-o' || a === '--out') out = args[(i += 1)];
+    else if (a === '--term') terms.push(args[(i += 1)] ?? '');
     else if (a === '--color') color = true;
     else if (a === '--mono' || a === '--monochrome') color = false;
     else if (!a.startsWith('-')) files.push(a);
   }
-  return { files, layer, out, color };
+  return { files, layer, out, color, terms };
 }
 
 function cmdLint(args: string[], io: CliIO): number {
@@ -180,6 +185,31 @@ function cmdConvert(args: string[], io: CliIO): number {
   return 0;
 }
 
+function cmdRedact(args: string[], io: CliIO): number {
+  const { files, out, terms } = parseArgs(args);
+  if (files.length !== 1) {
+    io.err('usage: psyuml redact <file> [--term NAME ...] [-o out]');
+    return 2;
+  }
+  let model: PsyumlModel;
+  try {
+    model = loadModel(io, files[0]);
+  } catch (e) {
+    io.err(`${files[0]}: ${msg(e)}`);
+    return 1;
+  }
+  const { model: clean, redactions } = deidentify(model, { terms });
+  const json = serializeModel(clean);
+  if (out) {
+    io.writeFile(out, json);
+    io.out(`wrote ${out}`);
+  } else {
+    io.out(json);
+  }
+  io.err(`redacted ${redactions.length} item(s)`);
+  return 0;
+}
+
 /** Dispatch a `psyuml` invocation. Returns the process exit code. */
 export function run(argv: string[], io: CliIO): number {
   const [cmd, ...rest] = argv;
@@ -190,6 +220,8 @@ export function run(argv: string[], io: CliIO): number {
       return cmdRender(rest, io);
     case 'convert':
       return cmdConvert(rest, io);
+    case 'redact':
+      return cmdRedact(rest, io);
     case 'version':
     case '--version':
     case '-v':
