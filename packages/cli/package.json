@@ -1,0 +1,17 @@
+{
+  "name": "@psyuml/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@psyuml/grammar": "workspace:*",
+    "@psyuml/model": "workspace:*",
+    "@psyuml/render": "workspace:*",
+    "@psyuml/validate": "workspace:*"
+  }
+}

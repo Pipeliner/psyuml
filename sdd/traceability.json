@@ -265,9 +265,9 @@
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M9",
       "status": "in-progress",
-      "impl": ["packages/grammar/**", "apps/web/**"],
-      "tests": ["packages/grammar/**/*.test.ts"],
-      "notes": "M9: @psyuml/grammar ships toDSL()/fromDSL() — a line-oriented text surface (diagram/lang/title/disclaimer/crisis/ritual/flag headers; band/node/edge statements; double-quoted free text with \\\" + \\\\ escapes; omit-on-default + a labeljson escape for multi-language labels). Lossless round-trip is proven over the whole corpus (fromDSL(toDSL(parseModel(x))) deep-equals parseModel(x)) since both sides are parseModel-normalized. Still to come: the runnable `psyuml lint|render|convert|export` CLI (needs a build/run story for the TS workspace packages) and non-programmer-friendly parse error messages (alt-plan cross-check, idea-incorporation §7)."
+      "impl": ["packages/grammar/**", "packages/cli/**", "apps/web/**", "scripts/build-cli.mjs"],
+      "tests": ["packages/grammar/**/*.test.ts", "packages/cli/**/*.test.ts"],
+      "notes": "M9: @psyuml/grammar ships toDSL()/fromDSL() — a line-oriented text surface (diagram/lang/title/disclaimer/crisis/ritual/flag headers; band/node/edge statements; double-quoted free text with \\\" + \\\\ escapes; omit-on-default + a labeljson escape for multi-language labels). Lossless round-trip is proven over the whole corpus (fromDSL(toDSL(parseModel(x))) deep-equals parseModel(x)) since both sides are parseModel-normalized; the editor has a Text (DSL) view/edit panel. @psyuml/cli ships `psyuml lint|render|convert` as a pure run(argv,io) (unit-tested with a fake IO) bundled to a runnable dist/cli/psyuml.mjs by scripts/build-cli.mjs (esbuild, already in the toolchain): lint validates JSON-or-DSL input (auto-detected) and exits non-zero on any error-severity issue — a CI/pre-commit gate mirroring the editor's export gate. Still to come: a FHIR/SNOMED `export` subcommand (REQ-INTEROP-FHIR) and non-programmer-friendly parse error messages (idea-incorporation §7)."
     },
     {
       "id": "REQ-CONFORMANCE",

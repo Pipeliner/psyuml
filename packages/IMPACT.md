@@ -13,7 +13,7 @@
 > the dependency DAG in `sdd/README.md`. `model` is the highest-fan-in module.
 
 ## Subdirectories
-- `model/` · `validate/` · `render/` · `profiles/` · `diff/` · `grammar/` — each has its own `IMPACT.md`.
+- `model/` · `validate/` · `render/` · `profiles/` · `diff/` · `grammar/` · `cli/` — each has its own `IMPACT.md`.
   (`interop/`, `ai/` are planned for later milestones — see `docs/ROADMAP.md`.)
 
 ## Files

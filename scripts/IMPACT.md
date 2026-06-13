@@ -1,0 +1,21 @@
+# Impact — `scripts/`
+
+**Purpose:** repo build/automation scripts that aren't part of the published packages.
+**Status:** active
+**Spec anchor / REQ:** project-wide (tooling)
+
+## Upstream (this depends on)
+- `esbuild` (present in the toolchain via Vite) and the `@psyuml/cli` source it bundles.
+
+## Downstream (depends on this) — blast radius
+> **Blast radius: low.** Dev/CI tooling only; produces gitignored artifacts under `dist/`.
+> Not imported by any package; not part of `pnpm run verify`.
+
+## Files
+| File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
+|---|---|---|---|---|---|
+| `build-cli.mjs` | Bundle `packages/cli/bin.ts` → `dist/cli/psyuml.mjs` (a runnable Node script) via esbuild | `@psyuml/cli`, esbuild | `pnpm build:cli` | REQ-TEXT-DSL | low |
+
+## Change checklist
+- [ ] Keep build scripts out of `verify` (CLI logic is covered by `packages/cli` unit tests).
+- [ ] Ran `node sdd/check.mjs` (green).
