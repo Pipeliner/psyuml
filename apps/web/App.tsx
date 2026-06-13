@@ -6,6 +6,7 @@ import {
   renderResourceMap,
   renderStateMap,
 } from '@psyuml/render';
+import { validate } from '@psyuml/validate';
 import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
 import decisionRaw from '../../examples/decision-nav.psyuml?raw';
@@ -47,6 +48,9 @@ export function App() {
 
   const canAdd = model.diagram === 'state-map' || model.diagram === 'parts-map';
   const addLabel = model.diagram === 'parts-map' ? 'Add part' : 'Add state';
+
+  const report = useMemo(() => validate(model, { layer }), [model, layer]);
+  const exportBlocked = !report.ok;
 
   return (
     <main
@@ -118,6 +122,7 @@ export function App() {
         </button>
         <button
           type="button"
+          disabled={exportBlocked}
           onClick={() =>
             downloadText(`${model.diagram}.psyuml`, serializeModel(model), 'application/json')
           }
@@ -126,11 +131,47 @@ export function App() {
         </button>
         <button
           type="button"
+          disabled={exportBlocked}
           onClick={() => downloadText(`${model.diagram}.svg`, svg, 'image/svg+xml')}
         >
           Export SVG
         </button>
       </div>
+
+      <section
+        aria-label="Formulation health"
+        style={{
+          border: '1px solid #ddd',
+          borderLeft: `4px solid ${report.ok ? '#009e73' : '#d55e00'}`,
+          borderRadius: 8,
+          padding: '8px 12px',
+          marginBottom: 12,
+          fontSize: 14,
+        }}
+      >
+        <strong>Formulation health:</strong>{' '}
+        {report.issues.length === 0 ? (
+          <span>✓ no issues</span>
+        ) : (
+          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+            {report.issues.map((iss, i) => (
+              <li key={`${iss.rule}-${i}`}>
+                <strong>
+                  {iss.severity === 'error'
+                    ? '✖ ERROR'
+                    : iss.severity === 'warn'
+                      ? '⚠ WARNING'
+                      : 'ℹ INFO'}
+                </strong>{' '}
+                {iss.message}
+              </li>
+            ))}
+          </ul>
+        )}
+        {exportBlocked && (
+          <p style={{ margin: '6px 0 0', color: '#555' }}>Fix the errors above to export.</p>
+        )}
+      </section>
 
       <section
         aria-label={`${model.diagram} diagram`}

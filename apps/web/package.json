@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@psyuml/model": "workspace:*",
-    "@psyuml/render": "workspace:*"
+    "@psyuml/render": "workspace:*",
+    "@psyuml/validate": "workspace:*"
   }
 }

@@ -17,7 +17,7 @@ a model. (M0: skeleton; M3: the four rule classes.)
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/validate`) | — | workspace resolution | — | low |
-| `index.ts` | Validator API (M0: `validate`, `ValidationResult`) | `@psyuml/model` | profiles, apps/web | §A.2, §D, §L.2 | medium |
+| `index.ts` | `validate(model,{layer})` — well-formedness + path-of-hope + crisis no-dead-ends/resources + client disclaimer gate | `@psyuml/model` | apps/web | §A.2, §L.2 / REQ-WELLFORMEDNESS, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE | medium |
 | `index.test.ts` | Unit tests | `index.ts` | CI `test` | — | low |
 
 ## Change checklist

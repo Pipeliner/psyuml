@@ -62,6 +62,9 @@ importers:
       '@psyuml/render':
         specifier: workspace:*
         version: link:../../packages/render
+      '@psyuml/validate':
+        specifier: workspace:*
+        version: link:../../packages/validate
 
   packages/model:
     dependencies:
@@ -77,7 +80,11 @@ importers:
         specifier: workspace:*
         version: link:../model
 
-  packages/validate: {}
+  packages/validate:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../model
 
 packages:
 

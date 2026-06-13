@@ -142,9 +142,9 @@
       "spec": ["§A.2", "§L.2"],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M3",
-      "status": "planned",
-      "impl": ["packages/validate/**"],
-      "notes": "Generalizes §A.2-r5 to every diagram; hard-block in the client layer. Companion-paper idea A4."
+      "status": "in-progress",
+      "impl": ["packages/validate/**", "apps/web/**"],
+      "notes": "Generalizes §A.2-r5 to every diagram; hard-block in the client layer. Companion-paper idea A4. M3: implemented in @psyuml/validate (warn for clinician, error for client) + surfaced in the editor's formulation-health panel, gating export."
     },
     {
       "id": "REQ-ETHICS-GUARDRAILS",
@@ -152,8 +152,9 @@
       "spec": ["§L.2", "§A.2"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M3",
-      "status": "planned",
-      "impl": ["packages/validate/**", "apps/web/**"]
+      "status": "in-progress",
+      "impl": ["packages/validate/**", "apps/web/**"],
+      "notes": "M3: client-facing diagrams require a standing disclaimer (error if missing); the editor gates export on a clean validation report. Standing non-diagnosis disclaimer shown in the editor."
     },
     {
       "id": "REQ-CROSS-SCHOOL",
@@ -289,9 +290,9 @@
       "spec": ["§L.2", "§F", "§A.3"],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M3",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/validate/**"],
-      "notes": "Source 3 C3. Acute-risk/psychosis -> block autonomous formulation + human-review banner; risky-ritual materials -> documentation-only; typed-edge requirement; mixed-school provenance; PII redact-by-default. Gates the AI-assist pipeline."
+      "notes": "Source 3 C3. Acute-risk/psychosis -> block autonomous formulation + human-review banner; risky-ritual materials -> documentation-only; typed-edge requirement; mixed-school provenance; PII redact-by-default. Gates the AI-assist pipeline. M3: crisis no-dead-ends + crisis-resources lint shipped; acute-risk/psychosis triage + ritual/PII gates land with AI-assist (M8)."
     },
     {
       "id": "REQ-BODY-MAP",
