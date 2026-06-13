@@ -8,6 +8,7 @@
  * Traceability: REQ-NOTATION, REQ-ACCESSIBILITY, REQ-EPISTEMIC-STATUS.
  */
 import { getText, type PsyumlModel } from '@psyuml/model';
+import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
 
 type MBand = PsyumlModel['bands'][number];
 type MNode = PsyumlModel['nodes'][number];
@@ -1356,6 +1357,121 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     `<title>${esc(model.meta.title ?? 'Body map')}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${BODY_W}" height="${BODY_H}" fill="#fff" />` +
     titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
+
+const DIFF_W = 600;
+const DIFF_ROW_H = 24;
+
+interface DiffRow {
+  glyph: string;
+  text: string;
+  strike?: boolean;
+  /** Draw the spec's signature dashed→solid swatch (forming/liminal → consolidated). */
+  solidified?: boolean;
+}
+
+/**
+ * Render a longitudinal diff (M6) as an accessible "progress card": a monochrome,
+ * print-safe list of what changed between two versions — dominance ↑/↓, the
+ * dashed→solid (forming/liminal → consolidated) marker drawn as a swatch, rename, and
+ * add/remove. Meaning never rides on colour (§D): a leading glyph (＋ added, − removed,
+ * ↑/↓ dominance/valence, ✎ rename, ◧ consolidation) + a dashed/solid swatch + the full
+ * text carry it. Exportable alongside the diagram it summarizes.
+ *
+ * Traceability: REQ-VERSIONING-DIFF (§E.5, §H.10), REQ-ACCESSIBILITY (§D).
+ */
+export function renderDiff(
+  before: PsyumlModel,
+  after: PsyumlModel,
+  options: { layer?: Layer } = {},
+): RenderResult {
+  const layer = options.layer ?? 'clinician';
+  const diff: ModelDiff = diffModels(before, after, { layer });
+
+  const rows: DiffRow[] = [];
+  for (const n of diff.nodes.added)
+    rows.push({ glyph: '＋', text: `${n.kind} “${getText(n.label, layer)}”` });
+  for (const c of diff.nodes.changed) {
+    for (const d of c.deltas) {
+      if (d.field === 'dominance' || d.field === 'valence') {
+        rows.push({
+          glyph: d.direction === 'down' ? '↓' : '↑',
+          text: `${c.label}: ${d.field} ${d.before} → ${d.after}`,
+        });
+      } else if (d.field === 'consolidation') {
+        rows.push({
+          glyph: '◧',
+          text: `${c.label}: ${d.before} → ${d.after}`,
+          solidified: d.after === 'consolidated',
+        });
+      } else if (d.field === 'label') {
+        rows.push({ glyph: '✎', text: `Renamed “${d.before}” → “${d.after}”` });
+      } else {
+        rows.push({ glyph: 'Δ', text: `${c.label}: ${d.field} ${d.before} → ${d.after}` });
+      }
+    }
+  }
+  for (const c of diff.edges.changed)
+    for (const d of c.deltas)
+      rows.push({ glyph: 'Δ', text: `link ${c.id}: ${d.field} ${d.before} → ${d.after}` });
+  for (const e of diff.edges.added) rows.push({ glyph: '＋', text: `${e.kind} link` });
+  for (const n of diff.nodes.removed)
+    rows.push({ glyph: '−', text: `${n.kind} “${getText(n.label, layer)}”`, strike: true });
+  for (const e of diff.edges.removed)
+    rows.push({ glyph: '−', text: `${e.kind} link`, strike: true });
+
+  const titleText = `Progress${after.meta.title ? `: ${after.meta.title}` : ''}`;
+  const altText =
+    `${titleText}. ` +
+    (rows.length === 0 ? 'No tracked changes.' : `${rows.map((r) => r.text).join('; ')}.`);
+
+  const parts: string[] = [
+    `<text x="16" y="24" font-family="sans-serif" font-size="16" font-weight="700">${esc(titleText)}</text>`,
+  ];
+  let y = 52;
+  if (rows.length === 0) {
+    parts.push(
+      `<text x="16" y="${y}" font-family="sans-serif" font-size="13">No tracked changes.</text>`,
+    );
+    y += DIFF_ROW_H;
+  } else {
+    for (const r of rows) {
+      parts.push(
+        `<text x="16" y="${y}" font-family="sans-serif" font-size="14" font-weight="700">${esc(r.glyph)}</text>`,
+      );
+      let tx = 40;
+      if (r.solidified) {
+        parts.push(
+          `<rect x="${tx}" y="${y - 11}" width="13" height="13" fill="#fff" stroke="#000" stroke-width="1.5" stroke-dasharray="3 2" />`,
+          `<text x="${tx + 16}" y="${y}" font-family="sans-serif" font-size="12">→</text>`,
+          `<rect x="${tx + 28}" y="${y - 11}" width="13" height="13" fill="#fff" stroke="#000" stroke-width="2.5" />`,
+        );
+        tx += 48;
+      }
+      const deco = r.strike ? ' text-decoration="line-through"' : '';
+      const fill = r.strike ? ' fill="#555"' : '';
+      parts.push(
+        `<text x="${tx}" y="${y}" font-family="sans-serif" font-size="13"${deco}${fill}>${esc(r.text)}</text>`,
+      );
+      y += DIFF_ROW_H;
+    }
+  }
+  if (after.meta.disclaimer) {
+    parts.push(
+      `<text x="16" y="${y + 4}" font-family="sans-serif" font-size="10" fill="#333">${esc(after.meta.disclaimer)}</text>`,
+    );
+    y += 18;
+  }
+  const height = y + 12;
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${DIFF_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(titleText)}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${DIFF_W}" height="${height}" fill="#fff" />` +
     parts.join('') +
     '</svg>';
 

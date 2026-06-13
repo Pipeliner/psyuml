@@ -9,6 +9,7 @@
     ".": "./index.ts"
   },
   "dependencies": {
+    "@psyuml/diff": "workspace:*",
     "@psyuml/model": "workspace:*"
   }
 }

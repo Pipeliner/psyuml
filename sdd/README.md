@@ -60,6 +60,7 @@ flowchart RL
     web --> diff
     web --> model
     render["packages/render"] --> profiles
+    render --> diff
     render --> model
     profiles["packages/profiles"] --> validate
     profiles --> model

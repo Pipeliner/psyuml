@@ -1,12 +1,12 @@
 # Impact — `packages/render/` (`@psyuml/render`)
 
 **Purpose:** turn a model (under a profile) into SVG, with layers, monochrome, legend, and
-alt-text. (M0: placeholder; M1: the real pipeline.)
-**Status:** active (M0 skeleton)
+alt-text — plus a longitudinal diff "progress card".
+**Status:** active (M1–M6 — 11 diagram renderers + the diff card)
 **Spec anchor / REQ:** REQ-NOTATION, REQ-ACCESSIBILITY, REQ-EPISTEMIC-STATUS
 
 ## Upstream (this depends on)
-- `@psyuml/model`, `@psyuml/profiles` (what + how to draw).
+- `@psyuml/model` (what to draw), `@psyuml/diff` (the changeset `renderDiff` visualizes).
 - `../../assets/glyphs/` and `../../assets/tokens.json` (the 8 core glyphs + palette).
 - `../../docs/specification/psyuml-v0.1.0.md` §B, §C, §D.
 
@@ -17,7 +17,7 @@ alt-text. (M0: placeholder; M1: the real pipeline.)
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/render`) | — | workspace resolution | — | low |
-| `index.ts` | Render API — one `render*` per diagram type: State, Parts, ModeMap, RelationalField, BodyMap, Loop, Timeline, InterventionSeq, Ritual, Decision, Resource. Takes `roleLabels` (cross-school vocabulary). | model, profiles, assets | apps/web | §B–§F, §G, §K / REQ-NOTATION, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR, REQ-RESEARCH-PROFILES, REQ-CROSS-SCHOOL | medium |
+| `index.ts` | Render API — one `render*` per diagram type: State, Parts, ModeMap, RelationalField, BodyMap, Loop, Timeline, InterventionSeq, Ritual, Decision, Resource — plus `renderDiff(before,after)` (the longitudinal progress card). Takes `roleLabels` (cross-school vocabulary). | model, diff, assets | apps/web | §B–§F, §G, §K / REQ-NOTATION, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR, REQ-RESEARCH-PROFILES, REQ-CROSS-SCHOOL, REQ-VERSIONING-DIFF | medium |
 | `index.test.ts` | Unit tests | `index.ts` | CI `test` | — | low |
 
 ## Change checklist

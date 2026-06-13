@@ -3,6 +3,7 @@ import { getText, parseModel, serializeModel, type PsyumlModel } from '@psyuml/m
 import {
   renderBodyMap,
   renderDecisionChart,
+  renderDiff,
   renderInterventionSeq,
   renderLoopMap,
   renderModeMap,
@@ -262,6 +263,20 @@ export function App() {
           }}
         >
           <strong>Changes since the loaded version</strong>
+          <button
+            type="button"
+            disabled={isEmptyDiff(diff)}
+            onClick={() =>
+              downloadText(
+                `${model.diagram}-progress.svg`,
+                renderDiff(compareWith ?? model, model, { layer }).svg,
+                'image/svg+xml',
+              )
+            }
+            style={{ marginLeft: 8 }}
+          >
+            Export progress (SVG)
+          </button>
           <button type="button" onClick={() => setCompareWith(null)} style={{ marginLeft: 8 }}>
             clear
           </button>

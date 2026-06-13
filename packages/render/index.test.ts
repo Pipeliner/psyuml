@@ -4,6 +4,7 @@ import { parseModel } from '@psyuml/model';
 import {
   renderBodyMap,
   renderDecisionChart,
+  renderDiff,
   renderInterventionSeq,
   renderLoopMap,
   renderModeMap,
@@ -252,5 +253,57 @@ describe('renderBodyMap', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('body-map.svg', renderBodyMap(bodyModel).svg);
+  });
+});
+
+describe('renderDiff', () => {
+  // Okabe–Ito hues must not appear in the (monochrome) progress card (§D).
+  const HUES = /#(009e73|e69f00|d55e00|56b4e9|cc79a7|f0e442|0072b2)/;
+  const v1 = parseModel({
+    version: '0.1.0',
+    diagram: 'parts-map',
+    meta: { title: 'R.', disclaimer: 'Supports, not replaces, care.' },
+    nodes: [
+      { id: 'self', kind: 'self', label: { clinician: { en: 'Self' } } },
+      {
+        id: 'punisher',
+        kind: 'agent',
+        label: { clinician: { en: 'Punishing Parent' } },
+        properties: { dominance: 0.9, consolidation: 'forming' },
+      },
+      { id: 'gone', kind: 'state', label: { clinician: { en: 'Old state' } } },
+    ],
+  });
+  const v2 = parseModel({
+    ...JSON.parse(JSON.stringify(v1)),
+    nodes: [
+      v1.nodes[0],
+      { ...v1.nodes[1], properties: { dominance: 0.4, consolidation: 'consolidated' } },
+      { id: 'res', kind: 'resource', label: { clinician: { en: 'Walking' } } },
+    ],
+  });
+
+  it('renders an accessible, monochrome progress card', () => {
+    const { svg, altText } = renderDiff(v1, v2);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('role="img"');
+    expect(svg).toContain('aria-label="');
+    expect(svg.toLowerCase()).not.toMatch(HUES);
+    expect(altText).toContain('Progress');
+  });
+
+  it('shows dominance direction, the dashed→solid swatch, an add and a remove', () => {
+    const { svg } = renderDiff(v1, v2);
+    expect(svg).toContain('↓'); // dominance fell
+    expect(svg).toContain('stroke-dasharray'); // forming → consolidated swatch
+    expect(svg).toContain('consolidated');
+    expect(svg).toContain('Walking'); // added resource
+    expect(svg).toContain('text-decoration="line-through"'); // removed node
+  });
+
+  it('says so when nothing changed', () => {
+    const { svg, altText } = renderDiff(v1, v1);
+    expect(svg).toContain('No tracked changes.');
+    expect(altText).toContain('No tracked changes.');
   });
 });

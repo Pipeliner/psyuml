@@ -214,9 +214,9 @@
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M6",
       "status": "in-progress",
-      "impl": ["packages/diff/**", "apps/web/**"],
-      "tests": ["packages/diff/**/*.test.ts"],
-      "notes": "Companion-paper idea A6. Versions documents, not the person. M6: @psyuml/diff ships diffModels() — matches nodes/edges by stable id (§H.10) so a rename reads as a label change, surfaces the spec's progress deltas (dominance up/down, forming/liminal->consolidated 'dashed->solid', valence, add/remove/rename) — plus summarizeDiff() readable lines and isEmptyDiff(). The editor has a 'Compare with...' file load that shows the changes-since panel. Still to come: an immutable per-session version store, a renderDiff SVG overlay, and Timeline/Trajectory (§E.5) wiring."
+      "impl": ["packages/diff/**", "packages/render/**", "apps/web/**"],
+      "tests": ["packages/diff/**/*.test.ts", "packages/render/**/*.test.ts"],
+      "notes": "Companion-paper idea A6. Versions documents, not the person. M6: @psyuml/diff ships diffModels() — matches nodes/edges by stable id (§H.10) so a rename reads as a label change, surfaces the spec's progress deltas (dominance up/down, forming/liminal->consolidated 'dashed->solid', valence, add/remove/rename) — plus summarizeDiff() readable lines and isEmptyDiff(). render.renderDiff() draws an accessible monochrome 'progress card' (↑/↓ glyphs + a dashed->solid swatch, §D); the editor has a 'Compare with...' file load showing the changes-since panel + an Export-progress-SVG button. Still to come: an immutable per-session version store and Timeline/Trajectory (§E.5) wiring."
     },
     {
       "id": "REQ-TIMELINE",
