@@ -146,9 +146,10 @@
       "spec": ["§D"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M3",
-      "status": "planned",
-      "impl": ["packages/validate/**", "packages/render/**"],
-      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2). The editor itself meets WCAG 2.2 AA — keyboard operation, contrast, 200% zoom, target size, colour-redundant (UX-M1, docs/ux). M3: validate flags over-long labels (a11y.label-length); the examples corpus is lint-gated in CI."
+      "status": "in-progress",
+      "impl": ["packages/validate/**", "packages/render/**", "conformance/**"],
+      "tests": ["packages/render/**/*.test.ts", "conformance/**/*.test.ts"],
+      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2). The editor itself meets WCAG 2.2 AA — keyboard operation, contrast, 200% zoom, target size, colour-redundant (UX-M1, docs/ux). M3: validate flags over-long labels (a11y.label-length); the examples corpus is lint-gated in CI. Conformance asserts, per view + both layers, role=img + aria-label + non-empty alt text and monochrome-by-default (no colour hue). Render legibility hardened (ADR-0006) after a build-a-diagram agent test: content-fit viewBoxes (renderLoopMap, incl. negative coords + honor pos), node-center clamping (state map), and a fitText helper that compresses an over-long label to stay inside its box (never clipped/overflowing) — on screen and in exports."
     },
     {
       "id": "REQ-PATH-OF-HOPE",

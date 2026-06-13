@@ -46,6 +46,36 @@ const esc = (s: string): string =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
   );
 
+const r1 = (v: number): number => Math.round(v * 10) / 10;
+
+interface TextOpts {
+  size?: number;
+  anchor?: 'start' | 'middle' | 'end';
+  weight?: number;
+  fill?: string;
+  /** When set and the label is estimated wider than this, compress it to fit (never stretch). */
+  maxWidth?: number;
+}
+
+/**
+ * Emit a `<text>` that *compresses* into `maxWidth` when the label would overflow
+ * (`textLength` + `spacingAndGlyphs`), so a long label never spills out of its box or off
+ * the frame — keeping every label legible and inside the diagram (§D). Short labels are
+ * emitted unchanged (no `textLength`), so they render identically to before.
+ */
+function fitText(s: string, x: number, y: number, o: TextOpts = {}): string {
+  const size = o.size ?? 11;
+  const a = o.anchor ? ` text-anchor="${o.anchor}"` : '';
+  const w = o.weight ? ` font-weight="${o.weight}"` : '';
+  const f = o.fill ? ` fill="${o.fill}"` : '';
+  // ~0.58em per char is a safe sans-serif estimate; only compress when clearly over.
+  const fit =
+    o.maxWidth && s.length * size * 0.58 > o.maxWidth
+      ? ` textLength="${r1(o.maxWidth)}" lengthAdjust="spacingAndGlyphs"`
+      : '';
+  return `<text x="${r1(x)}" y="${r1(y)}" font-family="sans-serif" font-size="${size}"${a}${w}${f}${fit}>${esc(s)}</text>`;
+}
+
 const patternId = (p: MBand['pattern']): string | null => (p === 'none' ? null : `p-${p}`);
 
 /** Progressive reveal (UX-M7): drop hidden nodes and any edge touching them. */
@@ -85,10 +115,10 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     const list = nodesByBand.get(b.id) ?? [];
     const top = bandTop.get(b.id) ?? 0;
     list.forEach((n, idx) => {
-      center.set(n.id, {
-        cx: 20 + ((idx + 1) / (list.length + 1)) * (WIDTH - 40),
-        cy: top + BAND_H / 2,
-      });
+      const raw = 20 + ((idx + 1) / (list.length + 1)) * (WIDTH - 40);
+      // Keep the node box inside the frame so a crowded band can't clip at the edge.
+      const cx = Math.max(20 + NODE_W / 2, Math.min(WIDTH - 20 - NODE_W / 2, raw));
+      center.set(n.id, { cx, cy: top + BAND_H / 2 });
     });
   }
 
@@ -151,7 +181,11 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
       `<rect x="${c.cx - NODE_W / 2}" y="${c.cy - NODE_H / 2}" width="${NODE_W}" height="${NODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
     );
     parts.push(
-      `<text x="${c.cx}" y="${c.cy + 4}" font-family="sans-serif" font-size="12" text-anchor="middle">${esc(getText(n.label, layer, lang))}</text>`,
+      fitText(getText(n.label, layer, lang), c.cx, c.cy + 4, {
+        size: 12,
+        anchor: 'middle',
+        maxWidth: NODE_W - 16,
+      }),
     );
   }
 
@@ -216,7 +250,6 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
 
 const PARTS_W = 680;
 const PARTS_H = 470;
-const r1 = (v: number): number => Math.round(v * 10) / 10;
 
 /** Render a Parts / Agents Map (spec §E.2): Self centred, protectors orbiting,
  * exiles in a containment orbit behind a dissociative barrier. */
@@ -523,7 +556,7 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
       const dx = c * colW + 24;
       parts.push(
         `<polygon points="${dx},${y - 6} ${dx + 7},${y} ${dx},${y + 6} ${dx - 7},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
-        `<text x="${dx + 14}" y="${y + 4}" font-family="sans-serif" font-size="12">${esc(getText(it.label, layer, lang))}</text>`,
+        fitText(getText(it.label, layer, lang), dx + 14, y + 4, { size: 12, maxWidth: colW - 50 }),
       );
     });
     altCats.push(
@@ -577,12 +610,17 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   const cy = 250;
   const radius = Math.max(120, n * 26);
 
+  // Honor manual positions when present; otherwise lay the cycle out on a ring.
+  const usePos = nodes.some((node) => node.position);
   const pos = new Map<string, { x: number; y: number }>();
   nodes.forEach((node, i) => {
-    const a = ((-90 + (i * 360) / n) * Math.PI) / 180;
-    pos.set(node.id, { x: r1(cx + radius * Math.cos(a)), y: r1(cy + radius * Math.sin(a)) });
+    if (usePos && node.position) {
+      pos.set(node.id, { x: node.position.x, y: node.position.y });
+    } else {
+      const a = ((-90 + (i * 360) / n) * Math.PI) / 180;
+      pos.set(node.id, { x: r1(cx + radius * Math.cos(a)), y: r1(cy + radius * Math.sin(a)) });
+    }
   });
-  const height = cy + radius + LNODE_H + 56;
 
   const nodeName = (id: string): string => {
     const node = nodes.find((x) => x.id === id);
@@ -600,10 +638,12 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
     const ux = (t.x - s.x) / len;
     const uy = (t.y - s.y) / len;
-    const x1 = r1(s.x + ux * SHORT);
-    const y1 = r1(s.y + uy * SHORT);
-    const x2 = r1(t.x - ux * SHORT);
-    const y2 = r1(t.y - uy * SHORT);
+    // Clamp the pull-back so short chords don't overshoot into a detached arrowhead.
+    const short = Math.max(0, Math.min(SHORT, len / 2 - 10));
+    const x1 = r1(s.x + ux * short);
+    const y1 = r1(s.y + uy * short);
+    const x2 = r1(t.x - ux * short);
+    const y2 = r1(t.y - uy * short);
     const isExit = e.kind === 'exit';
     const dash = isExit ? ' stroke-dasharray="6 5"' : '';
     const markerStart = e.kind === 'reciprocal' ? ' marker-start="url(#arrow)"' : '';
@@ -623,9 +663,17 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   // Reinforcing / balancing loop badge in the centre
   const loop = model.edges.find((e) => e.loop);
   if (loop) {
+    let sx = 0;
+    let sy = 0;
+    for (const p of pos.values()) {
+      sx += p.x;
+      sy += p.y;
+    }
+    const bx = r1(sx / pos.size);
+    const by = r1(sy / pos.size);
     parts.push(
-      `<circle cx="${cx}" cy="${cy}" r="18" fill="#fff" stroke="#000" stroke-width="2" />`,
-      `<text x="${cx}" y="${cy + 5}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loop.loop ?? '')}</text>`,
+      `<circle cx="${bx}" cy="${by}" r="18" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<text x="${bx}" y="${by + 5}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loop.loop ?? '')}</text>`,
     );
   }
 
@@ -651,7 +699,11 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
       );
     }
     parts.push(
-      `<text x="${p.x}" y="${p.y + labelDy}" text-anchor="middle" font-family="sans-serif" font-size="11">${esc(getText(node.label, layer, lang))}</text>`,
+      fitText(getText(node.label, layer, lang), p.x, p.y + labelDy, {
+        size: 11,
+        anchor: 'middle',
+        maxWidth: LNODE_W - 16,
+      }),
     );
   }
 
@@ -668,17 +720,41 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     `Maintaining loop${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
     `Links: ${links.join('; ') || 'none'}. Ways out: ${exits.join('; ') || 'none'}.`;
 
+  // Fit the frame to the actual content (incl. negative coords) so nothing clips on screen or in export.
+  const pad = 18;
+  const titleH = model.meta.title ? 28 : 0;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of pos.values()) {
+    minX = Math.min(minX, p.x - LNODE_W / 2);
+    maxX = Math.max(maxX, p.x + LNODE_W / 2);
+    minY = Math.min(minY, p.y - LNODE_H / 2);
+    maxY = Math.max(maxY, p.y + LNODE_H / 2);
+  }
+  if (!Number.isFinite(minX)) {
+    minX = 0;
+    minY = 0;
+    maxX = LOOP_W;
+    maxY = 200;
+  }
+  const fx = r1(minX - pad);
+  const fy = r1(minY - pad - titleH);
+  const fw = r1(maxX + pad - fx);
+  const fh = r1(maxY + pad - fy);
+
   const titleText = model.meta.title
-    ? `<text x="16" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? `<text x="${r1(fx + 8)}" y="${r1(fy + 20)}" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
     : '';
   const defs =
     '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${LOOP_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fx} ${fy} ${fw} ${fh}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Loop map')}</title><desc>${esc(altText)}</desc>` +
     defs +
-    `<rect x="0" y="0" width="${LOOP_W}" height="${height}" fill="#fff" />` +
+    `<rect x="${fx}" y="${fy}" width="${fw}" height="${fh}" fill="#fff" />` +
     titleText +
     parts.join('') +
     '</svg>';

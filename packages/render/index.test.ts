@@ -163,6 +163,30 @@ describe('renderLoopMap', () => {
   it('matches the committed golden SVG', () => {
     expectGolden('process-loop.svg', renderLoopMap(loopModel).svg);
   });
+
+  it('fits the viewBox to content (honors positions; nothing clips)', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'process-loop',
+      meta: { disclaimer: 'x', title: 'Big loop' },
+      nodes: [
+        { id: 'a', kind: 'state', position: { x: -50, y: -30 }, label: { clinician: { en: 'A' } } },
+        { id: 'b', kind: 'state', position: { x: 700, y: 400 }, label: { clinician: { en: 'B' } } },
+      ],
+      edges: [{ id: 'e', kind: 'sequential', source: 'a', target: 'b', loop: 'R' }],
+    });
+    const vb = renderLoopMap(m).svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+)"/);
+    expect(vb).not.toBeNull();
+    const x = Number(vb![1]);
+    const y = Number(vb![2]);
+    const w = Number(vb![3]);
+    const h = Number(vb![4]);
+    // both far-apart, partly-negative nodes (± their box half-size) sit inside the frame
+    expect(x).toBeLessThanOrEqual(-50 - 70);
+    expect(y).toBeLessThanOrEqual(-30 - 22);
+    expect(x + w).toBeGreaterThanOrEqual(700 + 70);
+    expect(y + h).toBeGreaterThanOrEqual(400 + 22);
+  });
 });
 
 describe('renderTimeline', () => {

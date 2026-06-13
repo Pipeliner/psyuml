@@ -17,8 +17,8 @@ alt-text — plus a longitudinal diff "progress card".
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/render`) | — | workspace resolution | — | low |
-| `index.ts` | Render API — one `render*` per diagram type: State, Parts, ModeMap, RelationalField (+ drama triangle via `nestedWithin`), BodyMap, Loop, Timeline, InterventionSeq, Ritual, Decision, Resource, TwoTriangles (Malan, via `transference`) — plus `renderDiff(before,after)` (the longitudinal progress card). Takes `roleLabels` (cross-school vocabulary). | model, diff, assets | apps/web | §B–§F, §G, §K / REQ-NOTATION, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR, REQ-RESEARCH-PROFILES, REQ-CROSS-SCHOOL, REQ-VERSIONING-DIFF | medium |
-| `index.test.ts` | Unit tests | `index.ts` | CI `test` | — | low |
+| `index.ts` | Render API — one `render*` per diagram type: State, Parts, ModeMap, RelationalField (+ drama triangle via `nestedWithin`), BodyMap, Loop, Timeline, InterventionSeq, Ritual, Decision, Resource, TwoTriangles (Malan, via `transference`) — plus `renderDiff(before,after)`. Shared `esc`/`r1`/**`fitText`** (compress-to-fit labels) + content-fit framing (ADR-0006: Loop fits its viewBox incl. negative coords + honors `pos`; State clamps node centers). Takes `roleLabels` (cross-school vocabulary). | model, diff, assets | apps/web | §B–§F, §G, §K, §D / REQ-NOTATION, REQ-ACCESSIBILITY, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR, REQ-RESEARCH-PROFILES, REQ-CROSS-SCHOOL, REQ-VERSIONING-DIFF | medium |
+| `index.test.ts` | Unit tests (incl. the content-fit/no-clip frame assertion) | `index.ts` | CI `test` | REQ-ACCESSIBILITY | low |
 
 ## Change checklist
 - [ ] Keep color redundant (§D) and emit alt-text/text-summary for every view.

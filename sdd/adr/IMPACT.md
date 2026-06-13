@@ -21,6 +21,7 @@ choices were made.
 | `0003-adopt-ux-research-as-binding.md` | Records treating the UX research findings as binding requirements for the editor | `../templates/adr.md`, `../../docs/ux/ux-research-and-requirements.md` | REQ-UX-STORIES, REQ-COLLAB, REQ-CLIENT-SAFETY-UX, REQ-EDITOR-MVP, REQ-ACCESSIBILITY, REQ-DECISION-NAV | §D, §E.8, §L.2 | low (append-only) |
 | `0004-bulk-coverage-for-generated-files.md` | Records the `sdd:cover` glob directive (generated/fixture files documented in bulk) | `../templates/adr.md`, `../check.mjs` | `sdd/check.mjs`, `examples/IMPACT.md` | cross-cutting | low (append-only) |
 | `0005-client-facing-diagram-classification.md` | Records which diagram types are client-facing (disclaimer-gated) — adds `process-loop`, excludes `two-triangles`; + in-UI diagram-details editing | `../templates/adr.md`, `../../packages/validate/index.ts` | REQ-ETHICS-GUARDRAILS, REQ-PATH-OF-HOPE | §A.2-r7, §L.2 | low (append-only) |
+| `0006-rendering-robustness-fit.md` | Records content-fit viewBoxes + `fitText` fit-to-box labels (no clipping / overflow on screen or export) found by the build-a-diagram agent test | `../templates/adr.md`, `../../packages/render/index.ts` | REQ-ACCESSIBILITY, REQ-NOTATION | §D | low (append-only) |
 
 ## Change checklist
 - [ ] Don't rewrite history — supersede with a new ADR and mark the old one `superseded`.
