@@ -87,6 +87,47 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
     }
   }
 
+  // --- More §A.2 well-formedness: relation/barrier endpoint kinds + no floating intervention ---
+  // Relations (§A.2-r3) join social entities — people, parts, or contexts — not states/resources.
+  // `reciprocal` is intentionally excluded: it also marks mutual state↔state reinforcement in loops.
+  const kindById = new Map(model.nodes.map((n) => [n.id, n.kind]));
+  const RELATION_KINDS = new Set(['close', 'conflict', 'fused', 'distant', 'cutoff']);
+  const RELATION_ENDPOINT_KINDS = new Set(['agent', 'self', 'context']);
+  const BARRIER_ENDPOINT_KINDS = new Set(['agent', 'self', 'state']); // §A.2-r6
+  const incident = new Set<string>();
+  for (const e of model.edges) {
+    incident.add(e.source);
+    incident.add(e.target);
+    for (const ep of [e.source, e.target]) {
+      const k = kindById.get(ep);
+      if (!k) continue; // a missing endpoint is already an error above
+      if (RELATION_KINDS.has(e.kind) && !RELATION_ENDPOINT_KINDS.has(k)) {
+        add(
+          'wf.relation-endpoints',
+          'warn',
+          `A ${e.kind} relation ("${e.id}") touches a ${k} node — relations connect people, parts, or contexts (§A.2-r3).`,
+        );
+      }
+      if (e.kind === 'barrier' && !BARRIER_ENDPOINT_KINDS.has(k)) {
+        add(
+          'wf.barrier-endpoints',
+          'warn',
+          `A dissociative barrier ("${e.id}") touches a ${k} node — it may only separate parts or states (§A.2-r6).`,
+        );
+      }
+    }
+  }
+  for (const n of model.nodes) {
+    if (n.kind === 'intervention' && !incident.has(n.id)) {
+      add(
+        'wf.intervention-attached',
+        'warn',
+        `Intervention "${getText(n.label, layer)}" floats unattached — attach it to what it acts on (§A.2-r4).`,
+        n.id,
+      );
+    }
+  }
+
   // --- Path of hope (a map of only problems can be harmful; Redhead 2015, UX-M7) ---
   if (CYCLE_DIAGRAMS.has(model.diagram) && model.nodes.length > 0) {
     const hopeful =

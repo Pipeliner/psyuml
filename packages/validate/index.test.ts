@@ -68,6 +68,41 @@ describe('validate', () => {
     ).toBe(true);
   });
 
+  it('flags a floating (unattached) intervention (§A.2-r4)', () => {
+    const m = read('state-map.psyuml');
+    const orphan = parseModel({
+      ...m,
+      nodes: [
+        ...m.nodes,
+        { id: 'iv1', kind: 'intervention', label: { clinician: { en: 'Breathe' } } },
+      ],
+    });
+    expect(validate(orphan).issues.some((i) => i.rule === 'wf.intervention-attached')).toBe(true);
+  });
+
+  it('flags a relation that touches a non-social node (§A.2-r3)', () => {
+    const m = read('state-map.psyuml');
+    const bad = parseModel({
+      ...m,
+      edges: [...m.edges, { id: 'rel', kind: 'close', source: 'calm', target: 'numb' }],
+    });
+    expect(validate(bad).issues.some((i) => i.rule === 'wf.relation-endpoints')).toBe(true);
+  });
+
+  it('flags a dissociative barrier on a non-part/state node (§A.2-r6)', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'parts-map',
+      meta: { disclaimer: 'Supports, not replaces, care.' },
+      nodes: [
+        { id: 'a', kind: 'agent', label: { clinician: { en: 'Protector' } } },
+        { id: 'res', kind: 'resource', label: { clinician: { en: 'Anchor' } } },
+      ],
+      edges: [{ id: 'b', kind: 'barrier', source: 'a', target: 'res' }],
+    });
+    expect(validate(m).issues.some((i) => i.rule === 'wf.barrier-endpoints')).toBe(true);
+  });
+
   it('requires honest framing + a secular variant on a ritual diagram', () => {
     const r = read('ritual.psyuml');
     expect(validate(r).ok).toBe(true);

@@ -134,7 +134,8 @@
       "milestone": "M3",
       "status": "in-progress",
       "impl": ["packages/validate/**"],
-      "tests": ["packages/validate/**/*.test.ts"]
+      "tests": ["packages/validate/**/*.test.ts"],
+      "notes": "Enforced: single-source/target edges + live endpoints (r2), band refs resolve (r1), relations join people/parts/contexts not states/resources (r3), interventions never float unattached (r4), dissociative barriers separate only parts/states (r6), client-facing disclaimer + crisis-resource gate (r7). r5 loop typing is structural (loop marker is the R/B enum); full closed-path/exit detection tracked with the diff/loop work."
     },
     {
       "id": "REQ-ACCESSIBILITY",
