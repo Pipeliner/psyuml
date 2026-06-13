@@ -231,8 +231,9 @@
       "spec": ["§E.6"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M7",
-      "status": "planned",
-      "impl": ["packages/render/**", "packages/profiles/**"]
+      "status": "in-progress",
+      "impl": ["packages/render/**", "examples/**"],
+      "notes": "renderInterventionSeq: actor swimlanes (bands) as columns, interventions as hexagons placed by longest-path phase order, guards as edge labels; example wired into the editor. The grief-ritual interop node (§F.6) lands with the Ritual diagram (M7)."
     },
     {
       "id": "REQ-RITUAL",

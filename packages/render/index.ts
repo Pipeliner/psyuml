@@ -774,3 +774,129 @@ export function renderTimeline(model: PsyumlModel, options: RenderOptions = {}):
 
   return { svg, altText };
 }
+
+const SEQ_W = 720;
+const HEX_W = 156;
+const HEX_H = 46;
+
+/** Render an Intervention Sequence (spec §E.6): actor swimlanes (bands) as columns,
+ * interventions as hexagons placed by longest-path phase order, guards as edge labels. */
+export function renderInterventionSeq(
+  model: PsyumlModel,
+  options: RenderOptions = {},
+): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const lanes = [...model.bands].sort((a, b) => a.order - b.order);
+  const laneN = Math.max(1, lanes.length);
+  const laneW = SEQ_W / laneN;
+  const laneX = (i: number): number => r1(i * laneW + laneW / 2);
+  const laneIndex = new Map(lanes.map((l, i) => [l.id, i]));
+
+  const nodes = model.nodes;
+  const indeg = new Map<string, number>(nodes.map((n) => [n.id, 0]));
+  const adj = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
+  for (const e of model.edges) {
+    if (!indeg.has(e.target) || !adj.has(e.source)) continue;
+    indeg.set(e.target, (indeg.get(e.target) ?? 0) + 1);
+    adj.get(e.source)?.push(e.target);
+  }
+  const depth = new Map<string, number>(nodes.map((n) => [n.id, 0]));
+  const work = new Map(indeg);
+  const queue = nodes.filter((n) => (indeg.get(n.id) ?? 0) === 0).map((n) => n.id);
+  while (queue.length) {
+    const id = queue.shift() as string;
+    for (const t of adj.get(id) ?? []) {
+      depth.set(t, Math.max(depth.get(t) ?? 0, (depth.get(id) ?? 0) + 1));
+      work.set(t, (work.get(t) ?? 0) - 1);
+      if ((work.get(t) ?? 0) === 0) queue.push(t);
+    }
+  }
+
+  const TOP = 72;
+  const GAP = 80;
+  const pos = new Map<string, { x: number; y: number }>();
+  let maxDepth = 0;
+  for (const n of nodes) {
+    const li = n.bandId ? laneIndex.get(n.bandId) : undefined;
+    if (li === undefined) continue;
+    const d = depth.get(n.id) ?? 0;
+    maxDepth = Math.max(maxDepth, d);
+    pos.set(n.id, { x: laneX(li), y: TOP + d * GAP });
+  }
+  const height = TOP + maxDepth * GAP + HEX_H + 28;
+
+  const parts: string[] = [];
+
+  // Lane headers + dividers
+  lanes.forEach((l, i) => {
+    parts.push(
+      `<text x="${laneX(i)}" y="28" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700">${esc(getText(l.label, layer, lang))}</text>`,
+    );
+    if (i > 0) {
+      parts.push(
+        `<line x1="${r1(i * laneW)}" y1="38" x2="${r1(i * laneW)}" y2="${height - 10}" stroke="#ccc" stroke-width="1" stroke-dasharray="4 4" />`,
+      );
+    }
+  });
+
+  // Edges (with guard labels)
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const sy = s.y + HEX_H / 2;
+    const ty = t.y - HEX_H / 2;
+    parts.push(
+      `<path d="M ${s.x},${sy} L ${t.x},${ty}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+    );
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      parts.push(
+        `<text x="${r1((s.x + t.x) / 2 + 4)}" y="${r1((sy + ty) / 2)}" font-family="sans-serif" font-size="10">${esc(lbl)}</text>`,
+      );
+    }
+  }
+
+  // Intervention hexagons
+  for (const n of nodes) {
+    const p = pos.get(n.id);
+    if (!p) continue;
+    const { x, y } = p;
+    const w = HEX_W;
+    const h = HEX_H;
+    parts.push(
+      `<polygon points="${x - w / 2 + 12},${y - h / 2} ${x + w / 2 - 12},${y - h / 2} ${x + w / 2},${y} ${x + w / 2 - 12},${y + h / 2} ${x - w / 2 + 12},${y + h / 2} ${x - w / 2},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<text x="${x}" y="${y + 4}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(n.label, layer, lang))}</text>`,
+    );
+  }
+
+  const laneName = (n: (typeof nodes)[number]): string => {
+    const l = n.bandId ? lanes.find((x) => x.id === n.bandId) : undefined;
+    return l ? getText(l.label, layer, lang) : '';
+  };
+  const ordered = [...nodes].sort((a, b) => (depth.get(a.id) ?? 0) - (depth.get(b.id) ?? 0));
+  const altText =
+    `Intervention sequence${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Lanes: ${lanes.map((l) => getText(l.label, layer, lang)).join(', ')}. ` +
+    `Steps in order: ${ordered.map((n) => `${getText(n.label, layer, lang)} (${laneName(n)})`).join(' → ') || 'none'}.`;
+
+  const titleText = model.meta.title
+    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+  const defs =
+    '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SEQ_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Intervention sequence')}</title><desc>${esc(altText)}</desc>` +
+    defs +
+    `<rect x="0" y="0" width="${SEQ_W}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

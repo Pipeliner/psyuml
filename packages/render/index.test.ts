@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
 import {
   renderDecisionChart,
+  renderInterventionSeq,
   renderLoopMap,
   renderPartsMap,
   renderResourceMap,
@@ -19,6 +20,7 @@ const decisionModel = parseModel(read('decision-nav.psyuml'));
 const resourceModel = parseModel(read('resource-anchor.psyuml'));
 const loopModel = parseModel(read('process-loop.psyuml'));
 const timelineModel = parseModel(read('timeline.psyuml'));
+const seqModel = parseModel(read('intervention-sequence.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -155,5 +157,21 @@ describe('renderTimeline', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('timeline.svg', renderTimeline(timelineModel).svg);
+  });
+});
+
+describe('renderInterventionSeq', () => {
+  it('places interventions in actor lanes by phase order', () => {
+    const { svg, altText } = renderInterventionSeq(seqModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Therapist');
+    expect(svg).toContain('Phase 1: Stabilize');
+    expect(svg).toContain('[stable &amp; resourced]');
+    expect(altText).toContain('Intervention sequence');
+    expect(altText).toContain('Steps in order');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('intervention-sequence.svg', renderInterventionSeq(seqModel).svg);
   });
 });

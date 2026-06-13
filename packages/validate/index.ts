@@ -34,6 +34,7 @@ const CLIENT_FACING = new Set([
   'decision-nav',
   'resource-anchor',
   'timeline',
+  'intervention-sequence',
   'ritual',
 ]);
 // Path-of-hope applies to maintaining-cycle diagrams (spec §A.2-r5). Timelines are

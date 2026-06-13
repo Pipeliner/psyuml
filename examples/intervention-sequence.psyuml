@@ -1,0 +1,30 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "intervention-sequence",
+  "meta": {
+    "title": "Therapy roadmap",
+    "disclaimer": "This plan supports, and does not replace, professional care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    { "id": "client", "order": 0, "label": { "clinician": { "en": "Client" } } },
+    { "id": "therapist", "order": 1, "label": { "clinician": { "en": "Therapist" } } },
+    { "id": "support", "order": 2, "label": { "clinician": { "en": "Support" } } }
+  ],
+  "nodes": [
+    { "id": "t1", "kind": "intervention", "bandId": "therapist", "tier": 1, "label": { "clinician": { "en": "Phase 1: Stabilize" }, "client": { "en": "Get steady" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "c1", "kind": "intervention", "bandId": "client", "tier": 1, "label": { "clinician": { "en": "Grounding skills" }, "client": { "en": "Grounding skills" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "t2", "kind": "intervention", "bandId": "therapist", "tier": 1, "label": { "clinician": { "en": "Phase 2: Process (EMDR)" }, "client": { "en": "Work it through" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "s1", "kind": "intervention", "bandId": "support", "tier": 1, "label": { "clinician": { "en": "Witnesses / safe person" }, "client": { "en": "People who have my back" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "t3", "kind": "intervention", "bandId": "therapist", "tier": 1, "label": { "clinician": { "en": "Phase 3: Integrate" }, "client": { "en": "Build my life" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "c2", "kind": "intervention", "bandId": "client", "tier": 1, "label": { "clinician": { "en": "Values-led action" }, "client": { "en": "Values-led action" } }, "properties": { "epistemicStatus": "planned" } }
+  ],
+  "edges": [
+    { "id": "e1", "kind": "sequential", "source": "t1", "target": "c1", "properties": {} },
+    { "id": "e2", "kind": "sequential", "source": "c1", "target": "t2", "label": { "clinician": { "en": "[stable & resourced]" } }, "properties": {} },
+    { "id": "e3", "kind": "sequential", "source": "t2", "target": "s1", "properties": {} },
+    { "id": "e4", "kind": "sequential", "source": "s1", "target": "t3", "properties": {} },
+    { "id": "e5", "kind": "sequential", "source": "t3", "target": "c2", "properties": {} }
+  ]
+}
