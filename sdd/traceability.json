@@ -186,7 +186,7 @@
       "milestone": "M4",
       "status": "in-progress",
       "impl": ["packages/render/**", "packages/model/**", "examples/**"],
-      "notes": "renderRelationalField: manual node positions; gender glyphs (male square / female circle / other diamond / system dashed); index double-border; McGoldrick relation line styles (close solid, distant dashed, conflict zigzag, fused triple, cutoff slashed) + ecomap. Completes the 9-type diagram catalog. Cross-school re-render/translation table still under REQ-CROSS-SCHOOL."
+      "notes": "renderRelationalField: manual node positions; gender glyphs (male square / female circle / other diamond / system dashed); index double-border; McGoldrick relation line styles (close solid, distant dashed, conflict zigzag, fused triple, cutoff slashed) + nestedWithin origin thread (fine-dotted + ring) + ecomap. Subsumes the drama triangle (§E.3) — see drama-triangle.psyuml under REQ-RESEARCH-PROFILES. Completes the 9-type diagram catalog. Cross-school re-render/translation table still under REQ-CROSS-SCHOOL."
     },
     {
       "id": "REQ-EXTENSION-MECH",
@@ -205,7 +205,7 @@
       "milestone": "M5",
       "status": "in-progress",
       "impl": ["packages/render/**", "examples/**"],
-      "notes": "Companion-paper profiles; each per §K extension rules (idea-incorporation §2). M5: Schema Mode Map shipped (renderModeMap — circle size = dominance with redundant numeral, §D; Healthy-Adult growth target; vulnerable-child wound marker). CAT SDR / Malan two-triangles / Karpman nested still to come."
+      "notes": "Companion-paper profiles; each per §K extension rules (idea-incorporation §2). M5: Schema Mode Map shipped (renderModeMap — circle size = dominance with redundant numeral, §D; Healthy-Adult growth target; vulnerable-child wound marker). Karpman drama triangle shipped as a Relational Field instance (spec §E.3): drama-triangle.psyuml places Persecutor/Rescuer/Victim with a NESTED historical triangle wired via the nestedWithin connector (now drawn by relLine as a fine-dotted origin thread with a ring — previously a dangling edge kind). CAT SDR + Malan two-triangles (transference edges) still to come."
     },
     {
       "id": "REQ-VERSIONING-DIFF",

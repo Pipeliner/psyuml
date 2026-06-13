@@ -28,13 +28,18 @@ import ritualRaw from '../../examples/ritual.psyuml?raw';
 import relRaw from '../../examples/relational-field.psyuml?raw';
 import modeRaw from '../../examples/mode-map.psyuml?raw';
 import bodyRaw from '../../examples/body-map.psyuml?raw';
+import dramaRaw from '../../examples/drama-triangle.psyuml?raw';
 import { addNode, setNodeHidden, setNodeLabel, setSafetyFlag } from './editor';
 
+// Keyed by example, not by diagram type, so school-specific profiles (e.g. the Karpman
+// drama triangle, which is a Relational Field instance, spec §E.3) can sit alongside the
+// base type without colliding on the type key.
 const EXAMPLES: Record<string, string> = {
   'state-map': stateRaw,
   'parts-map': partsRaw,
   'mode-map': modeRaw,
   'relational-field': relRaw,
+  'drama-triangle': dramaRaw,
   'body-map': bodyRaw,
   'decision-nav': decisionRaw,
   'resource-anchor': resourceRaw,
@@ -60,6 +65,7 @@ function downloadText(filename: string, text: string, type: string): void {
  */
 export function App() {
   const [model, setModel] = useState<PsyumlModel>(() => parseModel(stateRaw));
+  const [example, setExample] = useState('state-map');
   const [layer, setLayer] = useState<'clinician' | 'client'>('clinician');
   const [monochrome, setMonochrome] = useState(true);
   const [school, setSchool] = useState('');
@@ -125,8 +131,9 @@ export function App() {
         <label>
           Diagram{' '}
           <select
-            value={model.diagram}
+            value={example}
             onChange={(e) => {
+              setExample(e.target.value);
               setModel(parseModel(EXAMPLES[e.target.value] ?? stateRaw));
               setCompareWith(null);
               setCompareError(null);
@@ -136,6 +143,7 @@ export function App() {
             <option value="parts-map">Parts / Agents Map</option>
             <option value="mode-map">Schema Mode Map</option>
             <option value="relational-field">Relational Field</option>
+            <option value="drama-triangle">Drama triangle (TA)</option>
             <option value="body-map">Body Map</option>
             <option value="decision-nav">Crisis chart</option>
             <option value="resource-anchor">Resource / Anchor map</option>

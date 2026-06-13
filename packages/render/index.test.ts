@@ -30,6 +30,7 @@ const ritualModel = parseModel(read('ritual.psyuml'));
 const relModel = parseModel(read('relational-field.psyuml'));
 const modeModel = parseModel(read('mode-map.psyuml'));
 const bodyModel = parseModel(read('body-map.psyuml'));
+const dramaModel = parseModel(read('drama-triangle.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -253,6 +254,26 @@ describe('renderBodyMap', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('body-map.svg', renderBodyMap(bodyModel).svg);
+  });
+});
+
+describe('renderRelationalField — Karpman drama triangle', () => {
+  it('renders the present roles and the nested historical triangle', () => {
+    const { svg, altText } = renderRelationalField(dramaModel);
+    expect(svg).toContain('Persecutor');
+    expect(svg).toContain('Rescuer');
+    expect(svg).toContain('Critical parent (then)');
+    expect(svg).toContain('stroke-dasharray="1 4"'); // the nestedWithin origin thread
+    expect(altText).toContain('nestedWithin');
+  });
+
+  it('uses the client vocabulary in the client layer', () => {
+    const { svg } = renderRelationalField(dramaModel, { layer: 'client' });
+    expect(svg).toContain('The blaming role');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('drama-triangle.svg', renderRelationalField(dramaModel).svg);
   });
 });
 

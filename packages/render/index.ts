@@ -1037,6 +1037,14 @@ function relLine(kind: string, x1: number, y1: number, x2: number, y2: number): 
       `<line x1="${r1(x1 + px * k)}" y1="${r1(y1 + py * k)}" x2="${r1(x2 + px * k)}" y2="${r1(y2 + py * k)}" stroke="#000" stroke-width="1.5" />`;
     return ln(-3) + ln(0) + ln(3);
   }
+  if (kind === 'nestedWithin') {
+    // Origin / nested-within: a fine-dotted thread (distinct from 'distant' dashes) with a
+    // small ring at the historical end to read as "derives from this earlier pattern".
+    return (
+      `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="#000" stroke-width="1" stroke-dasharray="1 4" />` +
+      `<circle cx="${r1(x2)}" cy="${r1(y2)}" r="4" fill="none" stroke="#000" stroke-width="1" />`
+    );
+  }
   const dash = kind === 'distant' ? ' stroke-dasharray="6 5"' : '';
   let out = `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="#000" stroke-width="2"${dash} />`;
   if (kind === 'cutoff') {
@@ -1143,7 +1151,7 @@ export function renderRelationalField(
 
   const ly = height - 26;
   parts.push(
-    `<text x="12" y="${ly}" font-family="sans-serif" font-size="10">□ male · ○ female · ◇ other · ▭ system · ═ fused · zigzag = conflict · dashed = distant · ‖ cutoff</text>`,
+    `<text x="12" y="${ly}" font-family="sans-serif" font-size="10">□ male · ○ female · ◇ other · ▭ system · ═ fused · zigzag = conflict · dashed = distant · ‖ cutoff · ⋯○ = origin (nested)</text>`,
   );
   if (model.meta.disclaimer) {
     parts.push(
