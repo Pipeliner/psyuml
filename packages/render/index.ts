@@ -673,3 +673,104 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   return { svg, altText };
 }
+
+const TL_W = 760;
+const TL_GUTTER = 92;
+const TL_ROW = { action: 112, identity: 198 } as const;
+
+/** Render a Timeline / Trajectory (spec §E.5): a narrative grid — bands are time
+ * columns, stereotype "action"/"identity" are the two landscapes, with a
+ * problem-saturated → preferred-future baseline. */
+export function renderTimeline(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const bands = [...model.bands].sort((a, b) => a.order - b.order);
+  const cols = Math.max(1, bands.length);
+  const colW = (TL_W - TL_GUTTER) / cols;
+  const colX = (i: number): number => r1(TL_GUTTER + i * colW + colW / 2);
+  const bandIndex = new Map(bands.map((b, i) => [b.id, i]));
+  const boxW = Math.min(colW - 14, 150);
+  const boxH = 52;
+
+  const rowOf = (s: string | undefined): 'action' | 'identity' =>
+    s === 'identity' ? 'identity' : 'action';
+
+  const pos = new Map<string, { x: number; y: number }>();
+  for (const node of model.nodes) {
+    const ci = node.bandId ? bandIndex.get(node.bandId) : undefined;
+    if (ci === undefined) continue;
+    pos.set(node.id, { x: colX(ci), y: TL_ROW[rowOf(node.stereotype)] });
+  }
+
+  const parts: string[] = [];
+
+  // Time-axis header + landscape row labels
+  bands.forEach((b, i) => {
+    parts.push(
+      `<text x="${colX(i)}" y="56" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700">${esc(getText(b.label, layer, lang))}</text>`,
+    );
+  });
+  parts.push(
+    `<text x="12" y="${TL_ROW.action + 4}" font-family="sans-serif" font-size="11" font-weight="700">ACTION</text>`,
+    `<text x="12" y="${TL_ROW.identity + 4}" font-family="sans-serif" font-size="11" font-weight="700">IDENTITY</text>`,
+  );
+
+  // Trajectory edges (left → right within a row)
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    parts.push(
+      `<path d="M ${r1(s.x + boxW / 2)},${s.y} L ${r1(t.x - boxW / 2)},${t.y}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+    );
+  }
+
+  // Cells
+  for (const node of model.nodes) {
+    const p = pos.get(node.id);
+    if (!p) continue;
+    parts.push(
+      `<rect x="${r1(p.x - boxW / 2)}" y="${p.y - boxH / 2}" width="${r1(boxW)}" height="${boxH}" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<text x="${p.x}" y="${p.y + 4}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(node.label, layer, lang))}</text>`,
+    );
+  }
+
+  // Problem-saturated → preferred-future baseline
+  const fy = TL_ROW.identity + 56;
+  parts.push(
+    `<line x1="${TL_GUTTER}" y1="${fy}" x2="${TL_W - 16}" y2="${fy}" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+    `<text x="${TL_GUTTER}" y="${fy - 6}" font-family="sans-serif" font-size="11">problem-saturated past</text>`,
+    `<text x="${TL_W - 16}" y="${fy - 6}" text-anchor="end" font-family="sans-serif" font-size="11">preferred future →</text>`,
+  );
+  const height = fy + 28;
+
+  const rowText = (row: 'action' | 'identity'): string =>
+    model.nodes
+      .filter((nd) => nd.bandId && rowOf(nd.stereotype) === row)
+      .sort((a, b) => (bandIndex.get(a.bandId ?? '') ?? 0) - (bandIndex.get(b.bandId ?? '') ?? 0))
+      .map((nd) => getText(nd.label, layer, lang))
+      .join(' → ');
+  const altText =
+    `Timeline${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Time: ${bands.map((b) => getText(b.label, layer, lang)).join(' → ')}. ` +
+    `Action: ${rowText('action') || 'none'}. Identity: ${rowText('identity') || 'none'}.`;
+
+  const titleText = model.meta.title
+    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+  const defs =
+    '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${TL_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Timeline')}</title><desc>${esc(altText)}</desc>` +
+    defs +
+    `<rect x="0" y="0" width="${TL_W}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

@@ -7,6 +7,7 @@ import {
   renderPartsMap,
   renderResourceMap,
   renderStateMap,
+  renderTimeline,
 } from './index';
 
 const read = (name: string): string =>
@@ -17,6 +18,7 @@ const partsModel = parseModel(read('parts-map.psyuml'));
 const decisionModel = parseModel(read('decision-nav.psyuml'));
 const resourceModel = parseModel(read('resource-anchor.psyuml'));
 const loopModel = parseModel(read('process-loop.psyuml'));
+const timelineModel = parseModel(read('timeline.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -136,5 +138,22 @@ describe('renderLoopMap', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('process-loop.svg', renderLoopMap(loopModel).svg);
+  });
+});
+
+describe('renderTimeline', () => {
+  it('lays out the action/identity grid across time bands', () => {
+    const { svg, altText } = renderTimeline(timelineModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('ACTION');
+    expect(svg).toContain('IDENTITY');
+    expect(svg).toContain('Started therapy');
+    expect(svg).toContain('preferred future');
+    expect(altText).toContain('Timeline');
+    expect(altText).toContain('Action:');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('timeline.svg', renderTimeline(timelineModel).svg);
   });
 });

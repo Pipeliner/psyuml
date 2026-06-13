@@ -1,0 +1,36 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "timeline",
+  "meta": {
+    "title": "Story line → preferred future",
+    "disclaimer": "This map supports, and does not replace, professional care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    { "id": "remote", "order": 0, "label": { "clinician": { "en": "Remote (age 6)" } } },
+    { "id": "distant", "order": 1, "label": { "clinician": { "en": "Distant (18)" } } },
+    { "id": "recent", "order": 2, "label": { "clinician": { "en": "Recent (now)" } } },
+    { "id": "present", "order": 3, "label": { "clinician": { "en": "Present" } } },
+    { "id": "future", "order": 4, "label": { "clinician": { "en": "Near future" } } }
+  ],
+  "nodes": [
+    { "id": "a0", "kind": "state", "stereotype": "action", "bandId": "remote", "tier": 1, "label": { "clinician": { "en": "Abuse" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "a1", "kind": "state", "stereotype": "action", "bandId": "distant", "tier": 1, "label": { "clinician": { "en": "Left home" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "a2", "kind": "state", "stereotype": "action", "bandId": "recent", "tier": 1, "label": { "clinician": { "en": "Started therapy" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "a3", "kind": "state", "stereotype": "action", "bandId": "present", "tier": 1, "label": { "clinician": { "en": "Setting boundaries" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "a4", "kind": "state", "stereotype": "action", "bandId": "future", "tier": 1, "label": { "clinician": { "en": "Values-led life" } }, "properties": { "epistemicStatus": "planned" } },
+
+    { "id": "i0", "kind": "state", "stereotype": "identity", "bandId": "remote", "tier": 1, "label": { "clinician": { "en": "\"unsafe\"" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "i1", "kind": "state", "stereotype": "identity", "bandId": "distant", "tier": 1, "label": { "clinician": { "en": "\"survivor\"" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "i2", "kind": "state", "stereotype": "identity", "bandId": "recent", "tier": 1, "label": { "clinician": { "en": "\"learning to trust\"" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "i3", "kind": "state", "stereotype": "identity", "bandId": "present", "tier": 1, "label": { "clinician": { "en": "\"I can choose\"" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "i4", "kind": "state", "stereotype": "identity", "bandId": "future", "tier": 1, "label": { "clinician": { "en": "\"I belong\"" } }, "properties": { "epistemicStatus": "planned" } }
+  ],
+  "edges": [
+    { "id": "t1", "kind": "sequential", "source": "a0", "target": "a1", "properties": {} },
+    { "id": "t2", "kind": "sequential", "source": "a1", "target": "a2", "properties": {} },
+    { "id": "t3", "kind": "sequential", "source": "a2", "target": "a3", "properties": {} },
+    { "id": "t4", "kind": "sequential", "source": "a3", "target": "a4", "properties": {} }
+  ]
+}

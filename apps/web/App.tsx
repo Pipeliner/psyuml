@@ -6,6 +6,7 @@ import {
   renderPartsMap,
   renderResourceMap,
   renderStateMap,
+  renderTimeline,
 } from '@psyuml/render';
 import { validate } from '@psyuml/validate';
 import stateRaw from '../../examples/state-map.psyuml?raw';
@@ -13,6 +14,7 @@ import partsRaw from '../../examples/parts-map.psyuml?raw';
 import decisionRaw from '../../examples/decision-nav.psyuml?raw';
 import resourceRaw from '../../examples/resource-anchor.psyuml?raw';
 import loopRaw from '../../examples/process-loop.psyuml?raw';
+import timelineRaw from '../../examples/timeline.psyuml?raw';
 import { addNode, setNodeHidden, setNodeLabel } from './editor';
 
 const EXAMPLES: Record<string, string> = {
@@ -21,6 +23,7 @@ const EXAMPLES: Record<string, string> = {
   'decision-nav': decisionRaw,
   'resource-anchor': resourceRaw,
   'process-loop': loopRaw,
+  timeline: timelineRaw,
 };
 
 function downloadText(filename: string, text: string, type: string): void {
@@ -47,6 +50,7 @@ export function App() {
     if (model.diagram === 'decision-nav') return renderDecisionChart(model, { layer });
     if (model.diagram === 'resource-anchor') return renderResourceMap(model, { layer });
     if (model.diagram === 'process-loop') return renderLoopMap(model, { layer });
+    if (model.diagram === 'timeline') return renderTimeline(model, { layer });
     return renderStateMap(model, { layer, monochrome });
   }, [model, layer, monochrome]);
 
@@ -93,6 +97,7 @@ export function App() {
             <option value="decision-nav">Crisis chart</option>
             <option value="resource-anchor">Resource / Anchor map</option>
             <option value="process-loop">Process / Loop</option>
+            <option value="timeline">Timeline / Trajectory</option>
           </select>
         </label>
 

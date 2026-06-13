@@ -221,8 +221,9 @@
       "spec": ["§E.5"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M6",
-      "status": "planned",
-      "impl": ["packages/render/**", "packages/profiles/**"]
+      "status": "in-progress",
+      "impl": ["packages/render/**", "examples/**"],
+      "notes": "renderTimeline: bands = time columns, stereotype action/identity = the two narrative landscapes, with a problem-saturated -> preferred-future baseline + trajectory arrows. timeline example wired into the editor."
     },
     {
       "id": "REQ-INTERVENTION-SEQ",
