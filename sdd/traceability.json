@@ -304,8 +304,9 @@
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M3",
       "status": "in-progress",
-      "impl": ["packages/validate/**"],
-      "notes": "Source 3 C3. Acute-risk/psychosis -> block autonomous formulation + human-review banner; risky-ritual materials -> documentation-only; typed-edge requirement; mixed-school provenance; PII redact-by-default. Gates the AI-assist pipeline. M3: crisis no-dead-ends + crisis-resources lint shipped; acute-risk/psychosis triage + ritual/PII gates land with AI-assist (M8)."
+      "impl": ["packages/validate/**", "apps/web/**"],
+      "tests": ["packages/validate/**/*.test.ts", "apps/web/**/*.test.ts"],
+      "notes": "Source 3 C3. Acute-risk/psychosis -> block autonomous formulation + human-review banner; risky-ritual materials -> documentation-only; typed-edge requirement; mixed-school provenance; PII redact-by-default. Gates the AI-assist pipeline. M3: crisis no-dead-ends + crisis-resources lint shipped; acute-risk + psychosis triage now act on meta.safety (escalation warning, acute-risk-requires-crisis-resources error, ritual-under-psychosis contraindication) + a mixed-school provenance notice; validate exports requiresHumanEscalation() which the editor reads to raise a clinical-escalation banner and which AI-assist (M8) reads to halt. Typed edges are enforced at parse time (EdgeKind required). PII redact-by-default still lands with privacy/AI (M8)."
     },
     {
       "id": "REQ-BODY-MAP",

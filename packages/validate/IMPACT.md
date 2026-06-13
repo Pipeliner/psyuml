@@ -1,9 +1,10 @@
 # Impact — `packages/validate/` (`@psyuml/validate`)
 
 **Purpose:** well-formedness, accessibility, path-of-hope, and clinical-hazard lint over
-a model. (M0: skeleton; M3: the four rule classes.)
-**Status:** active (M0 skeleton)
-**Spec anchor / REQ:** REQ-WELLFORMEDNESS, REQ-ACCESSIBILITY, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE
+a model (M3 rule classes). Acts on the clinician's risk flags + cross-school provenance.
+**Status:** active (M3 — rule classes landed; safety triage acts on `meta.safety`)
+**Spec anchor / REQ:** REQ-WELLFORMEDNESS, REQ-ACCESSIBILITY, REQ-PATH-OF-HOPE,
+REQ-SAFETY-TRIAGE, REQ-ETHICS-GUARDRAILS, REQ-CROSS-SCHOOL
 
 ## Upstream (this depends on)
 - `@psyuml/model` (the graph it checks).
@@ -17,7 +18,7 @@ a model. (M0: skeleton; M3: the four rule classes.)
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/validate`) | — | workspace resolution | — | low |
-| `index.ts` | `validate(model,{layer})` — well-formedness + path-of-hope + crisis no-dead-ends/resources + client disclaimer gate + a11y label-length | `@psyuml/model` | apps/web | §A.2, §D, §L.2 / REQ-WELLFORMEDNESS, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE, REQ-ACCESSIBILITY | medium |
+| `index.ts` | `validate(model,{layer})` — well-formedness + path-of-hope + crisis no-dead-ends/resources + client disclaimer gate + a11y label-length + **safety triage** (acute-risk/psychosis escalation, ritual-under-psychosis contraindication) + **mixed-school provenance** awareness; exports `requiresHumanEscalation` (the AI/UI halt gate) | `@psyuml/model` | apps/web, ai (M8) | §A.2, §D, §G.2, §L.2 / REQ-WELLFORMEDNESS, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE, REQ-ETHICS-GUARDRAILS, REQ-CROSS-SCHOOL, REQ-ACCESSIBILITY | medium |
 | `index.test.ts` | Unit tests + **examples-corpus lint** (every `examples/*.psyuml` must validate clean in both layers — a bad example fails CI) | `index.ts`, `examples/*.psyuml` | CI `test` | REQ-CONFORMANCE | low |
 
 ## Change checklist

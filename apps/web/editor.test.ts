@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
-import { addNode, nextId, setNodeHidden, setNodeLabel } from './editor';
+import { addNode, nextId, setNodeHidden, setNodeLabel, setSafetyFlag } from './editor';
 
 const read = (name: string) =>
   parseModel(readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8'));
@@ -52,5 +52,14 @@ describe('editor', () => {
     expect(hidden.nodes.find((x) => x.id === 'numb')?.hidden).toBe(true);
     const shown = setNodeHidden(hidden, 'numb', false);
     expect(shown.nodes.find((x) => x.id === 'numb')?.hidden).toBe(false);
+  });
+
+  it('setSafetyFlag toggles a triage flag without disturbing the other', () => {
+    const flagged = setSafetyFlag(stateModel, 'acuteRiskFlag', true);
+    expect(flagged.meta.safety.acuteRiskFlag).toBe(true);
+    expect(flagged.meta.safety.psychosisFlag).toBe(false);
+    expect(stateModel.meta.safety.acuteRiskFlag).toBe(false); // input untouched
+    const cleared = setSafetyFlag(flagged, 'acuteRiskFlag', false);
+    expect(cleared.meta.safety.acuteRiskFlag).toBe(false);
   });
 });

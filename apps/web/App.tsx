@@ -13,7 +13,7 @@ import {
   renderStateMap,
   renderTimeline,
 } from '@psyuml/render';
-import { validate } from '@psyuml/validate';
+import { requiresHumanEscalation, validate } from '@psyuml/validate';
 import { roleLabelsFor, TRANSLATABLE_SCHOOLS } from '@psyuml/profiles';
 import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
@@ -26,7 +26,7 @@ import ritualRaw from '../../examples/ritual.psyuml?raw';
 import relRaw from '../../examples/relational-field.psyuml?raw';
 import modeRaw from '../../examples/mode-map.psyuml?raw';
 import bodyRaw from '../../examples/body-map.psyuml?raw';
-import { addNode, setNodeHidden, setNodeLabel } from './editor';
+import { addNode, setNodeHidden, setNodeLabel, setSafetyFlag } from './editor';
 
 const EXAMPLES: Record<string, string> = {
   'state-map': stateRaw,
@@ -83,6 +83,7 @@ export function App() {
 
   const report = useMemo(() => validate(model, { layer }), [model, layer]);
   const exportBlocked = !report.ok;
+  const escalate = requiresHumanEscalation(model);
 
   return (
     <main
@@ -162,6 +163,24 @@ export function App() {
           </select>
         </label>
 
+        <label title="Clinician flag: acute risk to self or others — raises an escalation banner and requires crisis resources">
+          <input
+            type="checkbox"
+            checked={model.meta.safety.acuteRiskFlag}
+            onChange={(e) => setModel(setSafetyFlag(model, 'acuteRiskFlag', e.target.checked))}
+          />{' '}
+          Acute risk
+        </label>
+
+        <label title="Clinician flag: psychosis indicators — symbolic / reframing work needs specialist review">
+          <input
+            type="checkbox"
+            checked={model.meta.safety.psychosisFlag}
+            onChange={(e) => setModel(setSafetyFlag(model, 'psychosisFlag', e.target.checked))}
+          />{' '}
+          Psychosis
+        </label>
+
         <button
           type="button"
           disabled={!canAdd}
@@ -188,6 +207,25 @@ export function App() {
           Export SVG
         </button>
       </div>
+
+      {escalate && (
+        <section
+          role="alert"
+          aria-label="Clinical escalation"
+          style={{
+            border: '2px solid #d55e00',
+            background: '#fff4ec',
+            borderRadius: 8,
+            padding: '8px 12px',
+            marginBottom: 12,
+            fontSize: 14,
+          }}
+        >
+          <strong>⚠ Human clinical review required.</strong> A risk flag is set. This tool documents
+          a formulation — it does not provide crisis care, and any AI-assisted drafting is disabled
+          while a flag is active.
+        </section>
+      )}
 
       <section
         aria-label="Formulation health"

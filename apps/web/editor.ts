@@ -67,3 +67,19 @@ export function setNodeHidden(model: PsyumlModel, id: string, hidden: boolean): 
     nodes: model.nodes.map((n) => (n.id === id ? { ...n, hidden } : n)),
   });
 }
+
+/**
+ * Set a clinician safety-triage flag (acute-risk / psychosis), returning a new
+ * validated model. The validator turns these into escalation issues and the
+ * `requiresHumanEscalation` gate (REQ-SAFETY-TRIAGE).
+ */
+export function setSafetyFlag(
+  model: PsyumlModel,
+  flag: 'acuteRiskFlag' | 'psychosisFlag',
+  value: boolean,
+): PsyumlModel {
+  return parseModel({
+    ...model,
+    meta: { ...model.meta, safety: { ...model.meta.safety, [flag]: value } },
+  });
+}

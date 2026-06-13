@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { parseModel, type PsyumlModel } from '@psyuml/model';
-import { validate } from './index';
+import { requiresHumanEscalation, validate } from './index';
 
 const read = (name: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8'));
@@ -78,6 +78,64 @@ describe('validate', () => {
     const res = validate(noFraming);
     expect(res.ok).toBe(false);
     expect(res.issues.some((i) => i.rule === 'ethics.ritual-framing')).toBe(true);
+  });
+
+  it('escalates an acute-risk flag and requires crisis resources (REQ-SAFETY-TRIAGE)', () => {
+    const m = read('state-map.psyuml');
+    expect(requiresHumanEscalation(m)).toBe(false);
+    // Flag acute risk and strip the crisis resources → hard error + escalation warning.
+    const flagged = parseModel({
+      ...m,
+      meta: { ...m.meta, crisisResources: '', safety: { acuteRiskFlag: true } },
+    });
+    const r = validate(flagged);
+    expect(r.ok).toBe(false);
+    expect(r.issues.some((i) => i.rule === 'safety.acute-risk-escalation')).toBe(true);
+    expect(r.issues.some((i) => i.rule === 'safety.acute-risk-resources')).toBe(true);
+    expect(requiresHumanEscalation(flagged)).toBe(true);
+
+    // With crisis resources recorded, the hard error clears; the escalation warning stays.
+    const withResources = parseModel({
+      ...flagged,
+      meta: { ...flagged.meta, crisisResources: 'Call/text a local crisis line' },
+    });
+    const r2 = validate(withResources);
+    expect(r2.issues.some((i) => i.rule === 'safety.acute-risk-resources')).toBe(false);
+    expect(r2.issues.some((i) => i.rule === 'safety.acute-risk-escalation')).toBe(true);
+  });
+
+  it('escalates a psychosis flag and contraindicates ritual (REQ-SAFETY-TRIAGE)', () => {
+    const base = read('state-map.psyuml');
+    const s = parseModel({ ...base, meta: { ...base.meta, safety: { psychosisFlag: true } } });
+    const sr = validate(s);
+    expect(sr.ok).toBe(true); // a warning, not an export block, off-ritual
+    expect(sr.issues.some((i) => i.rule === 'safety.psychosis-escalation')).toBe(true);
+    expect(sr.issues.some((i) => i.rule === 'safety.psychosis-ritual')).toBe(false);
+
+    const r = read('ritual.psyuml');
+    const flagged = parseModel({ ...r, meta: { ...r.meta, safety: { psychosisFlag: true } } });
+    const res = validate(flagged);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.rule === 'safety.psychosis-ritual')).toBe(true);
+  });
+
+  it('flags mixed-school provenance as info (§G.2)', () => {
+    const m = read('state-map.psyuml');
+    const mixed = parseModel({
+      ...m,
+      nodes: m.nodes.map((n, i) => ({
+        ...n,
+        properties: { ...n.properties, provenance: [i === 0 ? 'school:cbt' : 'school:cat'] },
+      })),
+    });
+    const r = validate(mixed);
+    expect(
+      r.issues.some((i) => i.rule === 'provenance.mixed-school' && i.severity === 'info'),
+    ).toBe(true);
+    // info only — it must not block export.
+    expect(
+      r.issues.some((i) => i.rule === 'provenance.mixed-school' && i.severity === 'error'),
+    ).toBe(false);
   });
 });
 

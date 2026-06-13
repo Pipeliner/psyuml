@@ -3,10 +3,15 @@
  *
  * Rule classes: well-formedness (§A.2), and the safety lints the UX research made
  * binding — path-of-hope (a map of only problems can harm), crisis no-dead-ends +
- * crisis-resources (UX-M4), and the client-facing disclaimer gate (§A.2-r7, §L.2).
+ * crisis-resources (UX-M4), the client-facing disclaimer gate (§A.2-r7, §L.2), the
+ * clinical-hazard safety triage that acts on a clinician's risk flags (§L.2, M3), and
+ * cross-school provenance awareness so opposed origin-claims stay visible (§G.2).
  * `ok` is false when any error-severity issue is present (used to gate client export).
+ * `requiresHumanEscalation` is the gate AI-assist (M8) and the UI banner read to halt
+ * autonomous formulation when an acute-risk / psychosis flag is set.
  *
- * Traceability: REQ-WELLFORMEDNESS, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE, REQ-ETHICS-GUARDRAILS.
+ * Traceability: REQ-WELLFORMEDNESS, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE,
+ * REQ-ETHICS-GUARDRAILS, REQ-CROSS-SCHOOL.
  */
 import { getText, type PsyumlModel } from '@psyuml/model';
 
@@ -124,6 +129,50 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
     }
   }
 
+  // --- Safety triage: a clinician's risk flags must escalate, not sit silent (§L.2, M3) ---
+  const safety = model.meta.safety;
+  if (safety.acuteRiskFlag) {
+    add(
+      'safety.acute-risk-escalation',
+      'warn',
+      'Acute-risk flag is set — route to human clinical review now. This tool documents a formulation; it does not provide crisis care.',
+    );
+    if (!model.meta.crisisResources?.trim()) {
+      add(
+        'safety.acute-risk-resources',
+        'error',
+        'Acute risk is flagged but no crisis resources are recorded — add a localized crisis line/number before export.',
+      );
+    }
+  }
+  if (safety.psychosisFlag) {
+    add(
+      'safety.psychosis-escalation',
+      'warn',
+      'Psychosis indicators flagged — symbolic / reframing work needs specialist review; do not challenge reality-testing unsupervised.',
+    );
+    if (model.diagram === 'ritual') {
+      add(
+        'safety.psychosis-ritual',
+        'error',
+        'Ritual / symbolic modality is contraindicated with active psychosis indicators — requires specialist review before use.',
+      );
+    }
+  }
+
+  // --- Cross-school provenance awareness (§G.2): keep opposed origin-claims visible ---
+  const schools = new Set<string>();
+  for (const n of model.nodes)
+    for (const p of n.properties.provenance ?? [])
+      if (p.startsWith('school:')) schools.add(p.slice('school:'.length));
+  if (schools.size > 1) {
+    add(
+      'provenance.mixed-school',
+      'info',
+      `This diagram draws on ${schools.size} schools (${[...schools].sort().join(', ')}) — keep provenance tags visible; do not merge opposed claims.`,
+    );
+  }
+
   // --- Ritual: honest non-medical framing + a secular variant (spec §F, §L.2-r3) ---
   if (model.diagram === 'ritual') {
     if (!model.meta.ritual?.framing?.trim()) {
@@ -152,4 +201,15 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
   }
 
   return { ok: !issues.some((i) => i.severity === 'error'), issues };
+}
+
+/**
+ * Safety-triage gate (REQ-SAFETY-TRIAGE): true when a risk flag requires human
+ * escalation and any autonomous / AI-assisted formulation must halt (spec §L.2; the
+ * M3/M8 acceptance that an acute-risk marker "disables autonomous formulation").
+ * The editor reads this to raise its escalation banner; the AI panel (M8) reads it to
+ * stop before any extraction.
+ */
+export function requiresHumanEscalation(model: PsyumlModel): boolean {
+  return model.meta.safety.acuteRiskFlag || model.meta.safety.psychosisFlag;
 }
