@@ -273,9 +273,9 @@
       "spec": ["§J", "§K"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M10",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["conformance/**"],
-      "notes": "Leaving v0.x stays gated on the spec's Stage-4 clinical evidence. Conformance includes the round-trip invariant (Source 3)."
+      "notes": "Leaving v0.x stays gated on the spec's Stage-4 clinical evidence. Conformance includes the round-trip invariant (Source 3). M10: conformance/ suite runs per-example round-trip + validation (both layers) + accessible-SVG (role/aria/alt) + monochrome + type coverage, in CI."
     },
     {
       "id": "REQ-EPISTEMIC-STATUS",

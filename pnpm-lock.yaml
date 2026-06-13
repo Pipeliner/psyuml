@@ -69,6 +69,18 @@ importers:
         specifier: workspace:*
         version: link:../../packages/validate
 
+  conformance:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../packages/model
+      '@psyuml/render':
+        specifier: workspace:*
+        version: link:../packages/render
+      '@psyuml/validate':
+        specifier: workspace:*
+        version: link:../packages/validate
+
   packages/model:
     dependencies:
       zod:

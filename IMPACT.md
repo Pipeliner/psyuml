@@ -19,6 +19,7 @@ PsyUML spec + tooling repo.
 - `assets/` — color tokens + the 8 core glyphs (see `assets/IMPACT.md`).
 - `examples/` — canonical `.psyuml` models + golden renders (see `examples/IMPACT.md`).
 - `docs/` — spec, architecture, roadmap, research (see `docs/IMPACT.md`).
+- `conformance/` — executable spec-conformance suite (§J; see `conformance/IMPACT.md`).
 - `sdd/` — Spec-Driven Development harness (see `sdd/IMPACT.md`).
 - `.github/` — CI workflow `ci.yml` (untracked by the SDD checker, dot-directory).
 
