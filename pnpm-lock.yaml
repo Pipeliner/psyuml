@@ -90,6 +90,12 @@ importers:
         specifier: workspace:*
         version: link:../model
 
+  packages/grammar:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../model
+
   packages/model:
     dependencies:
       zod:

@@ -264,10 +264,10 @@
       "spec": ["§B", "§C"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M9",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["packages/grammar/**"],
       "tests": ["packages/grammar/**/*.test.ts"],
-      "notes": "Error messages designed for non-programmers (alt-plan cross-check, idea-incorporation §7)."
+      "notes": "M9: @psyuml/grammar ships toDSL()/fromDSL() — a line-oriented text surface (diagram/lang/title/disclaimer/crisis/ritual/flag headers; band/node/edge statements; double-quoted free text with \\\" + \\\\ escapes; omit-on-default + a labeljson escape for multi-language labels). Lossless round-trip is proven over the whole corpus (fromDSL(toDSL(parseModel(x))) deep-equals parseModel(x)) since both sides are parseModel-normalized. Still to come: the runnable `psyuml lint|render|convert|export` CLI (needs a build/run story for the TS workspace packages) and non-programmer-friendly parse error messages (alt-plan cross-check, idea-incorporation §7)."
     },
     {
       "id": "REQ-CONFORMANCE",
