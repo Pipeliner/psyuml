@@ -134,7 +134,7 @@
       "milestone": "M3",
       "status": "planned",
       "impl": ["packages/validate/**", "packages/render/**"],
-      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2). The editor itself meets WCAG 2.2 AA — keyboard operation, contrast, 200% zoom, target size, colour-redundant (UX-M1, docs/ux)."
+      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2). The editor itself meets WCAG 2.2 AA — keyboard operation, contrast, 200% zoom, target size, colour-redundant (UX-M1, docs/ux). M3: validate flags over-long labels (a11y.label-length); the examples corpus is lint-gated in CI."
     },
     {
       "id": "REQ-PATH-OF-HOPE",

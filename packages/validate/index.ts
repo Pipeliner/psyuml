@@ -63,8 +63,16 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
         n.id,
       );
     }
-    if (!getText(n.label, 'clinician').trim()) {
+    const clinLabel = getText(n.label, 'clinician');
+    if (!clinLabel.trim()) {
       add('wf.label', 'warn', `Node "${n.id}" has no label.`, n.id);
+    } else if (clinLabel.length > 40) {
+      add(
+        'a11y.label-length',
+        'info',
+        `Node "${n.id}" label is long (${clinLabel.length} chars) — may overflow or be hard to read.`,
+        n.id,
+      );
     }
   }
 

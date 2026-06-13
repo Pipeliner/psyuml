@@ -187,24 +187,36 @@ export function App() {
       <section aria-label="Nodes" style={{ marginTop: 16 }}>
         <h2 style={{ fontSize: 16, marginBottom: 6 }}>Nodes — rename in your words, or hide</h2>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
-          {model.nodes.map((n) => (
-            <li key={n.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                aria-label={`Label for node ${n.id}`}
-                value={getText(n.label, layer)}
-                onChange={(e) => setModel(setNodeLabel(model, n.id, e.target.value, layer))}
-                style={{ flex: 1, minWidth: 0, padding: '4px 8px' }}
-              />
-              <label style={{ whiteSpace: 'nowrap' }}>
+          {model.nodes.map((n) => {
+            const nodeIssues = report.issues.filter((iss) => iss.nodeId === n.id);
+            return (
+              <li key={n.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {nodeIssues.length > 0 && (
+                  <span
+                    title={nodeIssues.map((iss) => iss.message).join('; ')}
+                    aria-label={`${nodeIssues.length} issue(s) on ${n.id}`}
+                    style={{ fontWeight: 700 }}
+                  >
+                    {nodeIssues.some((iss) => iss.severity === 'error') ? '✖' : '⚠'}
+                  </span>
+                )}
                 <input
-                  type="checkbox"
-                  checked={!n.hidden}
-                  onChange={(e) => setModel(setNodeHidden(model, n.id, !e.target.checked))}
-                />{' '}
-                show
-              </label>
-            </li>
-          ))}
+                  aria-label={`Label for node ${n.id}`}
+                  value={getText(n.label, layer)}
+                  onChange={(e) => setModel(setNodeLabel(model, n.id, e.target.value, layer))}
+                  style={{ flex: 1, minWidth: 0, padding: '4px 8px' }}
+                />
+                <label style={{ whiteSpace: 'nowrap' }}>
+                  <input
+                    type="checkbox"
+                    checked={!n.hidden}
+                    onChange={(e) => setModel(setNodeHidden(model, n.id, !e.target.checked))}
+                  />{' '}
+                  show
+                </label>
+              </li>
+            );
+          })}
         </ul>
       </section>
     </main>

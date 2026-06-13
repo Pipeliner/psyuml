@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { parseModel, type PsyumlModel } from '@psyuml/model';
 import { validate } from './index';
 
@@ -51,5 +51,37 @@ describe('validate', () => {
     const m = read('state-map.psyuml');
     const noDisclaimer = parseModel({ ...m, meta: { ...m.meta, disclaimer: '' } });
     expect(validate(noDisclaimer).issues.some((i) => i.rule === 'ethics.disclaimer')).toBe(true);
+  });
+
+  it('flags an over-long label (info, accessibility)', () => {
+    const m = read('state-map.psyuml');
+    const long = parseModel({
+      ...m,
+      nodes: m.nodes.map((n, i) =>
+        i === 0 ? { ...n, label: { clinician: { en: 'x'.repeat(60) } } } : n,
+      ),
+    });
+    expect(
+      validate(long).issues.some(
+        (iss) => iss.rule === 'a11y.label-length' && iss.severity === 'info',
+      ),
+    ).toBe(true);
+  });
+});
+
+// CI corpus lint: every committed example must validate clean in both layers.
+const corpus = readdirSync(new URL('../../examples/', import.meta.url)).filter((f) =>
+  f.endsWith('.psyuml'),
+);
+
+describe('examples corpus lint', () => {
+  it('has the expected examples', () => {
+    expect(corpus.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each(corpus)('%s validates clean in both layers', (name) => {
+    const m = read(name);
+    expect(validate(m, { layer: 'clinician' }).ok).toBe(true);
+    expect(validate(m, { layer: 'client' }).ok).toBe(true);
   });
 });
