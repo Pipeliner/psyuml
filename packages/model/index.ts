@@ -136,6 +136,13 @@ export const Meta = z
     title: z.string().optional(),
     disclaimer: z.string().optional(),
     crisisResources: z.string().optional(),
+    /** Ritual diagrams must carry honest non-medical framing + a secular variant (spec §F, §L.2-r3). */
+    ritual: z
+      .object({
+        framing: z.string().optional(),
+        secularVariant: z.string().optional(),
+      })
+      .optional(),
     safety: z
       .object({
         psychosisFlag: z.boolean().default(false),

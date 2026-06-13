@@ -241,9 +241,9 @@
       "spec": ["§F", "§L.2"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M7",
-      "status": "planned",
-      "impl": ["packages/profiles/**", "packages/validate/**"],
-      "notes": "Validator blocks ritual export without secular variant + non-medical framing fields."
+      "status": "in-progress",
+      "impl": ["packages/render/**", "packages/validate/**", "packages/model/**"],
+      "notes": "renderRitual (van Gennep phase columns, LIMINAL dashed, ritual-act hexagons, mandatory framing+secular footer); model.meta.ritual carries framing/secularVariant; validate errors if either is missing (ethics.ritual-framing / ethics.ritual-secular), so the editor blocks ritual export without them. §F.6 interop (same hexagon as an Intervention-Sequence node) follows."
     },
     {
       "id": "REQ-AI-ASSIST",

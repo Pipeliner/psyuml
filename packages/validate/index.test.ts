@@ -67,6 +67,18 @@ describe('validate', () => {
       ),
     ).toBe(true);
   });
+
+  it('requires honest framing + a secular variant on a ritual diagram', () => {
+    const r = read('ritual.psyuml');
+    expect(validate(r).ok).toBe(true);
+    const noFraming = parseModel({
+      ...r,
+      meta: { ...r.meta, ritual: { secularVariant: r.meta.ritual?.secularVariant } },
+    });
+    const res = validate(noFraming);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.rule === 'ethics.ritual-framing')).toBe(true);
+  });
 });
 
 // CI corpus lint: every committed example must validate clean in both layers.

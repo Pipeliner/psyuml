@@ -6,6 +6,7 @@ import {
   renderLoopMap,
   renderPartsMap,
   renderResourceMap,
+  renderRitual,
   renderStateMap,
   renderTimeline,
 } from '@psyuml/render';
@@ -17,6 +18,7 @@ import resourceRaw from '../../examples/resource-anchor.psyuml?raw';
 import loopRaw from '../../examples/process-loop.psyuml?raw';
 import timelineRaw from '../../examples/timeline.psyuml?raw';
 import seqRaw from '../../examples/intervention-sequence.psyuml?raw';
+import ritualRaw from '../../examples/ritual.psyuml?raw';
 import { addNode, setNodeHidden, setNodeLabel } from './editor';
 
 const EXAMPLES: Record<string, string> = {
@@ -27,6 +29,7 @@ const EXAMPLES: Record<string, string> = {
   'process-loop': loopRaw,
   timeline: timelineRaw,
   'intervention-sequence': seqRaw,
+  ritual: ritualRaw,
 };
 
 function downloadText(filename: string, text: string, type: string): void {
@@ -55,6 +58,7 @@ export function App() {
     if (model.diagram === 'process-loop') return renderLoopMap(model, { layer });
     if (model.diagram === 'timeline') return renderTimeline(model, { layer });
     if (model.diagram === 'intervention-sequence') return renderInterventionSeq(model, { layer });
+    if (model.diagram === 'ritual') return renderRitual(model, { layer });
     return renderStateMap(model, { layer, monochrome });
   }, [model, layer, monochrome]);
 
@@ -103,6 +107,7 @@ export function App() {
             <option value="process-loop">Process / Loop</option>
             <option value="timeline">Timeline / Trajectory</option>
             <option value="intervention-sequence">Intervention Sequence</option>
+            <option value="ritual">Ritual Structure</option>
           </select>
         </label>
 

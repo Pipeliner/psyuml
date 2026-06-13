@@ -900,3 +900,110 @@ export function renderInterventionSeq(
 
   return { svg, altText };
 }
+
+const RIT_W = 760;
+const RNODE_H = 46;
+
+/** Render a Ritual Structure (spec §F): van Gennep phase columns (the LIMINAL phase
+ * drawn dashed — "betwixt and between"), ritual-act hexagons, and a MANDATORY footer
+ * carrying the honest non-medical framing + a secular variant. */
+export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const phases = [...model.bands].sort((a, b) => a.order - b.order);
+  const cols = Math.max(1, phases.length);
+  const colW = RIT_W / cols;
+  const phaseIndex = new Map(phases.map((p, i) => [p.id, i]));
+  const nw = Math.min(colW - 26, 200);
+  const vgap = 16;
+  const top = 72;
+
+  const byPhase = new Map<number, MNode[]>();
+  for (const node of model.nodes) {
+    const ci = node.bandId ? phaseIndex.get(node.bandId) : undefined;
+    if (ci === undefined) continue;
+    const arr = byPhase.get(ci);
+    if (arr) arr.push(node);
+    else byPhase.set(ci, [node]);
+  }
+  const pos = new Map<string, { x: number; y: number }>();
+  let maxRows = 0;
+  for (let ci = 0; ci < phases.length; ci += 1) {
+    const list = byPhase.get(ci) ?? [];
+    maxRows = Math.max(maxRows, list.length);
+    list.forEach((node, r) => {
+      pos.set(node.id, {
+        x: r1(ci * colW + colW / 2),
+        y: top + r * (RNODE_H + vgap) + RNODE_H / 2,
+      });
+    });
+  }
+  const phasesBottom = top + Math.max(1, maxRows) * (RNODE_H + vgap);
+  const footerY = phasesBottom + 18;
+  const height = footerY + 44;
+
+  const parts: string[] = [];
+
+  // Phase columns (LIMINAL dashed)
+  phases.forEach((p, ci) => {
+    const isLiminal = getText(p.label, 'clinician', 'en').toLowerCase().includes('liminal');
+    const dash = isLiminal ? ' stroke-dasharray="6 5"' : '';
+    parts.push(
+      `<rect x="${r1(ci * colW + 6)}" y="50" width="${r1(colW - 12)}" height="${r1(phasesBottom - 50)}" fill="#fff" stroke="#000" stroke-width="1.5"${dash} />`,
+      `<text x="${r1(ci * colW + colW / 2)}" y="42" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700">${esc(getText(p.label, layer, lang))}</text>`,
+    );
+  });
+
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    parts.push(
+      `<path d="M ${s.x},${s.y} L ${t.x},${t.y}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+    );
+  }
+
+  for (const node of model.nodes) {
+    const p = pos.get(node.id);
+    if (!p) continue;
+    const { x, y } = p;
+    parts.push(
+      `<polygon points="${x - nw / 2 + 12},${y - RNODE_H / 2} ${x + nw / 2 - 12},${y - RNODE_H / 2} ${x + nw / 2},${y} ${x + nw / 2 - 12},${y + RNODE_H / 2} ${x - nw / 2 + 12},${y + RNODE_H / 2} ${x - nw / 2},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<text x="${x}" y="${y + 4}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(node.label, layer, lang))}</text>`,
+    );
+  }
+
+  // Mandatory honest-framing + secular-variant footer
+  const framing = model.meta.ritual?.framing ?? '';
+  const secular = model.meta.ritual?.secularVariant ?? '';
+  parts.push(
+    `<text x="12" y="${footerY + 6}" font-family="sans-serif" font-size="11" font-weight="700">Honest framing:</text>`,
+    `<text x="120" y="${footerY + 6}" font-family="sans-serif" font-size="10">${esc(framing)}</text>`,
+    `<text x="12" y="${footerY + 24}" font-family="sans-serif" font-size="11" font-weight="700">Secular variant:</text>`,
+    `<text x="120" y="${footerY + 24}" font-family="sans-serif" font-size="10">${esc(secular)}</text>`,
+  );
+
+  const altText =
+    `Ritual structure${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Phases: ${phases.map((p) => getText(p.label, layer, lang)).join(' → ')}. ` +
+    `Honest framing: ${framing} Secular variant: ${secular}`;
+
+  const titleText = model.meta.title
+    ? `<text x="12" y="24" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+  const defs =
+    '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${RIT_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Ritual structure')}</title><desc>${esc(altText)}</desc>` +
+    defs +
+    `<rect x="0" y="0" width="${RIT_W}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

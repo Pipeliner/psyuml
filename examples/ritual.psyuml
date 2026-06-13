@@ -1,0 +1,32 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "ritual",
+  "meta": {
+    "title": "Grief / transition rite",
+    "disclaimer": "This rite supports, and does not replace, professional care. Co-created and consent-based.",
+    "ritual": {
+      "framing": "Eases subjective anxiety, control & meaning — not objective disease. Not a medical cure.",
+      "secularVariant": "Quiet remembering: name the loss, keep an object, ask trusted people to witness. No belief needed."
+    },
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    { "id": "separation", "order": 0, "label": { "clinician": { "en": "Separation" } } },
+    { "id": "liminal", "order": 1, "label": { "clinician": { "en": "Liminal (threshold)" } } },
+    { "id": "incorporation", "order": 2, "label": { "clinician": { "en": "Incorporation" } } }
+  ],
+  "nodes": [
+    { "id": "sep1", "kind": "intervention", "bandId": "separation", "tier": 1, "label": { "clinician": { "en": "Name the losses (candle)" } }, "properties": { "epistemicStatus": "symbolic" } },
+    { "id": "lim1", "kind": "intervention", "bandId": "liminal", "tier": 1, "label": { "clinician": { "en": "Letter to the child-self" } }, "properties": { "epistemicStatus": "symbolic" } },
+    { "id": "lim2", "kind": "intervention", "bandId": "liminal", "tier": 1, "label": { "clinician": { "en": "Read aloud, then burn safely" } }, "properties": { "epistemicStatus": "symbolic" } },
+    { "id": "inc1", "kind": "intervention", "bandId": "incorporation", "tier": 1, "label": { "clinician": { "en": "Carry a symbol forward" } }, "properties": { "epistemicStatus": "symbolic" } },
+    { "id": "inc2", "kind": "intervention", "bandId": "incorporation", "tier": 1, "label": { "clinician": { "en": "Witnesses affirm new status" } }, "properties": { "epistemicStatus": "symbolic" } }
+  ],
+  "edges": [
+    { "id": "r1", "kind": "sequential", "source": "sep1", "target": "lim1", "properties": {} },
+    { "id": "r2", "kind": "sequential", "source": "lim1", "target": "lim2", "properties": {} },
+    { "id": "r3", "kind": "sequential", "source": "lim2", "target": "inc1", "properties": {} },
+    { "id": "r4", "kind": "sequential", "source": "inc1", "target": "inc2", "properties": {} }
+  ]
+}

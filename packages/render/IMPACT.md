@@ -17,7 +17,7 @@ alt-text. (M0: placeholder; M1: the real pipeline.)
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/render`) | — | workspace resolution | — | low |
-| `index.ts` | Render API — one `render*` per diagram type: State, Parts, Loop, Timeline, InterventionSeq, Decision, Resource | model, profiles, assets | apps/web | §B–§E / REQ-NOTATION, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR | medium |
+| `index.ts` | Render API — one `render*` per diagram type: State, Parts, Loop, Timeline, InterventionSeq, Ritual, Decision, Resource | model, profiles, assets | apps/web | §B–§F / REQ-NOTATION, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR | medium |
 | `index.test.ts` | Unit tests | `index.ts` | CI `test` | — | low |
 
 ## Change checklist

@@ -7,6 +7,7 @@ import {
   renderLoopMap,
   renderPartsMap,
   renderResourceMap,
+  renderRitual,
   renderStateMap,
   renderTimeline,
 } from './index';
@@ -21,6 +22,7 @@ const resourceModel = parseModel(read('resource-anchor.psyuml'));
 const loopModel = parseModel(read('process-loop.psyuml'));
 const timelineModel = parseModel(read('timeline.psyuml'));
 const seqModel = parseModel(read('intervention-sequence.psyuml'));
+const ritualModel = parseModel(read('ritual.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -173,5 +175,21 @@ describe('renderInterventionSeq', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('intervention-sequence.svg', renderInterventionSeq(seqModel).svg);
+  });
+});
+
+describe('renderRitual', () => {
+  it('draws van Gennep phases with a mandatory framing + secular footer', () => {
+    const { svg, altText } = renderRitual(ritualModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Liminal (threshold)');
+    expect(svg).toContain('Honest framing:');
+    expect(svg).toContain('Secular variant:');
+    expect(altText).toContain('Ritual structure');
+    expect(altText).toContain('Secular variant:');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('ritual.svg', renderRitual(ritualModel).svg);
   });
 });

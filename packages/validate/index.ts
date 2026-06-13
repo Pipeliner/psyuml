@@ -121,6 +121,24 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
     }
   }
 
+  // --- Ritual: honest non-medical framing + a secular variant (spec §F, §L.2-r3) ---
+  if (model.diagram === 'ritual') {
+    if (!model.meta.ritual?.framing?.trim()) {
+      add(
+        'ethics.ritual-framing',
+        'error',
+        'A ritual diagram must carry honest non-medical framing (it does not cure disease).',
+      );
+    }
+    if (!model.meta.ritual?.secularVariant?.trim()) {
+      add(
+        'ethics.ritual-secular',
+        'error',
+        'A ritual diagram must offer a secular variant (no belief required).',
+      );
+    }
+  }
+
   // --- Client-facing disclaimer gate (§A.2-r7, §L.2) ---
   if (CLIENT_FACING.has(model.diagram) && !model.meta.disclaimer?.trim()) {
     add(
