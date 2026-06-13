@@ -59,6 +59,9 @@ importers:
       '@psyuml/diff':
         specifier: workspace:*
         version: link:../../packages/diff
+      '@psyuml/grammar':
+        specifier: workspace:*
+        version: link:../../packages/grammar
       '@psyuml/model':
         specifier: workspace:*
         version: link:../../packages/model

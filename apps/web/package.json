@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@psyuml/diff": "workspace:*",
+    "@psyuml/grammar": "workspace:*",
     "@psyuml/model": "workspace:*",
     "@psyuml/profiles": "workspace:*",
     "@psyuml/render": "workspace:*",

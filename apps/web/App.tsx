@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { getText, parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
+import { fromDSL, toDSL } from '@psyuml/grammar';
 import {
   renderBodyMap,
   renderDecisionChart,
@@ -107,6 +108,11 @@ export function App() {
     [compareWith, model, layer],
   );
   const diffLines = useMemo(() => (diff ? summarizeDiff(diff, layer) : []), [diff, layer]);
+
+  // Text DSL surface (M9): show the model as editable text; apply parses it back.
+  const dsl = useMemo(() => toDSL(model), [model]);
+  const dslRef = useRef<HTMLTextAreaElement>(null);
+  const [dslError, setDslError] = useState<string | null>(null);
 
   return (
     <main
@@ -371,6 +377,45 @@ export function App() {
       <details style={{ marginTop: 12 }}>
         <summary>Text description (screen-reader friendly)</summary>
         <p style={{ fontSize: 14 }}>{altText}</p>
+      </details>
+
+      <details style={{ marginTop: 12 }}>
+        <summary>Text (DSL) — read, copy, or edit as text</summary>
+        <textarea
+          key={dsl}
+          ref={dslRef}
+          defaultValue={dsl}
+          rows={12}
+          spellCheck={false}
+          aria-label="PsyUML text DSL"
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            fontFamily: 'ui-monospace, monospace',
+            fontSize: 12,
+            marginTop: 6,
+          }}
+        />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                setModel(fromDSL(dslRef.current?.value ?? ''));
+                setDslError(null);
+              } catch (err) {
+                setDslError(err instanceof Error ? err.message : 'Could not parse the text.');
+              }
+            }}
+          >
+            Apply text
+          </button>
+          {dslError && (
+            <span role="alert" style={{ color: '#d55e00', fontSize: 13 }}>
+              {dslError}
+            </span>
+          )}
+        </div>
       </details>
 
       <section aria-label="Nodes" style={{ marginTop: 16 }}>
