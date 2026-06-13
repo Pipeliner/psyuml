@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
-import { addNode, nextId } from './editor';
+import { addNode, nextId, setNodeHidden, setNodeLabel } from './editor';
 
 const read = (name: string) =>
   parseModel(readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8'));
@@ -33,5 +33,24 @@ describe('editor', () => {
     const before = stateModel.nodes.length;
     addNode(stateModel, 'x');
     expect(stateModel.nodes).toHaveLength(before);
+  });
+
+  it('setNodeLabel updates the clinician label', () => {
+    const m = setNodeLabel(stateModel, 'calm', 'Renamed', 'clinician');
+    expect(m.nodes.find((x) => x.id === 'calm')?.label.clinician.en).toBe('Renamed');
+  });
+
+  it('setNodeLabel sets the client label without touching the clinician label', () => {
+    const m = setNodeLabel(stateModel, 'calm', 'My word', 'client');
+    const n = m.nodes.find((x) => x.id === 'calm');
+    expect(n?.label.client?.en).toBe('My word');
+    expect(n?.label.clinician.en).toBe('Calm / connected');
+  });
+
+  it('setNodeHidden hides a node (and is reversible)', () => {
+    const hidden = setNodeHidden(stateModel, 'numb', true);
+    expect(hidden.nodes.find((x) => x.id === 'numb')?.hidden).toBe(true);
+    const shown = setNodeHidden(hidden, 'numb', false);
+    expect(shown.nodes.find((x) => x.id === 'numb')?.hidden).toBe(false);
   });
 });

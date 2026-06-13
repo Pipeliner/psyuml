@@ -96,6 +96,8 @@ export const Node = z.object({
   stereotype: z.string().optional(),
   tier: Tier.default(1),
   bandId: z.string().optional(),
+  /** View flag for progressive reveal (UX-M7): hidden nodes + their edges are not rendered. */
+  hidden: z.boolean().optional(),
   properties: Properties.default({}),
 });
 export type Node = z.infer<typeof Node>;

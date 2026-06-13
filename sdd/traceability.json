@@ -82,9 +82,9 @@
       "spec": ["§G", "§L.2"],
       "source": "docs/ux/ux-research-and-requirements.md",
       "milestone": "M2",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["apps/web/**", "packages/model/**"],
-      "notes": "UX-M6 / P1.1 / P2.2: shared/concurrent editing, free-text + verbatim labels, visible authorship, client can relabel/hide/correct, reversible. Collaboration is the evidence-supported active ingredient (Thrower 2024; BPS 2011)."
+      "notes": "UX-M6 / P1.1 / P2.2: shared/concurrent editing, free-text + verbatim labels, visible authorship, client can relabel/hide/correct, reversible. Collaboration is the evidence-supported active ingredient (Thrower 2024; BPS 2011). M2: in-place label editing per layer (node panel); real-time concurrent editing is later."
     },
     {
       "id": "REQ-CLIENT-SAFETY-UX",
@@ -92,9 +92,9 @@
       "spec": ["§D", "§L.2"],
       "source": "docs/ux/ux-research-and-requirements.md",
       "milestone": "M2",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["apps/web/**", "packages/render/**"],
-      "notes": "UX-M7 / P1.3 / P2.3: a poorly-handled formulation can distress (Redhead 2015) — progressive reveal, never force completion, soft wording, opt-in trauma detail, no unprompted 'verdict' diagram."
+      "notes": "UX-M7 / P1.3 / P2.3: a poorly-handled formulation can distress (Redhead 2015) — progressive reveal, never force completion, soft wording, opt-in trauma detail, no unprompted 'verdict' diagram. M2: per-node hide/show (progressive reveal) via the node panel + standing disclaimer + save-incomplete (nothing auto-finalized) shipped."
     },
     {
       "id": "REQ-DECISION-NAV",

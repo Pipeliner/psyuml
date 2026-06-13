@@ -45,8 +45,20 @@ const esc = (s: string): string =>
 
 const patternId = (p: MBand['pattern']): string | null => (p === 'none' ? null : `p-${p}`);
 
+/** Progressive reveal (UX-M7): drop hidden nodes and any edge touching them. */
+function withoutHidden(model: PsyumlModel): PsyumlModel {
+  if (!model.nodes.some((n) => n.hidden)) return model;
+  const hidden = new Set(model.nodes.filter((n) => n.hidden).map((n) => n.id));
+  return {
+    ...model,
+    nodes: model.nodes.filter((n) => !hidden.has(n.id)),
+    edges: model.edges.filter((e) => !hidden.has(e.source) && !hidden.has(e.target)),
+  };
+}
+
 /** Render a State Map (spec §E.1) to SVG + alt text from the canonical model. */
 export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
   const monochrome = options.monochrome ?? true;
@@ -206,6 +218,7 @@ const r1 = (v: number): number => Math.round(v * 10) / 10;
 /** Render a Parts / Agents Map (spec §E.2): Self centred, protectors orbiting,
  * exiles in a containment orbit behind a dissociative barrier. */
 export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
 
@@ -352,6 +365,7 @@ function decShape(stereotype: string | undefined, cx: number, cy: number): strin
 /** Render a Decision / Navigation (crisis) chart (spec §E.8): one decision per step,
  * top-down layered, with an ALWAYS-VISIBLE crisis-resources banner (UX-M4). */
 export function renderDecisionChart(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
   const nodes = model.nodes;
@@ -474,6 +488,7 @@ const RES_W = 720;
 /** Render a Resource / Anchor map (spec §E.9): a categorized inventory of strengths,
  * supports, skills, values, and soothing-system boosters (◇ anchors under categories). */
 export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
 

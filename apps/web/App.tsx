@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
+import { getText, parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
 import {
   renderDecisionChart,
   renderPartsMap,
@@ -10,7 +10,7 @@ import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
 import decisionRaw from '../../examples/decision-nav.psyuml?raw';
 import resourceRaw from '../../examples/resource-anchor.psyuml?raw';
-import { addNode } from './editor';
+import { addNode, setNodeHidden, setNodeLabel } from './editor';
 
 const EXAMPLES: Record<string, string> = {
   'state-map': stateRaw,
@@ -142,6 +142,30 @@ export function App() {
         <summary>Text description (screen-reader friendly)</summary>
         <p style={{ fontSize: 14 }}>{altText}</p>
       </details>
+
+      <section aria-label="Nodes" style={{ marginTop: 16 }}>
+        <h2 style={{ fontSize: 16, marginBottom: 6 }}>Nodes — rename in your words, or hide</h2>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+          {model.nodes.map((n) => (
+            <li key={n.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                aria-label={`Label for node ${n.id}`}
+                value={getText(n.label, layer)}
+                onChange={(e) => setModel(setNodeLabel(model, n.id, e.target.value, layer))}
+                style={{ flex: 1, minWidth: 0, padding: '4px 8px' }}
+              />
+              <label style={{ whiteSpace: 'nowrap' }}>
+                <input
+                  type="checkbox"
+                  checked={!n.hidden}
+                  onChange={(e) => setModel(setNodeHidden(model, n.id, !e.target.checked))}
+                />{' '}
+                show
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   );
 }

@@ -40,3 +40,30 @@ export function addNode(model: PsyumlModel, label: string): PsyumlModel {
       };
   return parseModel({ ...model, nodes: [...model.nodes, node] });
 }
+
+/** Set a node's label for the given layer (in 'en'); returns a new validated model. */
+export function setNodeLabel(
+  model: PsyumlModel,
+  id: string,
+  text: string,
+  layer: 'clinician' | 'client',
+): PsyumlModel {
+  return parseModel({
+    ...model,
+    nodes: model.nodes.map((n) => {
+      if (n.id !== id) return n;
+      const label = { ...n.label };
+      if (layer === 'client') label.client = { ...(label.client ?? {}), en: text };
+      else label.clinician = { ...label.clinician, en: text };
+      return { ...n, label };
+    }),
+  });
+}
+
+/** Show/hide a node (progressive reveal, UX-M7); returns a new validated model. */
+export function setNodeHidden(model: PsyumlModel, id: string, hidden: boolean): PsyumlModel {
+  return parseModel({
+    ...model,
+    nodes: model.nodes.map((n) => (n.id === id ? { ...n, hidden } : n)),
+  });
+}
