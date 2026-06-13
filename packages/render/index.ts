@@ -1301,3 +1301,63 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   return { svg, altText };
 }
+
+const BODY_W = 460;
+const BODY_H = 484;
+
+/** Render a Body Map (spec §E.5 / Source 3): a body outline with sensations placed by
+ * location, each sized by `intensity` (redundant numeral, §D), with a pacing-safety note. */
+export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const parts: string[] = [
+    // Silhouette
+    '<circle cx="210" cy="86" r="32" fill="#fff" stroke="#000" stroke-width="2" />',
+    '<rect x="172" y="120" width="76" height="172" rx="26" ry="26" fill="#fff" stroke="#000" stroke-width="2" />',
+    '<line x1="176" y1="150" x2="120" y2="258" stroke="#000" stroke-width="2" />',
+    '<line x1="244" y1="150" x2="300" y2="258" stroke="#000" stroke-width="2" />',
+    '<line x1="192" y1="290" x2="178" y2="436" stroke="#000" stroke-width="2" />',
+    '<line x1="228" y1="290" x2="242" y2="436" stroke="#000" stroke-width="2" />',
+  ];
+
+  model.nodes.forEach((n, i) => {
+    const p = n.position ?? { x: 210, y: 140 + i * 30 };
+    const intensity = n.properties.intensity ?? 0.5;
+    const r = 6 + intensity * 10;
+    parts.push(
+      `<circle cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#000" fill-opacity="0.15" stroke="#000" stroke-width="1.5" />`,
+      `<text x="${r1(p.x + r + 8)}" y="${p.y + 4}" font-family="sans-serif" font-size="11">${esc(getText(n.label, layer, lang))} (${intensity.toFixed(1)})</text>`,
+    );
+  });
+
+  const fy = BODY_H - 30;
+  parts.push(
+    `<text x="12" y="${fy}" font-family="sans-serif" font-size="10">Marker size = intensity (number shown). Body sensations are meaningful but not self-explanatory — pace and titrate.</text>`,
+  );
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="12" y="${fy + 14}" font-family="sans-serif" font-size="9" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+  }
+
+  const altText =
+    `Body map${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Sensations: ${model.nodes.map((n) => `${getText(n.label, layer, lang)} (intensity ${(n.properties.intensity ?? 0.5).toFixed(1)})`).join(', ') || 'none'}. ` +
+    `Pace and titrate.`;
+
+  const titleText = model.meta.title
+    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BODY_W} ${BODY_H}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Body map')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${BODY_W}" height="${BODY_H}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

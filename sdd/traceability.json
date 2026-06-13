@@ -313,9 +313,9 @@
       "spec": ["§E.1", "§K"],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M5",
-      "status": "planned",
-      "impl": ["packages/profiles/**", "packages/render/**"],
-      "notes": "Source 3 C4. New view filling a gap; Tier-3 per §K; titration/pacing notes."
+      "status": "in-progress",
+      "impl": ["packages/render/**", "examples/**"],
+      "notes": "Source 3 C4. renderBodyMap: body silhouette + sensations placed by position, sized by intensity (redundant numeral, §D), with a pacing/titration safety note. body-map example wired into the editor. Arousal-curve / sensory-channel overlays can follow."
     },
     {
       "id": "REQ-PRIVACY",

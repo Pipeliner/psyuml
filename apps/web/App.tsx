@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { getText, parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
 import {
+  renderBodyMap,
   renderDecisionChart,
   renderInterventionSeq,
   renderLoopMap,
@@ -24,6 +25,7 @@ import seqRaw from '../../examples/intervention-sequence.psyuml?raw';
 import ritualRaw from '../../examples/ritual.psyuml?raw';
 import relRaw from '../../examples/relational-field.psyuml?raw';
 import modeRaw from '../../examples/mode-map.psyuml?raw';
+import bodyRaw from '../../examples/body-map.psyuml?raw';
 import { addNode, setNodeHidden, setNodeLabel } from './editor';
 
 const EXAMPLES: Record<string, string> = {
@@ -31,6 +33,7 @@ const EXAMPLES: Record<string, string> = {
   'parts-map': partsRaw,
   'mode-map': modeRaw,
   'relational-field': relRaw,
+  'body-map': bodyRaw,
   'decision-nav': decisionRaw,
   'resource-anchor': resourceRaw,
   'process-loop': loopRaw,
@@ -71,6 +74,7 @@ export function App() {
     if (model.diagram === 'ritual') return renderRitual(model, { layer });
     if (model.diagram === 'relational-field') return renderRelationalField(model, { layer });
     if (model.diagram === 'mode-map') return renderModeMap(model, { layer });
+    if (model.diagram === 'body-map') return renderBodyMap(model, { layer });
     return renderStateMap(model, { layer, monochrome });
   }, [model, layer, monochrome, school]);
 
@@ -116,6 +120,7 @@ export function App() {
             <option value="parts-map">Parts / Agents Map</option>
             <option value="mode-map">Schema Mode Map</option>
             <option value="relational-field">Relational Field</option>
+            <option value="body-map">Body Map</option>
             <option value="decision-nav">Crisis chart</option>
             <option value="resource-anchor">Resource / Anchor map</option>
             <option value="process-loop">Process / Loop</option>

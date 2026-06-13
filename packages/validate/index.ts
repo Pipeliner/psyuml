@@ -33,6 +33,7 @@ const CLIENT_FACING = new Set([
   'parts-map',
   'mode-map',
   'relational-field',
+  'body-map',
   'decision-nav',
   'resource-anchor',
   'timeline',

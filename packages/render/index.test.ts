@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
 import {
+  renderBodyMap,
   renderDecisionChart,
   renderInterventionSeq,
   renderLoopMap,
@@ -27,6 +28,7 @@ const seqModel = parseModel(read('intervention-sequence.psyuml'));
 const ritualModel = parseModel(read('ritual.psyuml'));
 const relModel = parseModel(read('relational-field.psyuml'));
 const modeModel = parseModel(read('mode-map.psyuml'));
+const bodyModel = parseModel(read('body-map.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -235,5 +237,20 @@ describe('renderModeMap', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('mode-map.svg', renderModeMap(modeModel).svg);
+  });
+});
+
+describe('renderBodyMap', () => {
+  it('places sensations on a body outline, sized by intensity', () => {
+    const { svg, altText } = renderBodyMap(bodyModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Chest tightness (0.8)');
+    expect(svg).toContain('pace and titrate');
+    expect(altText).toContain('Body map');
+    expect(altText).toContain('Pace and titrate');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('body-map.svg', renderBodyMap(bodyModel).svg);
   });
 });
