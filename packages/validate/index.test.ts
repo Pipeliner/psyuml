@@ -53,6 +53,13 @@ describe('validate', () => {
     expect(validate(noDisclaimer).issues.some((i) => i.rule === 'ethics.disclaimer')).toBe(true);
   });
 
+  it('gates a process-loop (shown to clients) on a disclaimer too', () => {
+    const m = read('process-loop.psyuml');
+    expect(validate(m).ok).toBe(true);
+    const noDisclaimer = parseModel({ ...m, meta: { ...m.meta, disclaimer: '' } });
+    expect(validate(noDisclaimer).issues.some((i) => i.rule === 'ethics.disclaimer')).toBe(true);
+  });
+
   it('flags an over-long label (info, accessibility)', () => {
     const m = read('state-map.psyuml');
     const long = parseModel({

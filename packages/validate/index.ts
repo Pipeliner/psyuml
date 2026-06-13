@@ -33,6 +33,11 @@ export interface ValidateOptions {
   layer?: 'clinician' | 'client';
 }
 
+// Diagram types that can be shown to a client and so must carry a standing disclaimer
+// (§A.2-r7, §L.2). `process-loop` is included: a maintaining-cycle map is routinely shared
+// with clients (CBT/CAT), and it renders in the client layer, so it is gated like the rest.
+// `two-triangles` is intentionally NOT here — Malan's triangles are a clinician/supervision
+// formulation aid, not a client handout.
 const CLIENT_FACING = new Set([
   'state-map',
   'parts-map',
@@ -41,6 +46,7 @@ const CLIENT_FACING = new Set([
   'body-map',
   'decision-nav',
   'resource-anchor',
+  'process-loop',
   'timeline',
   'intervention-sequence',
   'ritual',

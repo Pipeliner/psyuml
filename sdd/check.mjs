@@ -23,7 +23,8 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
 
 const IGNORE_DIRS = new Set([
-  'node_modules', 'dist', 'build', 'out', '.next', '.turbo', 'coverage', 'test-results',
+  'node_modules', 'dist', 'build', 'out', '.next', '.turbo', 'coverage',
+  'test-results', 'playwright-report',
 ]);
 const STATUSES = new Set(['planned', 'in-progress', 'implemented', 'deprecated']);
 const IMPACT = 'IMPACT.md';

@@ -26,6 +26,7 @@ truth), the tooling architecture, the build roadmap, and saved research.
 |---|---|---|---|---|---|
 | `ARCHITECTURE.md` | Tooling design: one-model/many-views, metamodel, pipeline, stack, repo layout | `specification/psyuml-v0.1.0.md` | `ROADMAP.md`, all packages, `sdd/README.md` dependency map | all | medium |
 | `ROADMAP.md` | Milestone plan M0–M10 (GUI-first), spec-traceable | `ARCHITECTURE.md`, spec | `sdd/traceability.json` milestones | all | medium |
+| `format-reference.md` | Field-level `.psyuml` reference (mirrors the zod schema) + per-diagram authoring quick-guide + the validation rules an author must satisfy | `packages/model`, `packages/validate`, spec | authors, readers | REQ-CORE-ONTOLOGY, REQ-STYLE-GUIDE, REQ-TEXT-DSL | low |
 
 ## Change checklist
 - [ ] If you change behavior, update `specification/psyuml-v0.1.0.md` first (§K semver).

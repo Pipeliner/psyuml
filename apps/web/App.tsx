@@ -134,8 +134,9 @@ export function App() {
     >
       <h1 style={{ marginBottom: 4 }}>PsyUML editor</h1>
       <p role="note" style={{ margin: '0 0 1rem', color: '#444', fontSize: 14 }}>
-        Supports, and does not replace, professional care. It does not diagnose. Editing is
-        local-first — nothing leaves your device.
+        <strong>Unvalidated v0.x — not a clinical instrument.</strong> Supports, and does not
+        replace, professional care. It does not diagnose. Editing is local-first — nothing leaves
+        your device.
       </p>
 
       <div

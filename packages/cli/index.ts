@@ -72,7 +72,25 @@ usage:
 Input is auto-detected: a leading "{" is parsed as JSON; otherwise as the text DSL.
 lint exits non-zero if any error-severity issue or a load failure is found.`;
 
-const msg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+interface ZodLikeIssue {
+  path?: (string | number)[];
+  message: string;
+}
+
+/** Friendly error text. A zod validation error is rendered as `path: message` lines
+ *  instead of dumping the raw issue array (which is developer-facing and noisy). */
+const msg = (e: unknown): string => {
+  if (
+    e &&
+    typeof e === 'object' &&
+    'issues' in e &&
+    Array.isArray((e as { issues: unknown }).issues)
+  ) {
+    const issues = (e as { issues: ZodLikeIssue[] }).issues;
+    return issues.map((i) => `${(i.path ?? []).join('.') || '(root)'}: ${i.message}`).join('; ');
+  }
+  return e instanceof Error ? e.message : String(e);
+};
 
 /** Auto-detect JSON `.psyuml` vs text DSL and parse to a validated model. */
 function loadModel(io: CliIO, path: string): PsyumlModel {

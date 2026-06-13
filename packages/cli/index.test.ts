@@ -48,6 +48,17 @@ describe('psyuml cli', () => {
     expect(io.stdout.join('\n')).toContain('wf.edge-endpoints');
   });
 
+  it('reports an invalid model with a readable message, not a raw zod array', () => {
+    const io = fakeIO({
+      'bad-enum.psyuml': JSON.stringify({ version: '0.1.0', diagram: 'not-a-real-type' }),
+    });
+    const code = run(['lint', 'bad-enum.psyuml'], io);
+    expect(code).toBe(1);
+    const err = io.stderr.join('\n');
+    expect(err).toContain('diagram:'); // path-prefixed, friendly
+    expect(err).not.toContain('"code"'); // not the raw zod issue dump
+  });
+
   it('lint accepts the text DSL too (auto-detected)', () => {
     const io = fakeIO({ 'm.psy': 'diagram parts-map\nnode self self label="Self"\n' });
     const code = run(['lint', 'm.psy'], io);

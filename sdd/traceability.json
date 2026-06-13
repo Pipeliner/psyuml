@@ -74,7 +74,8 @@
       "milestone": "M2",
       "status": "in-progress",
       "impl": ["docs/ux/**", "apps/web/**"],
-      "notes": "Deep-research synthesis (5 angles, primary-source-verified): 5 personas (therapist/client/solo/researcher/ritual), MoSCoW requirements (accessibility WCAG 2.2, plain-language client layer, colour-redundant, crisis-for-constriction, local-first privacy, co-authorship, emotional safety, no-diagnosis), risks/anti-requirements, and the usability-test open questions feeding REQ-EVAL-SUITE. Requirements authored; editor implementation lands in M2."
+      "tests": ["apps/web/**/*.test.ts", "e2e/**/*.spec.ts"],
+      "notes": "Deep-research synthesis (5 angles, primary-source-verified): 5 personas (therapist/client/solo/researcher/ritual), MoSCoW requirements (accessibility WCAG 2.2, plain-language client layer, colour-redundant, crisis-for-constriction, local-first privacy, co-authorship, emotional safety, no-diagnosis), risks/anti-requirements, and the usability-test open questions feeding REQ-EVAL-SUITE. Editor implemented; a Playwright onboarding journey (e2e/onboarding.spec.ts) drives the partially-understood-situation flow through the browser: safety posture visible, co-authorship relabel, progressive-reveal hide (reversible), snapshot (save-incomplete) + diff, and the acute-risk escalation banner."
     },
     {
       "id": "REQ-COLLAB",
@@ -358,9 +359,9 @@
       "spec": ["§B", "§C", "§D"],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M5",
-      "status": "planned",
-      "impl": ["docs/**", "assets/**"],
-      "notes": "Alt-plan cross-check (idea-incorporation §7): color semantics, line weights, emotional-valence + epistemic-status encoding, ritual cultural-sensitivity notes; quick-reference cheat sheets."
+      "status": "in-progress",
+      "impl": ["docs/format-reference.md", "docs/specification/psyuml-v0.1.0.md", "assets/**"],
+      "notes": "Alt-plan cross-check (idea-incorporation §7): color semantics, line weights, emotional-valence + epistemic-status encoding, ritual cultural-sensitivity notes; quick-reference cheat sheets. Started: docs/format-reference.md gives a field-level authoring reference + a per-diagram quick-guide (which node/edge kinds, required meta, the hope marker) + the validation rules an author must satisfy. Still to come: the visual notation style guide (glyph drawing conventions, colour/line-weight semantics) and printable clinician/client cheat-sheets (REQ-TEMPLATES)."
     },
     {
       "id": "REQ-TEMPLATES",

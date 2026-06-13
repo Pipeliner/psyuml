@@ -20,6 +20,7 @@ PsyUML spec + tooling repo.
 - `examples/` — canonical `.psyuml` models + golden renders (see `examples/IMPACT.md`).
 - `docs/` — spec, architecture, roadmap, research (see `docs/IMPACT.md`).
 - `conformance/` — executable spec-conformance suite (§J; see `conformance/IMPACT.md`).
+- `e2e/` — Playwright browser tests of the editor UX (see `e2e/IMPACT.md`).
 - `scripts/` — build/automation scripts (CLI bundler; see `scripts/IMPACT.md`).
 - `sdd/` — Spec-Driven Development harness (see `sdd/IMPACT.md`).
 - `.github/` — CI workflow `ci.yml` (untracked by the SDD checker, dot-directory).
@@ -37,6 +38,7 @@ PsyUML spec + tooling repo.
 | `tsconfig.json` | Single typecheck config across packages + app | — | `typecheck` | — | medium |
 | `vite.config.ts` | Builds `apps/web` from the repo root | — | `build`, `dev` | — | low |
 | `vitest.config.ts` | Test discovery (`packages/**`, `apps/**`) | — | `test` | — | low |
+| `playwright.config.ts` | E2E runner config (Chromium + Vite dev `webServer`) for `e2e/`; not in `verify` | — | `e2e` | REQ-UX-STORIES | low |
 | `eslint.config.js` | Flat ESLint config (typescript-eslint) | — | `lint` | — | low |
 | `.prettierrc.json` | Prettier style (single quotes, width 100) | — | `format` | — | low |
 | `.prettierignore` | Excludes docs/sdd/assets/md from formatting | — | `format` | — | low |
