@@ -17,8 +17,8 @@ translation table — the "many views over one model" layer. (M0: seed list; M4�
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/profiles`) | — | workspace resolution | — | low |
-| `index.ts` | Profiles API (M0: `SEED_PROFILES`, `listProfiles`) | model, validate | render, apps/web | §G, §K / REQ-CROSS-SCHOOL | medium |
-| `index.test.ts` | Unit tests | `index.ts` | CI `test` | — | low |
+| `index.ts` | Profiles API: `SEED_PROFILES`, `listProfiles`, the §G.2 `TRANSLATIONS` table, `translate(concept,school)`, `roleLabelsFor(school)` (stereotype→term map for the renderer's `roleLabels`) | — | render (via `roleLabels`), apps/web | §G, §K / REQ-CROSS-SCHOOL | medium |
+| `index.test.ts` | Unit tests (seed list + translation table) | `index.ts` | CI `test` | — | low |
 
 ## Change checklist
 - [ ] New profile ⇒ follow §K extension rules (map to a §A element; Tier-3; collision check).

@@ -59,6 +59,9 @@ importers:
       '@psyuml/model':
         specifier: workspace:*
         version: link:../../packages/model
+      '@psyuml/profiles':
+        specifier: workspace:*
+        version: link:../../packages/profiles
       '@psyuml/render':
         specifier: workspace:*
         version: link:../../packages/render

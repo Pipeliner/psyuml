@@ -12,6 +12,7 @@ import {
   renderTimeline,
 } from '@psyuml/render';
 import { validate } from '@psyuml/validate';
+import { roleLabelsFor, TRANSLATABLE_SCHOOLS } from '@psyuml/profiles';
 import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
 import decisionRaw from '../../examples/decision-nav.psyuml?raw';
@@ -53,9 +54,12 @@ export function App() {
   const [model, setModel] = useState<PsyumlModel>(() => parseModel(stateRaw));
   const [layer, setLayer] = useState<'clinician' | 'client'>('clinician');
   const [monochrome, setMonochrome] = useState(true);
+  const [school, setSchool] = useState('');
 
   const { svg, altText } = useMemo(() => {
-    if (model.diagram === 'parts-map') return renderPartsMap(model, { layer, monochrome });
+    const roleLabels = school ? roleLabelsFor(school) : undefined;
+    if (model.diagram === 'parts-map')
+      return renderPartsMap(model, { layer, monochrome, roleLabels });
     if (model.diagram === 'decision-nav') return renderDecisionChart(model, { layer });
     if (model.diagram === 'resource-anchor') return renderResourceMap(model, { layer });
     if (model.diagram === 'process-loop') return renderLoopMap(model, { layer });
@@ -64,7 +68,7 @@ export function App() {
     if (model.diagram === 'ritual') return renderRitual(model, { layer });
     if (model.diagram === 'relational-field') return renderRelationalField(model, { layer });
     return renderStateMap(model, { layer, monochrome });
-  }, [model, layer, monochrome]);
+  }, [model, layer, monochrome, school]);
 
   const canAdd = model.diagram === 'state-map' || model.diagram === 'parts-map';
   const addLabel = model.diagram === 'parts-map' ? 'Add part' : 'Add state';
@@ -134,6 +138,18 @@ export function App() {
             onChange={(e) => setMonochrome(e.target.checked)}
           />{' '}
           Monochrome
+        </label>
+
+        <label>
+          School{' '}
+          <select value={school} onChange={(e) => setSchool(e.target.value)}>
+            <option value="">native</option>
+            {TRANSLATABLE_SCHOOLS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </label>
 
         <button

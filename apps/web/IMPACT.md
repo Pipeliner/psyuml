@@ -7,8 +7,7 @@ editor over the 8-symbol Tier-1 core.)
 
 ## Upstream (this depends on)
 - `react`, `react-dom`, `vite` (built from the repo root via `../../vite.config.ts`).
-- `@psyuml/model`, `@psyuml/render`, `@psyuml/validate` (live render + lint; M2/M3). Editor state logic is in `editor.ts`.
-- Will consume `@psyuml/profiles` as M4 lands.
+- `@psyuml/model`, `@psyuml/render`, `@psyuml/validate`, `@psyuml/profiles` (live render + lint + cross-school vocabulary; M2/M3/M4). Editor state logic is in `editor.ts`.
 
 ## Downstream (depends on this) — blast radius
 > **Blast radius: low.** A leaf app; nothing imports it. Built to `dist/web` (gitignored).
@@ -19,7 +18,7 @@ editor over the 8-symbol Tier-1 core.)
 | `package.json` | Workspace member manifest (`web`) | — | workspace resolution | — | low |
 | `index.html` | Vite entry; mounts `#root`, loads `main.tsx`; WCAG focus + target-size styles | `main.tsx` | build | WCAG 2.4.7/2.5.8 | low |
 | `main.tsx` | React bootstrap (mounts `App`) | react-dom, `App.tsx` | build | — | low |
-| `App.tsx` | M2/M3 editor: live render (4 diagrams), toggles, palette, node panel (rename/hide), text alt, formulation-health panel + export gating, save/export | `@psyuml/model`, `@psyuml/render`, `@psyuml/validate`, `editor.ts`, `examples/*.psyuml` | — | REQ-EDITOR-MVP, REQ-UX-STORIES, REQ-COLLAB, REQ-CLIENT-SAFETY-UX, REQ-PATH-OF-HOPE | medium |
+| `App.tsx` | Editor: live render (all 9 diagrams), layer/monochrome/**school** toggles, palette, node panel (rename/hide), text alt, formulation-health panel + export gating, save/export | `@psyuml/model`, `@psyuml/render`, `@psyuml/validate`, `@psyuml/profiles`, `editor.ts`, `examples/*.psyuml` | — | REQ-EDITOR-MVP, REQ-UX-STORIES, REQ-COLLAB, REQ-CLIENT-SAFETY-UX, REQ-PATH-OF-HOPE, REQ-CROSS-SCHOOL | medium |
 | `editor.ts` | Pure editor-state helpers (`addNode`, `nextId`, `setNodeLabel`, `setNodeHidden`) — testable in node | `@psyuml/model` | `App.tsx`, `editor.test.ts` | REQ-EDITOR-MVP, REQ-COLLAB, REQ-CLIENT-SAFETY-UX | low |
 | `editor.test.ts` | Unit tests for editor helpers | `editor.ts` | CI `test` | — | low |
 | `vite-env.d.ts` | Vite client ambient types (enables `?raw` imports) | `vite/client` | typecheck | — | low |

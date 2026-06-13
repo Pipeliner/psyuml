@@ -17,6 +17,8 @@ export interface RenderOptions {
   lang?: string;
   /** Pure black-on-white when true (default). When false, adds redundant band hues. */
   monochrome?: boolean;
+  /** Optional stereotype → display term map (cross-school vocabulary, spec §G). */
+  roleLabels?: Record<string, string>;
 }
 
 export interface RenderResult {
@@ -292,8 +294,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       continue;
     }
     if (n.stereotype) {
+      const roleTerm = options.roleLabels?.[n.stereotype] ?? n.stereotype;
       parts.push(
-        `<text x="${p.x}" y="${p.y - nodeR - 5}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">${esc(n.stereotype)}</text>`,
+        `<text x="${p.x}" y="${p.y - nodeR - 5}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">${esc(roleTerm)}</text>`,
       );
     }
     parts.push(

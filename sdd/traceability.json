@@ -175,7 +175,7 @@
       "status": "in-progress",
       "impl": ["packages/profiles/**"],
       "tests": ["packages/profiles/**/*.test.ts"],
-      "notes": "One immutable model, many views. Provenance tags preserve opposed origin-claims (§G.2 caveat)."
+      "notes": "One immutable model, many views. Provenance tags preserve opposed origin-claims (§G.2 caveat). M4: @psyuml/profiles ships the §G.2 translation table (TRANSLATIONS) + translate() + roleLabelsFor(); the renderer takes a roleLabels map and the editor has a School switcher (IFS/schema/structural-dissociation/TA) that re-labels the Parts Map vocabulary while keeping structure + provenance. Full per-diagram profiles (glyph/layout/validators) + more families (loops/beliefs) still to come."
     },
     {
       "id": "REQ-GENOGRAM",

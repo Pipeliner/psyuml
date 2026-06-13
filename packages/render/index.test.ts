@@ -84,6 +84,15 @@ describe('renderPartsMap', () => {
     expect(svg).not.toContain('Little one, age 6');
   });
 
+  it('re-labels role tags under a school vocabulary (roleLabels, §G)', () => {
+    expect(renderPartsMap(partsModel).svg).toContain('manager');
+    const schema = renderPartsMap(partsModel, {
+      roleLabels: { manager: 'overcontroller', exile: 'vulnerable child mode' },
+    }).svg;
+    expect(schema).toContain('overcontroller');
+    expect(schema).toContain('vulnerable child mode');
+  });
+
   it('matches the committed golden SVG', () => {
     expectGolden('parts-map.svg', renderPartsMap(partsModel).svg);
   });
