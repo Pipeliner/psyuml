@@ -1,0 +1,87 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "decision-nav",
+  "meta": {
+    "title": "If I'm not OK — what to do",
+    "disclaimer": "This chart supports, and does not replace, professional care. It does not diagnose.",
+    "crisisResources": "If you are in danger now, call your local emergency number or a crisis line (e.g. 988 in the US).",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "nodes": [
+    {
+      "id": "q_safe",
+      "kind": "state",
+      "stereotype": "question",
+      "tier": 1,
+      "label": { "clinician": { "en": "Am I safe right now?" }, "client": { "en": "Am I safe right now?" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "q_feel",
+      "kind": "state",
+      "stereotype": "question",
+      "tier": 1,
+      "label": { "clinician": { "en": "What do I feel?" }, "client": { "en": "What do I feel?" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "crisis",
+      "kind": "intervention",
+      "stereotype": "crisis",
+      "tier": 1,
+      "label": { "clinician": { "en": "Call/text a crisis line or emergency" }, "client": { "en": "Call for help now" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "revved",
+      "kind": "resource",
+      "stereotype": "action",
+      "tier": 1,
+      "label": { "clinician": { "en": "TIPP / cold water / breathe" }, "client": { "en": "cold water, slow breathing" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "shutdown",
+      "kind": "resource",
+      "stereotype": "action",
+      "tier": 1,
+      "label": { "clinician": { "en": "Move / orient / reach support" }, "client": { "en": "move, look around, text someone" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "q_stuck",
+      "kind": "state",
+      "stereotype": "question",
+      "tier": 1,
+      "label": { "clinician": { "en": "Still stuck after 15 min?" }, "client": { "en": "Still stuck after 15 min?" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "safe_back",
+      "kind": "state",
+      "stereotype": "safe",
+      "tier": 1,
+      "label": { "clinician": { "en": "Back in my window — OK for now" }, "client": { "en": "Feeling steadier" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "support",
+      "kind": "resource",
+      "stereotype": "action",
+      "tier": 1,
+      "label": { "clinician": { "en": "Call my support person" }, "client": { "en": "Call my support person" } },
+      "properties": { "epistemicStatus": "planned" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "kind": "sequential", "source": "q_safe", "target": "crisis", "label": { "clinician": { "en": "No / unsafe" } }, "properties": {} },
+    { "id": "e2", "kind": "sequential", "source": "q_safe", "target": "q_feel", "label": { "clinician": { "en": "Yes" } }, "properties": {} },
+    { "id": "e3", "kind": "sequential", "source": "q_feel", "target": "revved", "label": { "clinician": { "en": "Revved up" } }, "properties": {} },
+    { "id": "e4", "kind": "sequential", "source": "q_feel", "target": "shutdown", "label": { "clinician": { "en": "Shut down" } }, "properties": {} },
+    { "id": "e5", "kind": "sequential", "source": "revved", "target": "q_stuck", "properties": {} },
+    { "id": "e6", "kind": "sequential", "source": "shutdown", "target": "q_stuck", "properties": {} },
+    { "id": "e7", "kind": "sequential", "source": "q_stuck", "target": "support", "label": { "clinician": { "en": "Yes" } }, "properties": {} },
+    { "id": "e8", "kind": "sequential", "source": "q_stuck", "target": "safe_back", "label": { "clinician": { "en": "No" } }, "properties": {} }
+  ]
+}

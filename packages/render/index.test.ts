@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
-import { renderPartsMap, renderStateMap } from './index';
+import { renderDecisionChart, renderPartsMap, renderStateMap } from './index';
 
 const read = (name: string): string =>
   readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8');
 
 const stateModel = parseModel(read('state-map.psyuml'));
 const partsModel = parseModel(read('parts-map.psyuml'));
+const decisionModel = parseModel(read('decision-nav.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -69,5 +70,26 @@ describe('renderPartsMap', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('parts-map.svg', renderPartsMap(partsModel).svg);
+  });
+});
+
+describe('renderDecisionChart', () => {
+  it('lays out a top-down crisis chart with an always-visible crisis banner', () => {
+    const { svg, altText } = renderDecisionChart(decisionModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Am I safe right now?');
+    expect(svg).toContain('Crisis resources (always available):');
+    expect(svg).toContain('988');
+    expect(altText).toContain('Crisis navigation chart');
+    expect(altText).toContain('always shown');
+  });
+
+  it('renders the client layer vocabulary', () => {
+    const { svg } = renderDecisionChart(decisionModel, { layer: 'client' });
+    expect(svg).toContain('Call for help now');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('decision-nav.svg', renderDecisionChart(decisionModel).svg);
   });
 });

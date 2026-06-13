@@ -102,9 +102,9 @@
       "spec": ["§E.8"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M2",
-      "status": "planned",
+      "status": "in-progress",
       "impl": ["apps/web/**", "packages/render/**"],
-      "notes": "UX-M4 (crisis-for-cognitive-constriction): one decision/step, escalation ladder, localized crisis resources on every screen, means-restriction step, no dead-ends, human escalation, large text (Stanley 2018; Morrison 2024). No AI handles crises."
+      "notes": "UX-M4 (crisis-for-cognitive-constriction): one decision/step, escalation ladder, localized crisis resources on every screen, means-restriction step, no dead-ends, human escalation, large text (Stanley 2018; Morrison 2024). No AI handles crises. M2: renderDecisionChart + always-visible crisis banner + decision-nav example shipped; the no-dead-ends / crisis-resource-present lint lands in M3 (REQ-SAFETY-TRIAGE)."
     },
     {
       "id": "REQ-RESOURCE-ANCHOR",

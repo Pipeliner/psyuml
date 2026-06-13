@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
 import { parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
-import { renderPartsMap, renderStateMap } from '@psyuml/render';
+import { renderDecisionChart, renderPartsMap, renderStateMap } from '@psyuml/render';
 import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
+import decisionRaw from '../../examples/decision-nav.psyuml?raw';
 import { addNode } from './editor';
 
 const EXAMPLES: Record<string, string> = {
   'state-map': stateRaw,
   'parts-map': partsRaw,
+  'decision-nav': decisionRaw,
 };
 
 function downloadText(filename: string, text: string, type: string): void {
@@ -20,24 +22,23 @@ function downloadText(filename: string, text: string, type: string): void {
 }
 
 /**
- * PsyUML editor (M2, first slice). Live model → render with client/clinician and
- * monochrome layers, a palette that edits the model, a screen-reader text
- * alternative, and local-first save/export. Built against docs/ux (UX-M1/M2/M3/M5/M8).
+ * PsyUML editor (M2 slice). Live model → render with client/clinician and monochrome
+ * layers, a palette that edits the model, a screen-reader text alternative, and
+ * local-first save/export. Built against docs/ux (UX-M1/M2/M3/M4/M5/M8).
  */
 export function App() {
   const [model, setModel] = useState<PsyumlModel>(() => parseModel(stateRaw));
   const [layer, setLayer] = useState<'clinician' | 'client'>('clinician');
   const [monochrome, setMonochrome] = useState(true);
 
-  const { svg, altText } = useMemo(
-    () =>
-      model.diagram === 'parts-map'
-        ? renderPartsMap(model, { layer, monochrome })
-        : renderStateMap(model, { layer, monochrome }),
-    [model, layer, monochrome],
-  );
+  const { svg, altText } = useMemo(() => {
+    if (model.diagram === 'parts-map') return renderPartsMap(model, { layer, monochrome });
+    if (model.diagram === 'decision-nav') return renderDecisionChart(model, { layer });
+    return renderStateMap(model, { layer, monochrome });
+  }, [model, layer, monochrome]);
 
-  const isParts = model.diagram === 'parts-map';
+  const canAdd = model.diagram === 'state-map' || model.diagram === 'parts-map';
+  const addLabel = model.diagram === 'parts-map' ? 'Add part' : 'Add state';
 
   return (
     <main
@@ -73,6 +74,7 @@ export function App() {
           >
             <option value="state-map">State Map</option>
             <option value="parts-map">Parts / Agents Map</option>
+            <option value="decision-nav">Crisis chart</option>
           </select>
         </label>
 
@@ -98,9 +100,12 @@ export function App() {
 
         <button
           type="button"
-          onClick={() => setModel(addNode(model, isParts ? 'New part' : 'New state'))}
+          disabled={!canAdd}
+          onClick={() =>
+            setModel(addNode(model, addLabel === 'Add part' ? 'New part' : 'New state'))
+          }
         >
-          {isParts ? 'Add part' : 'Add state'}
+          {addLabel}
         </button>
         <button
           type="button"

@@ -329,3 +329,142 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
 
   return { svg, altText };
 }
+
+const DEC_W = 720;
+const DNODE_W = 210;
+const DNODE_H = 50;
+const DLAYER_GAP = 96;
+const DEC_TOP = 64;
+const DBANNER_H = 48;
+
+/** Shape by decision-chart stereotype: question = diamond, crisis = thick box, else rounded box. */
+function decShape(stereotype: string | undefined, cx: number, cy: number): string {
+  const hw = DNODE_W / 2;
+  const hh = DNODE_H / 2;
+  if (stereotype === 'question') {
+    return `<polygon points="${cx},${cy - hh} ${cx + hw},${cy} ${cx},${cy + hh} ${cx - hw},${cy}" fill="#fff" stroke="#000" stroke-width="2" />`;
+  }
+  const sw = stereotype === 'crisis' ? 3.5 : 2;
+  const rx = stereotype === 'crisis' ? 6 : 10;
+  return `<rect x="${cx - hw}" y="${cy - hh}" width="${DNODE_W}" height="${DNODE_H}" rx="${rx}" ry="${rx}" fill="#fff" stroke="#000" stroke-width="${sw}" />`;
+}
+
+/** Render a Decision / Navigation (crisis) chart (spec §E.8): one decision per step,
+ * top-down layered, with an ALWAYS-VISIBLE crisis-resources banner (UX-M4). */
+export function renderDecisionChart(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+  const nodes = model.nodes;
+  const edges = model.edges;
+
+  // Longest-path layering (Sugiyama-lite) via a Kahn topological pass.
+  const indeg = new Map<string, number>(nodes.map((n) => [n.id, 0]));
+  const adj = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
+  for (const e of edges) {
+    if (!indeg.has(e.target) || !adj.has(e.source)) continue;
+    indeg.set(e.target, (indeg.get(e.target) ?? 0) + 1);
+    adj.get(e.source)?.push(e.target);
+  }
+  const depth = new Map<string, number>(nodes.map((n) => [n.id, 0]));
+  const work = new Map(indeg);
+  const queue = nodes.filter((n) => (indeg.get(n.id) ?? 0) === 0).map((n) => n.id);
+  while (queue.length) {
+    const id = queue.shift() as string;
+    for (const t of adj.get(id) ?? []) {
+      depth.set(t, Math.max(depth.get(t) ?? 0, (depth.get(id) ?? 0) + 1));
+      work.set(t, (work.get(t) ?? 0) - 1);
+      if ((work.get(t) ?? 0) === 0) queue.push(t);
+    }
+  }
+  const layers = new Map<number, string[]>();
+  for (const n of nodes) {
+    const d = depth.get(n.id) ?? 0;
+    const arr = layers.get(d);
+    if (arr) arr.push(n.id);
+    else layers.set(d, [n.id]);
+  }
+  const pos = new Map<string, { x: number; y: number }>();
+  let maxDepth = 0;
+  for (const [d, ids] of layers) {
+    maxDepth = Math.max(maxDepth, d);
+    ids.forEach((id, i) =>
+      pos.set(id, { x: r1((DEC_W * (i + 1)) / (ids.length + 1)), y: DEC_TOP + d * DLAYER_GAP }),
+    );
+  }
+  const height = DEC_TOP + maxDepth * DLAYER_GAP + DNODE_H + DBANNER_H + 24;
+
+  const nodeName = (id: string): string => {
+    const n = nodes.find((x) => x.id === id);
+    return n ? getText(n.label, layer, lang) : id;
+  };
+
+  const parts: string[] = [];
+
+  // Edges (downward, with branch labels)
+  for (const e of edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const sy = s.y + DNODE_H / 2;
+    const ty = t.y - DNODE_H / 2;
+    parts.push(
+      `<path d="M ${s.x},${sy} L ${t.x},${ty}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+    );
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      parts.push(
+        `<text x="${r1((s.x + t.x) / 2 + 5)}" y="${r1((sy + ty) / 2)}" font-family="sans-serif" font-size="11" font-weight="700">${esc(lbl)}</text>`,
+      );
+    }
+  }
+
+  // Nodes
+  for (const n of nodes) {
+    const p = pos.get(n.id);
+    if (!p) continue;
+    const isCrisis = n.stereotype === 'crisis';
+    const name = (isCrisis ? '! ' : '') + getText(n.label, layer, lang);
+    parts.push(decShape(n.stereotype, p.x, p.y));
+    parts.push(
+      `<text x="${p.x}" y="${p.y + 4}" font-family="sans-serif" font-size="11" text-anchor="middle"${isCrisis ? ' font-weight="700"' : ''}>${esc(name)}</text>`,
+    );
+  }
+
+  // Crisis-resources banner — ALWAYS visible (UX-M4)
+  const crisis =
+    model.meta.crisisResources ??
+    'If you are in danger now, call your local emergency number or a crisis line.';
+  const by = height - DBANNER_H;
+  parts.push(
+    `<rect x="0" y="${by}" width="${DEC_W}" height="${DBANNER_H}" fill="#fff" stroke="#000" stroke-width="2" />`,
+    `<text x="14" y="${by + 19}" font-family="sans-serif" font-size="12" font-weight="700">Crisis resources (always available):</text>`,
+    `<text x="14" y="${by + 37}" font-family="sans-serif" font-size="11">${esc(crisis)}</text>`,
+  );
+
+  const start = nodes.find((n) => (indeg.get(n.id) ?? 0) === 0);
+  const steps = edges.map(
+    (e) =>
+      `from "${nodeName(e.source)}", ${e.label ? `if ${getText(e.label, layer, lang)} ` : ''}go to "${nodeName(e.target)}"`,
+  );
+  const altText =
+    `Crisis navigation chart${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Start: "${start ? nodeName(start.id) : ''}". Steps: ${steps.join('; ')}. ` +
+    `Crisis resources are always shown: ${crisis}`;
+
+  const titleText = model.meta.title
+    ? `<text x="20" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+  const defs =
+    '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${DEC_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Crisis chart')}</title><desc>${esc(altText)}</desc>` +
+    defs +
+    `<rect x="0" y="0" width="${DEC_W}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
