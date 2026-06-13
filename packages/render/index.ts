@@ -1485,3 +1485,113 @@ export function renderDiff(
 
   return { svg, altText };
 }
+
+const TT_W = 760;
+const TT_NODE_W = 158;
+const TT_NODE_H = 38;
+const TT_SHORT = 6;
+
+/**
+ * Render Malan's Two Triangles (§K research profile, Source 2): the Triangle of Conflict
+ * (Defence / Anxiety / Hidden feeling) and the Triangle of Person (Current / Transference /
+ * Past), each a band-grouped triad whose three sides are its edges, linked by the
+ * `transference` connector (dotted) that shows the same conflict recurring across
+ * relationships. A clinician-facing psychodynamic formulation aid; meaning rides on the
+ * dotted/solid line + labels + group headers, never colour (§D).
+ *
+ * Traceability: REQ-RESEARCH-PROFILES (§K), REQ-NOTATION, REQ-ACCESSIBILITY.
+ */
+export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const pos = new Map<string, { x: number; y: number }>();
+  model.nodes.forEach((n, i) => {
+    pos.set(n.id, n.position ? { x: n.position.x, y: n.position.y } : { x: 130 + i * 130, y: 160 });
+  });
+  let maxX = 0;
+  let maxY = 0;
+  for (const p of pos.values()) {
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  const width = Math.max(TT_W, maxX + TT_NODE_W / 2 + 20);
+  const height = Math.max(320, maxY + 80) + 24;
+
+  const bands = [...model.bands].sort((a, b) => a.order - b.order);
+  const parts: string[] = [];
+
+  // Edges first (the triangle sides), so the node boxes sit on top of the line ends.
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
+    const ux = (t.x - s.x) / len;
+    const uy = (t.y - s.y) / len;
+    const dotted = e.kind === 'transference' ? ' stroke-dasharray="2 4"' : '';
+    parts.push(
+      `<line x1="${r1(s.x + ux * TT_SHORT)}" y1="${r1(s.y + uy * TT_SHORT)}" x2="${r1(t.x - ux * TT_SHORT)}" y2="${r1(t.y - uy * TT_SHORT)}" stroke="#000" stroke-width="1.5"${dotted} />`,
+    );
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      parts.push(
+        `<text x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">${esc(lbl)}</text>`,
+      );
+    }
+  }
+
+  // Group headers (one per band/triangle), above the group's topmost node.
+  for (const b of bands) {
+    const pts = model.nodes
+      .filter((n) => n.bandId === b.id)
+      .map((n) => pos.get(n.id))
+      .filter((p): p is { x: number; y: number } => Boolean(p));
+    if (pts.length === 0) continue;
+    const hx = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
+    const topY = Math.min(...pts.map((p) => p.y));
+    parts.push(
+      `<text x="${r1(hx)}" y="${r1(topY) - 28}" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700">${esc(getText(b.label, layer, lang))}</text>`,
+    );
+  }
+
+  // Concept nodes as rounded rects.
+  for (const n of model.nodes) {
+    const p = pos.get(n.id);
+    if (!p) continue;
+    parts.push(
+      `<rect x="${r1(p.x - TT_NODE_W / 2)}" y="${r1(p.y - TT_NODE_H / 2)}" width="${TT_NODE_W}" height="${TT_NODE_H}" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<text x="${r1(p.x)}" y="${r1(p.y + 4)}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(n.label, layer, lang))}</text>`,
+    );
+  }
+
+  const ly = height - 12;
+  parts.push(
+    `<text x="12" y="${ly}" font-family="sans-serif" font-size="10">solid = within-triangle link · dotted = transference (same conflict, new relationship)</text>`,
+  );
+
+  const groupAlt = bands.map((b) => {
+    const ns = model.nodes
+      .filter((n) => n.bandId === b.id)
+      .map((n) => getText(n.label, layer, lang));
+    return `${getText(b.label, layer, lang)} — ${ns.join(', ') || 'none'}`;
+  });
+  const altText =
+    `Two triangles${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `${groupAlt.join('. ')}. Transference links the same conflict across relationships.`;
+
+  const titleText = model.meta.title
+    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Two triangles')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}

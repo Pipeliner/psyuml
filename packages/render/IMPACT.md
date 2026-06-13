@@ -17,7 +17,7 @@ alt-text — plus a longitudinal diff "progress card".
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/render`) | — | workspace resolution | — | low |
-| `index.ts` | Render API — one `render*` per diagram type: State, Parts, ModeMap, RelationalField, BodyMap, Loop, Timeline, InterventionSeq, Ritual, Decision, Resource — plus `renderDiff(before,after)` (the longitudinal progress card). Takes `roleLabels` (cross-school vocabulary). | model, diff, assets | apps/web | §B–§F, §G, §K / REQ-NOTATION, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR, REQ-RESEARCH-PROFILES, REQ-CROSS-SCHOOL, REQ-VERSIONING-DIFF | medium |
+| `index.ts` | Render API — one `render*` per diagram type: State, Parts, ModeMap, RelationalField (+ drama triangle via `nestedWithin`), BodyMap, Loop, Timeline, InterventionSeq, Ritual, Decision, Resource, TwoTriangles (Malan, via `transference`) — plus `renderDiff(before,after)` (the longitudinal progress card). Takes `roleLabels` (cross-school vocabulary). | model, diff, assets | apps/web | §B–§F, §G, §K / REQ-NOTATION, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR, REQ-RESEARCH-PROFILES, REQ-CROSS-SCHOOL, REQ-VERSIONING-DIFF | medium |
 | `index.test.ts` | Unit tests | `index.ts` | CI `test` | — | low |
 
 ## Change checklist

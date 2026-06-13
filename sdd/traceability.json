@@ -204,8 +204,8 @@
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M5",
       "status": "in-progress",
-      "impl": ["packages/render/**", "examples/**"],
-      "notes": "Companion-paper profiles; each per §K extension rules (idea-incorporation §2). M5: Schema Mode Map shipped (renderModeMap — circle size = dominance with redundant numeral, §D; Healthy-Adult growth target; vulnerable-child wound marker). Karpman drama triangle shipped as a Relational Field instance (spec §E.3): drama-triangle.psyuml places Persecutor/Rescuer/Victim with a NESTED historical triangle wired via the nestedWithin connector (now drawn by relLine as a fine-dotted origin thread with a ring — previously a dangling edge kind). CAT SDR + Malan two-triangles (transference edges) still to come."
+      "impl": ["packages/render/**", "packages/model/**", "examples/**"],
+      "notes": "Companion-paper profiles; each per §K extension rules (idea-incorporation §2). M5: Schema Mode Map shipped (renderModeMap — circle size = dominance with redundant numeral, §D; Healthy-Adult growth target; vulnerable-child wound marker). Karpman drama triangle shipped as a Relational Field instance (spec §E.3): drama-triangle.psyuml places Persecutor/Rescuer/Victim with a NESTED historical triangle wired via the nestedWithin connector (drawn by relLine as a fine-dotted origin thread with a ring). Malan Two Triangles shipped as the two-triangles diagram type (renderTwoTriangles): the Triangle of Conflict (Defence/Anxiety/Hidden feeling) + Triangle of Person (Current/Transference/Past) as band-grouped triads linked by the transference connector (dotted) — closing the last dangling edge kind. Both nestedWithin and transference are now used. CAT SDR (process-loop profile: reciprocal-role ovals, traps/dilemmas/snags, observing-eye) still to come."
     },
     {
       "id": "REQ-VERSIONING-DIFF",

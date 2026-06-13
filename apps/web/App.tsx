@@ -13,6 +13,7 @@ import {
   renderRitual,
   renderStateMap,
   renderTimeline,
+  renderTwoTriangles,
 } from '@psyuml/render';
 import { requiresHumanEscalation, validate } from '@psyuml/validate';
 import { roleLabelsFor, TRANSLATABLE_SCHOOLS } from '@psyuml/profiles';
@@ -29,6 +30,7 @@ import relRaw from '../../examples/relational-field.psyuml?raw';
 import modeRaw from '../../examples/mode-map.psyuml?raw';
 import bodyRaw from '../../examples/body-map.psyuml?raw';
 import dramaRaw from '../../examples/drama-triangle.psyuml?raw';
+import twoTriRaw from '../../examples/two-triangles.psyuml?raw';
 import { addNode, setNodeHidden, setNodeLabel, setSafetyFlag } from './editor';
 
 // Keyed by example, not by diagram type, so school-specific profiles (e.g. the Karpman
@@ -47,6 +49,7 @@ const EXAMPLES: Record<string, string> = {
   timeline: timelineRaw,
   'intervention-sequence': seqRaw,
   ritual: ritualRaw,
+  'two-triangles': twoTriRaw,
 };
 
 function downloadText(filename: string, text: string, type: string): void {
@@ -85,6 +88,7 @@ export function App() {
     if (model.diagram === 'relational-field') return renderRelationalField(model, { layer });
     if (model.diagram === 'mode-map') return renderModeMap(model, { layer });
     if (model.diagram === 'body-map') return renderBodyMap(model, { layer });
+    if (model.diagram === 'two-triangles') return renderTwoTriangles(model, { layer });
     return renderStateMap(model, { layer, monochrome });
   }, [model, layer, monochrome, school]);
 
@@ -151,6 +155,7 @@ export function App() {
             <option value="timeline">Timeline / Trajectory</option>
             <option value="intervention-sequence">Intervention Sequence</option>
             <option value="ritual">Ritual Structure</option>
+            <option value="two-triangles">Two Triangles (Malan)</option>
           </select>
         </label>
 

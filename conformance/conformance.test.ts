@@ -17,7 +17,7 @@ type Renderer = (
   o?: { layer?: 'clinician' | 'client' },
 ) => { svg: string; altText: string };
 
-/** One renderer per diagram type (all 9 §E types + the Mode Map and Body Map profiles). */
+/** One renderer per diagram type (the 9 §E types + the Mode Map, Body Map, and Two-Triangles profiles). */
 const RENDERERS: Record<string, Renderer> = {
   'state-map': render.renderStateMap,
   'parts-map': render.renderPartsMap,
@@ -30,6 +30,7 @@ const RENDERERS: Record<string, Renderer> = {
   ritual: render.renderRitual,
   'decision-nav': render.renderDecisionChart,
   'resource-anchor': render.renderResourceMap,
+  'two-triangles': render.renderTwoTriangles,
 };
 
 const load = (f: string): PsyumlModel =>

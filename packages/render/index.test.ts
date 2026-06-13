@@ -14,6 +14,7 @@ import {
   renderRitual,
   renderStateMap,
   renderTimeline,
+  renderTwoTriangles,
 } from './index';
 
 const read = (name: string): string =>
@@ -31,6 +32,7 @@ const relModel = parseModel(read('relational-field.psyuml'));
 const modeModel = parseModel(read('mode-map.psyuml'));
 const bodyModel = parseModel(read('body-map.psyuml'));
 const dramaModel = parseModel(read('drama-triangle.psyuml'));
+const twoTriModel = parseModel(read('two-triangles.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -274,6 +276,21 @@ describe('renderRelationalField — Karpman drama triangle', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('drama-triangle.svg', renderRelationalField(dramaModel).svg);
+  });
+});
+
+describe('renderTwoTriangles — Malan', () => {
+  it('renders both triangle group headers, concepts, and a dotted transference link', () => {
+    const { svg, altText } = renderTwoTriangles(twoTriModel);
+    expect(svg).toContain('Triangle of Conflict');
+    expect(svg).toContain('Triangle of Person');
+    expect(svg).toContain('Hidden feeling: anger &amp; grief');
+    expect(svg).toContain('stroke-dasharray="2 4"'); // transference link
+    expect(altText).toContain('Transference links the same conflict');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('two-triangles.svg', renderTwoTriangles(twoTriModel).svg);
   });
 });
 

@@ -137,6 +137,7 @@ export const DiagramType = z.enum([
   'resource-anchor',
   'body-map',
   'mode-map',
+  'two-triangles',
 ]);
 export type DiagramType = z.infer<typeof DiagramType>;
 
