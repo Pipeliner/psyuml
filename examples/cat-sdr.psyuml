@@ -1,0 +1,96 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "process-loop",
+  "meta": {
+    "title": "CAT reformulation (SDR) — the placate-then-collapse trap",
+    "disclaimer": "A shared reformulation drawn together, with exits named early. Supports, does not replace, care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [],
+  "nodes": [
+    {
+      "id": "criticized",
+      "kind": "state",
+      "label": { "clinician": { "en": "Me: criticized" }, "client": { "en": "Feeling got-at" } },
+      "properties": { "epistemicStatus": "reported", "provenance": ["school:cat"] }
+    },
+    {
+      "id": "placate",
+      "kind": "state",
+      "label": { "clinician": { "en": "Placate & comply" }, "client": { "en": "People-please" } },
+      "properties": { "epistemicStatus": "observed", "provenance": ["school:cat"] }
+    },
+    {
+      "id": "resent",
+      "kind": "state",
+      "label": {
+        "clinician": { "en": "Resentment & exhaustion" },
+        "client": { "en": "Worn out, fed up" }
+      },
+      "properties": { "epistemicStatus": "observed", "provenance": ["school:cat"] }
+    },
+    {
+      "id": "withdraw",
+      "kind": "state",
+      "label": { "clinician": { "en": "Withdraw / collapse" }, "client": { "en": "Shut down" } },
+      "properties": { "epistemicStatus": "observed", "provenance": ["school:cat"] }
+    },
+    {
+      "id": "critic",
+      "kind": "agent",
+      "stereotype": "reciprocal-role",
+      "label": { "clinician": { "en": "Inner critic: criticizing" } },
+      "properties": { "epistemicStatus": "inferred", "provenance": ["school:cat"] }
+    },
+    {
+      "id": "eye",
+      "kind": "self",
+      "stereotype": "observing-eye",
+      "label": { "clinician": { "en": "Observing-I: spot the trap" } },
+      "properties": { "epistemicStatus": "observed", "provenance": ["school:cat"] }
+    },
+    {
+      "id": "assert",
+      "kind": "resource",
+      "label": {
+        "clinician": { "en": "Ask directly / state a need" },
+        "client": { "en": "Say what I need" }
+      },
+      "properties": { "epistemicStatus": "planned", "provenance": ["school:cat"] }
+    }
+  ],
+  "edges": [
+    {
+      "id": "rr",
+      "kind": "reciprocal",
+      "source": "critic",
+      "target": "criticized",
+      "label": { "clinician": { "en": "criticizing ⇄ criticized" } }
+    },
+    {
+      "id": "c_p",
+      "kind": "sequential",
+      "source": "criticized",
+      "target": "placate",
+      "label": { "clinician": { "en": "trap: placate to avoid criticism" } }
+    },
+    { "id": "p_r", "kind": "sequential", "source": "placate", "target": "resent" },
+    { "id": "r_w", "kind": "sequential", "source": "resent", "target": "withdraw" },
+    {
+      "id": "w_c",
+      "kind": "sequential",
+      "source": "withdraw",
+      "target": "criticized",
+      "loop": "R",
+      "label": { "clinician": { "en": "confirms criticized role" } }
+    },
+    {
+      "id": "exit",
+      "kind": "exit",
+      "source": "placate",
+      "target": "assert",
+      "label": { "clinician": { "en": "check facts; ask early" } }
+    }
+  ]
+}

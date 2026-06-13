@@ -33,6 +33,7 @@ const modeModel = parseModel(read('mode-map.psyuml'));
 const bodyModel = parseModel(read('body-map.psyuml'));
 const dramaModel = parseModel(read('drama-triangle.psyuml'));
 const twoTriModel = parseModel(read('two-triangles.psyuml'));
+const catSdrModel = parseModel(read('cat-sdr.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -276,6 +277,21 @@ describe('renderRelationalField — Karpman drama triangle', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('drama-triangle.svg', renderRelationalField(dramaModel).svg);
+  });
+});
+
+describe('renderLoopMap — CAT SDR', () => {
+  it('draws the observing-eye, the reciprocal role, the trap and a named exit', () => {
+    const { svg, altText } = renderLoopMap(catSdrModel);
+    expect(svg).toContain('rx="26" ry="15"'); // observing-eye glyph
+    expect(svg).toContain('Observing-I: spot the trap');
+    expect(svg).toContain('marker-start='); // reciprocal (double-headed) role link
+    expect(svg).toContain('(EXIT)');
+    expect(altText).toContain('Ways out');
+  });
+
+  it('matches the committed golden SVG', () => {
+    expectGolden('cat-sdr.svg', renderLoopMap(catSdrModel).svg);
   });
 });
 

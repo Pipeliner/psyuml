@@ -629,21 +629,29 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     );
   }
 
-  // Nodes (resources = diamonds, others = rounded rects)
+  // Nodes (resources = diamonds, CAT observing-eye = eye glyph, others = rounded rects)
   for (const node of nodes) {
     const p = pos.get(node.id);
     if (!p) continue;
+    let labelDy = 4;
     if (node.kind === 'resource') {
       parts.push(
         `<polygon points="${p.x},${p.y - LNODE_H / 2} ${p.x + LNODE_W / 2},${p.y} ${p.x},${p.y + LNODE_H / 2} ${p.x - LNODE_W / 2},${p.y}" fill="#fff" stroke="#000" stroke-width="2" />`,
       );
+    } else if (node.stereotype === 'observing-eye') {
+      // CAT observing eye/I — the self-reflective stance that watches the trap (spec §B).
+      parts.push(
+        `<ellipse cx="${p.x}" cy="${p.y}" rx="26" ry="15" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<circle cx="${p.x}" cy="${p.y}" r="6" fill="#000" />`,
+      );
+      labelDy = 30;
     } else {
       parts.push(
         `<rect x="${p.x - LNODE_W / 2}" y="${p.y - LNODE_H / 2}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
       );
     }
     parts.push(
-      `<text x="${p.x}" y="${p.y + 4}" text-anchor="middle" font-family="sans-serif" font-size="11">${esc(getText(node.label, layer, lang))}</text>`,
+      `<text x="${p.x}" y="${p.y + labelDy}" text-anchor="middle" font-family="sans-serif" font-size="11">${esc(getText(node.label, layer, lang))}</text>`,
     );
   }
 

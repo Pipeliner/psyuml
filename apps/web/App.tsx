@@ -31,6 +31,7 @@ import modeRaw from '../../examples/mode-map.psyuml?raw';
 import bodyRaw from '../../examples/body-map.psyuml?raw';
 import dramaRaw from '../../examples/drama-triangle.psyuml?raw';
 import twoTriRaw from '../../examples/two-triangles.psyuml?raw';
+import catSdrRaw from '../../examples/cat-sdr.psyuml?raw';
 import { addNode, setNodeHidden, setNodeLabel, setSafetyFlag } from './editor';
 
 // Keyed by example, not by diagram type, so school-specific profiles (e.g. the Karpman
@@ -46,6 +47,7 @@ const EXAMPLES: Record<string, string> = {
   'decision-nav': decisionRaw,
   'resource-anchor': resourceRaw,
   'process-loop': loopRaw,
+  'cat-sdr': catSdrRaw,
   timeline: timelineRaw,
   'intervention-sequence': seqRaw,
   ritual: ritualRaw,
@@ -152,6 +154,7 @@ export function App() {
             <option value="decision-nav">Crisis chart</option>
             <option value="resource-anchor">Resource / Anchor map</option>
             <option value="process-loop">Process / Loop</option>
+            <option value="cat-sdr">CAT reformulation (SDR)</option>
             <option value="timeline">Timeline / Trajectory</option>
             <option value="intervention-sequence">Intervention Sequence</option>
             <option value="ritual">Ritual Structure</option>
