@@ -33,7 +33,15 @@ import bodyRaw from '../../examples/body-map.psyuml?raw';
 import dramaRaw from '../../examples/drama-triangle.psyuml?raw';
 import twoTriRaw from '../../examples/two-triangles.psyuml?raw';
 import catSdrRaw from '../../examples/cat-sdr.psyuml?raw';
-import { addNode, setNodeHidden, setNodeLabel, setSafetyFlag } from './editor';
+import {
+  addNode,
+  restoreVersion,
+  setNodeHidden,
+  setNodeLabel,
+  setSafetyFlag,
+  snapshotModel,
+  type Version,
+} from './editor';
 
 // Keyed by example, not by diagram type, so school-specific profiles (e.g. the Karpman
 // drama triangle, which is a Relational Field instance, spec §E.3) can sit alongside the
@@ -77,6 +85,7 @@ export function App() {
   const [school, setSchool] = useState('');
   const [compareWith, setCompareWith] = useState<PsyumlModel | null>(null);
   const [compareError, setCompareError] = useState<string | null>(null);
+  const [versions, setVersions] = useState<Version[]>([]);
 
   const { svg, altText } = useMemo(() => {
     const roleLabels = school ? roleLabelsFor(school) : undefined;
@@ -149,6 +158,7 @@ export function App() {
               setModel(parseModel(EXAMPLES[e.target.value] ?? stateRaw));
               setCompareWith(null);
               setCompareError(null);
+              setVersions([]);
             }}
           >
             <option value="state-map">State Map</option>
@@ -243,6 +253,18 @@ export function App() {
         >
           Export SVG
         </button>
+        <button
+          type="button"
+          title="Save an immutable in-session snapshot you can compare or restore"
+          onClick={() =>
+            setVersions((vs) => [
+              ...vs,
+              snapshotModel(model, `Snapshot ${vs.length + 1}`, new Date().toISOString()),
+            ])
+          }
+        >
+          Snapshot
+        </button>
         <label title="Load an earlier saved .psyuml version to see what changed">
           Compare with…{' '}
           <input
@@ -311,6 +333,39 @@ export function App() {
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {versions.length > 0 && (
+        <section
+          aria-label="Saved versions"
+          style={{
+            border: '1px solid #ddd',
+            borderRadius: 8,
+            padding: '8px 12px',
+            marginBottom: 12,
+            fontSize: 14,
+          }}
+        >
+          <strong>Saved versions (this session)</strong>
+          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+            {versions.map((v, i) => (
+              <li
+                key={`${v.id}-${i}`}
+                style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}
+              >
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  {v.label} · {new Date(v.at).toLocaleString()}
+                </span>
+                <button type="button" onClick={() => setCompareWith(restoreVersion(v))}>
+                  Compare
+                </button>
+                <button type="button" onClick={() => setModel(restoreVersion(v))}>
+                  Restore
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

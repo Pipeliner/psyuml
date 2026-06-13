@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
-import { addNode, nextId, setNodeHidden, setNodeLabel, setSafetyFlag } from './editor';
+import {
+  addNode,
+  nextId,
+  restoreVersion,
+  setNodeHidden,
+  setNodeLabel,
+  setSafetyFlag,
+  snapshotModel,
+} from './editor';
 
 const read = (name: string) =>
   parseModel(readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8'));
@@ -52,6 +60,16 @@ describe('editor', () => {
     expect(hidden.nodes.find((x) => x.id === 'numb')?.hidden).toBe(true);
     const shown = setNodeHidden(hidden, 'numb', false);
     expect(shown.nodes.find((x) => x.id === 'numb')?.hidden).toBe(false);
+  });
+
+  it('snapshotModel captures an immutable version that restores losslessly', () => {
+    const v = snapshotModel(stateModel, 'before session 2', '2026-06-13T10:00:00Z');
+    expect(v.label).toBe('before session 2');
+    expect(v.at).toBe('2026-06-13T10:00:00Z');
+    expect(restoreVersion(v)).toEqual(stateModel);
+    // mutating the live model afterwards does not change the snapshot
+    addNode(stateModel, 'later');
+    expect(restoreVersion(v)).toEqual(stateModel);
   });
 
   it('setSafetyFlag toggles a triage flag without disturbing the other', () => {

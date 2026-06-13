@@ -2,9 +2,30 @@
  * Pure editor-state helpers for the web app (kept out of React so they are
  * unit-testable in node). They never mutate the input model.
  *
- * Traceability: REQ-EDITOR-MVP, REQ-COLLAB (client can add/edit), REQ-CLIENT-SAFETY-UX.
+ * Traceability: REQ-EDITOR-MVP, REQ-COLLAB (client can add/edit), REQ-CLIENT-SAFETY-UX,
+ * REQ-VERSIONING-DIFF (in-session snapshots).
  */
-import { parseModel, type PsyumlModel } from '@psyuml/model';
+import { parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
+
+/** An immutable in-session snapshot of a formulation (M6 versioning). */
+export interface Version {
+  id: string;
+  label: string;
+  /** ISO timestamp the snapshot was taken. */
+  at: string;
+  /** The serialized model at snapshot time (immutable). */
+  json: string;
+}
+
+/** Take an immutable snapshot of the current model. The model is serialized, not referenced. */
+export function snapshotModel(model: PsyumlModel, label: string, at: string): Version {
+  return { id: at, label, at, json: serializeModel(model) };
+}
+
+/** Rehydrate a snapshot back into a validated model. */
+export function restoreVersion(version: Version): PsyumlModel {
+  return parseModel(version.json);
+}
 
 /** First unused `${prefix}${n}` id in the model. */
 export function nextId(prefix: string, model: PsyumlModel): string {
