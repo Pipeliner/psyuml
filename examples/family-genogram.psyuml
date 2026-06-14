@@ -1,0 +1,36 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "relational-field",
+  "meta": {
+    "title": "K. — three-generation genogram",
+    "disclaimer": "An illustrative, fictional composite. This map of relationships supports, and does not replace, professional care. It does not diagnose.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [],
+  "nodes": [
+    { "id": "gfPat", "kind": "agent", "stereotype": "male", "tier": 1, "position": { "x": 150, "y": 90 }, "label": { "clinician": { "en": "Grandfather (pat.)" } }, "properties": {} },
+    { "id": "gmPat", "kind": "agent", "stereotype": "female", "tier": 1, "position": { "x": 360, "y": 90 }, "label": { "clinician": { "en": "Grandmother (pat.)" } }, "properties": {} },
+    { "id": "gmMat", "kind": "agent", "stereotype": "female", "tier": 1, "position": { "x": 640, "y": 90 }, "label": { "clinician": { "en": "Grandmother (mat.)" } }, "properties": {} },
+    { "id": "father", "kind": "agent", "stereotype": "male", "tier": 1, "position": { "x": 260, "y": 240 }, "label": { "clinician": { "en": "Father" } }, "properties": {} },
+    { "id": "aunt", "kind": "agent", "stereotype": "female", "tier": 1, "position": { "x": 110, "y": 240 }, "label": { "clinician": { "en": "Aunt" } }, "properties": {} },
+    { "id": "mother", "kind": "agent", "stereotype": "female", "tier": 1, "position": { "x": 540, "y": 240 }, "label": { "clinician": { "en": "Mother" } }, "properties": {} },
+    { "id": "kindex", "kind": "agent", "stereotype": "female", "tier": 1, "position": { "x": 360, "y": 400 }, "label": { "clinician": { "en": "K. (38)" } }, "properties": { "index": true } },
+    { "id": "brother", "kind": "agent", "stereotype": "male", "tier": 1, "position": { "x": 180, "y": 400 }, "label": { "clinician": { "en": "Brother" } }, "properties": {} },
+    { "id": "partner", "kind": "agent", "stereotype": "female", "tier": 1, "position": { "x": 560, "y": 400 }, "label": { "clinician": { "en": "Partner" } }, "properties": {} },
+    { "id": "child", "kind": "agent", "stereotype": "male", "tier": 1, "position": { "x": 460, "y": 540 }, "label": { "clinician": { "en": "Son (9)" } }, "properties": {} },
+    { "id": "faith", "kind": "context", "stereotype": "system", "tier": 1, "position": { "x": 120, "y": 540 }, "label": { "clinician": { "en": "Faith community" } }, "properties": {} }
+  ],
+  "edges": [
+    { "id": "g1", "kind": "distant", "source": "gfPat", "target": "gmPat", "properties": {} },
+    { "id": "g2", "kind": "conflict", "source": "father", "target": "aunt", "label": { "clinician": { "en": "estranged" } }, "properties": {} },
+    { "id": "g3", "kind": "close", "source": "father", "target": "mother", "properties": {} },
+    { "id": "g4", "kind": "distant", "source": "kindex", "target": "father", "properties": {} },
+    { "id": "g5", "kind": "fused", "source": "kindex", "target": "mother", "properties": {} },
+    { "id": "g6", "kind": "cutoff", "source": "kindex", "target": "brother", "label": { "clinician": { "en": "no contact 5 yrs" } }, "properties": {} },
+    { "id": "g7", "kind": "close", "source": "kindex", "target": "partner", "properties": {} },
+    { "id": "g8", "kind": "close", "source": "kindex", "target": "child", "properties": {} },
+    { "id": "g9", "kind": "conflict", "source": "partner", "target": "child", "label": { "clinician": { "en": "tense" } }, "properties": {} },
+    { "id": "g10", "kind": "close", "source": "faith", "target": "kindex", "properties": {} }
+  ]
+}

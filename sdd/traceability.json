@@ -706,11 +706,18 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M6",
-      "status": "planned",
+      "status": "in-progress",
       "impl": [
-        "examples/**"
+        "examples/**",
+        "packages/render/index.test.ts",
+        "conformance/**"
       ],
-      "notes": "Alt-plan cross-check: case studies beyond the composite 'R.' (CBT panic, IFS, family genogram, grief-ritual, ...), each as .psyuml + golden."
+      "tests": [
+        "packages/render/index.test.ts",
+        "packages/validate/index.test.ts",
+        "conformance/conformance.test.ts"
+      ],
+      "notes": "Alt-plan cross-check: worked teaching cases beyond the composite 'R.', each a clearly-fictional non-pathologising composite with dual clinician/client labels, the right safety fields, and a pinned golden SVG. Added: social-anxiety-loop.psyuml (process-loop, 'T.') — a post-event rumination/'post-mortem' loop with a reinforcing cycle (avoidance prevents disconfirmation) and an early exit, distinct from the existing panic loop; perfectionism-parts.psyuml (parts-map, 'M.') — perfectionist driver vs. procrastinator with an inner critic carrying TWO opposed origin-claims (IFS+schema) to exercise the contested-origin rendering (provenance.node-mixed-school) plus a manager↔firefighter conflict and a dissociative barrier; family-genogram.psyuml (relational-field, 'K.') — a three-generation genogram on the McGoldrick glyph set (male/female/index person, plus a faith-community system) wired with conflict/fused/distant/cutoff/close ties. Each is auto-included in the examples-corpus lint (validate, both layers), the conformance suite (round-trip + accessible SVG + monochrome), and a render golden test. Further cases (grief-ritual, CBT panic for a new person, ...) can follow under the same wiring."
     },
     {
       "id": "REQ-HANDBOOK",

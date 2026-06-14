@@ -1,0 +1,29 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "process-loop",
+  "meta": {
+    "title": "T. — post-event rumination loop (social anxiety)",
+    "disclaimer": "An illustrative, fictional composite. This map supports, and does not replace, professional care. It does not diagnose.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [],
+  "nodes": [
+    { "id": "event", "kind": "state", "tier": 1, "label": { "clinician": { "en": "Spoke up in the team meeting" }, "client": { "en": "I said something in the meeting" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "selffocus", "kind": "state", "tier": 1, "label": { "clinician": { "en": "Self-focused monitoring" }, "client": { "en": "Watching myself closely" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "postmortem", "kind": "state", "tier": 1, "label": { "clinician": { "en": "Post-event 'post-mortem'" }, "client": { "en": "Replaying it afterwards" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "appraisal", "kind": "state", "tier": 1, "label": { "clinician": { "en": "\"I made a fool of myself\"" }, "client": { "en": "\"They think I'm awkward\"" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "shame", "kind": "state", "tier": 1, "label": { "clinician": { "en": "Shame / dread" }, "client": { "en": "Hot, cringing feeling" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "avoid", "kind": "state", "tier": 1, "label": { "clinician": { "en": "Avoid / over-prepare next time" }, "client": { "en": "Stay quiet next time" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "step", "kind": "resource", "tier": 1, "label": { "clinician": { "en": "Drop the review; check others' actual reactions" }, "client": { "en": "Let it go; notice how people really reacted" } }, "properties": { "epistemicStatus": "planned" } }
+  ],
+  "edges": [
+    { "id": "e1", "kind": "sequential", "source": "event", "target": "selffocus", "trigger": { "clinician": { "en": "social exposure" }, "client": { "en": "being seen" } }, "properties": {} },
+    { "id": "e2", "kind": "sequential", "source": "selffocus", "target": "postmortem", "properties": {} },
+    { "id": "e3", "kind": "sequential", "source": "postmortem", "target": "appraisal", "properties": {} },
+    { "id": "e4", "kind": "reciprocal", "source": "appraisal", "target": "shame", "properties": {} },
+    { "id": "e5", "kind": "sequential", "source": "shame", "target": "avoid", "properties": {} },
+    { "id": "e6", "kind": "sequential", "source": "avoid", "target": "appraisal", "loop": "R", "label": { "clinician": { "en": "avoidance prevents disconfirmation" }, "client": { "en": "never get to find out it was OK" } }, "properties": {} },
+    { "id": "x1", "kind": "exit", "source": "postmortem", "target": "step", "label": { "clinician": { "en": "interrupt the review early" }, "client": { "en": "catch it early" } }, "properties": { "epistemicStatus": "planned" } }
+  ]
+}

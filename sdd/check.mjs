@@ -92,7 +92,10 @@ function walk(absDir, relDir) {
   for (const e of readdirSync(absDir, { withFileTypes: true })) {
     if (e.isDirectory()) {
       if (!isIgnoredDir(e.name)) subdirs.push(e.name);
-    } else if (e.isFile() && e.name !== IMPACT) {
+    } else if (e.isFile() && e.name !== IMPACT && !e.name.startsWith('.')) {
+      // Dotfiles are VCS/tooling artifacts, not documented source. This mirrors the
+      // dot-directory exclusion above and, notably, skips the `.git` *file* a git worktree
+      // uses in place of the `.git` directory (which is already ignored as a dot-directory).
       files.push(e.name);
     }
   }

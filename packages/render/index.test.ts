@@ -35,6 +35,10 @@ const bodyModel = parseModel(read('body-map.psyuml'));
 const dramaModel = parseModel(read('drama-triangle.psyuml'));
 const twoTriModel = parseModel(read('two-triangles.psyuml'));
 const catSdrModel = parseModel(read('cat-sdr.psyuml'));
+// REQ-CASE-CORPUS: additional worked teaching cases (fictional composites, distinct from "R.").
+const socialAnxietyModel = parseModel(read('social-anxiety-loop.psyuml'));
+const perfectionismModel = parseModel(read('perfectionism-parts.psyuml'));
+const familyGenogramModel = parseModel(read('family-genogram.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -385,6 +389,39 @@ describe('renderTwoTriangles — Malan', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('two-triangles.svg', renderTwoTriangles(twoTriModel).svg);
+  });
+});
+
+describe('REQ-CASE-CORPUS worked cases', () => {
+  it('social-anxiety post-event rumination loop — reinforcing loop + early exit, pinned golden', () => {
+    const { svg, altText } = renderLoopMap(socialAnxietyModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Post-event');
+    expect(svg).toContain('(EXIT)');
+    expect(altText).toContain('reinforcing');
+    expect(altText).toContain('Ways out');
+    expectGolden('social-anxiety-loop.svg', svg);
+  });
+
+  it('perfectionism parts map — contested-origin part (IFS vs schema), pinned golden', () => {
+    const { svg, altText } = renderPartsMap(perfectionismModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Inner critic');
+    // the critic carries IFS + schema → shown as a disagreement, not a merged slash-list (§G.2)
+    expect(svg).toContain('⚖');
+    expect(svg).toContain('IFS vs schema');
+    expect(altText).toContain('Origins disagree on');
+    expectGolden('perfectionism-parts.svg', svg);
+  });
+
+  it('three-generation family genogram — glyph set + relation ties, pinned golden', () => {
+    const { svg, altText } = renderRelationalField(familyGenogramModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('K. (38)');
+    expect(svg).toContain('Faith community');
+    expect(altText).toContain('Relational field');
+    expect(altText).toContain('(cutoff)');
+    expectGolden('family-genogram.svg', svg);
   });
 });
 
