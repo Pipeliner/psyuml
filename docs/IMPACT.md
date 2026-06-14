@@ -28,6 +28,8 @@ truth), the tooling architecture, the build roadmap, and saved research.
 | `ROADMAP.md` | Milestone plan M0–M10 (GUI-first), spec-traceable | `ARCHITECTURE.md`, spec | `sdd/traceability.json` milestones | all | medium |
 | `format-reference.md` | Field-level `.psyuml` reference (mirrors the zod schema) + per-diagram authoring quick-guide + the validation rules an author must satisfy | `packages/model`, `packages/validate`, spec | authors, readers | REQ-CORE-ONTOLOGY, REQ-STYLE-GUIDE, REQ-TEXT-DSL | low |
 | `cheatsheets.md` | One-page clinician + client quick references (the 8 glyphs, connectors, which diagram for which job, the safety gates; plain-language "reading the map") | spec §B/§E/§L.2, `packages/render`, `packages/validate` | clinicians, clients | REQ-STYLE-GUIDE | low |
+| `style-guide.md` | Visual notation style guide — glyph forms, colour/line-weight semantics (colour redundant), epistemic/consolidation/valence encoding, layout, ritual cultural-sensitivity, cross-school | spec §B–§D/§F/§L.2, `packages/render` | clinicians, contributors | REQ-STYLE-GUIDE | low |
+| `evaluation-suite.md` | The v0.x→v1.0 evidence plan — Tier A (automated, enforced now) vs. Tier B (human studies) per §J/Source-3 dimension + the Stage-4 go/no-go gate | spec §J, `conformance/`, `packages/validate`, `packages/privacy` | maintainers, reviewers | REQ-EVAL-SUITE | low |
 
 ## Change checklist
 - [ ] If you change behavior, update `specification/psyuml-v0.1.0.md` first (§K semver).

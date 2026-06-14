@@ -354,9 +354,9 @@
       "spec": ["§J"],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M10",
-      "status": "planned",
-      "impl": ["conformance/**"],
-      "notes": "Source 3 C11. Operationalizes the §J rubric + Stage-4 gate."
+      "status": "in-progress",
+      "impl": ["docs/evaluation-suite.md", "conformance/**"],
+      "notes": "Source 3 C11. Operationalizes the §J rubric + Stage-4 gate. docs/evaluation-suite.md defines the two-tier plan: Tier A (automated, enforced in CI now — conformance round-trip/validate/a11y/monochrome, the safety + privacy + grammar-round-trip tests, the e2e build-a-diagram journey) mapped per dimension, vs. Tier B (the human studies that remain — comprehension, collaborative validity, inter-rater reliability, multi-school endorsement, and the formal safety/privacy/a11y audits). Tier A is green; Tier B is the v0.x->v1.0 gate and is explicitly outstanding. Interop (FHIR) is shelved, not faked."
     },
     {
       "id": "REQ-STYLE-GUIDE",
@@ -364,9 +364,9 @@
       "spec": ["§B", "§C", "§D"],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M5",
-      "status": "in-progress",
-      "impl": ["docs/format-reference.md", "docs/cheatsheets.md", "docs/specification/psyuml-v0.1.0.md", "assets/**"],
-      "notes": "Alt-plan cross-check (idea-incorporation §7): color semantics, line weights, emotional-valence + epistemic-status encoding, ritual cultural-sensitivity notes; quick-reference cheat sheets. Shipped: docs/format-reference.md (field-level authoring reference + per-diagram quick-guide + the validation rules an author must satisfy) and docs/cheatsheets.md (one-page clinician + plain-language client quick references — glyphs, connectors, which diagram for which job, the safety gates, how to read a map). Still to come: the visual notation style guide (glyph drawing conventions, colour/line-weight semantics) and printable blank session templates (REQ-TEMPLATES)."
+      "status": "implemented",
+      "impl": ["docs/style-guide.md", "docs/format-reference.md", "docs/cheatsheets.md", "docs/specification/psyuml-v0.1.0.md", "assets/**"],
+      "notes": "Alt-plan cross-check (idea-incorporation §7). All three named deliverables shipped: docs/format-reference.md (field-level authoring reference + per-diagram quick-guide + validation rules), docs/cheatsheets.md (one-page clinician + plain-language client quick references), and docs/style-guide.md (the visual notation style guide — glyph forms, colour-redundant/line-weight semantics, epistemic/consolidation/valence/band encoding, layout conventions, ritual cultural-sensitivity, cross-school provenance). Printable blank session templates are tracked separately (REQ-TEMPLATES)."
     },
     {
       "id": "REQ-TEMPLATES",
