@@ -18,6 +18,7 @@ import { validate } from '@psyuml/validate';
 import { fromDSL, toDSL } from '@psyuml/grammar';
 import { deidentify } from '@psyuml/privacy';
 import {
+  blankTemplate,
   renderBodyMap,
   renderDecisionChart,
   renderInterventionSeq,
@@ -67,6 +68,7 @@ usage:
   psyuml render <file> [--layer clinician|client] [--color] [-o out.svg]
   psyuml convert <file> [-o out]      # JSON .psyuml <-> text DSL (auto-detected)
   psyuml redact <file> [--term NAME ...] [-o out]   # de-identify before export
+  psyuml template <file> [--layer L] [--color] [-o out.svg]   # blank printable scaffold
   psyuml help | version
 
 Input is auto-detected: a leading "{" is parsed as JSON; otherwise as the text DSL.
@@ -237,6 +239,34 @@ function cmdRedact(args: string[], io: CliIO): number {
   return 0;
 }
 
+function cmdTemplate(args: string[], io: CliIO): number {
+  const { files, layer, out, color } = parseArgs(args);
+  if (files.length !== 1) {
+    io.err('usage: psyuml template <file> [--layer L] [--color] [-o out.svg]');
+    return 2;
+  }
+  let model: PsyumlModel;
+  try {
+    model = blankTemplate(loadModel(io, files[0]));
+  } catch (e) {
+    io.err(`${files[0]}: ${msg(e)}`);
+    return 1;
+  }
+  const renderer = RENDERERS[model.diagram];
+  if (!renderer) {
+    io.err(`no renderer for diagram type "${model.diagram}"`);
+    return 1;
+  }
+  const { svg } = renderer(model, { layer, monochrome: !color });
+  if (out) {
+    io.writeFile(out, svg);
+    io.out(`wrote ${out}`);
+  } else {
+    io.out(svg);
+  }
+  return 0;
+}
+
 /** Dispatch a `psyuml` invocation. Returns the process exit code. */
 export function run(argv: string[], io: CliIO): number {
   const [cmd, ...rest] = argv;
@@ -249,6 +279,8 @@ export function run(argv: string[], io: CliIO): number {
       return cmdConvert(rest, io);
     case 'redact':
       return cmdRedact(rest, io);
+    case 'template':
+      return cmdTemplate(rest, io);
     case 'version':
     case '--version':
     case '-v':

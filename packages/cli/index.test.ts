@@ -115,6 +115,15 @@ describe('psyuml cli', () => {
     expect(io.stderr.join('\n')).toContain('matched nothing: Nonexistent');
   });
 
+  it('template renders a blank printable scaffold (no original labels)', () => {
+    const io = fakeIO();
+    const code = run(['template', 'examples/state-map.psyuml', '-o', 'blank.svg'], io);
+    expect(code).toBe(0);
+    expect(io.written['blank.svg'].startsWith('<svg')).toBe(true);
+    expect(io.written['blank.svg']).toContain('(state…)');
+    expect(io.written['blank.svg']).not.toContain('Calm / connected');
+  });
+
   it('help and version succeed; unknown command and no-files fail', () => {
     const help = fakeIO();
     expect(run(['help'], help)).toBe(0);

@@ -7,7 +7,7 @@
  *
  * Traceability: REQ-NOTATION, REQ-ACCESSIBILITY, REQ-EPISTEMIC-STATUS.
  */
-import { getText, type PsyumlModel } from '@psyuml/model';
+import { getText, parseModel, type PsyumlModel } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
 
 type MBand = PsyumlModel['bands'][number];
@@ -1755,4 +1755,46 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     '</svg>';
 
   return { svg, altText };
+}
+
+/** Per-kind fill-in prompt for blank printable templates. */
+const KIND_PROMPT: Record<string, string> = {
+  state: '(state…)',
+  agent: '(part…)',
+  self: '(Self / centre)',
+  resource: '(resource…)',
+  intervention: '(step…)',
+  context: '(context…)',
+  temporal: '(when…)',
+};
+
+/**
+ * Turn a model into a **blank printable template**: keep the structure (bands, positions,
+ * node kinds, edges) but replace every node label with a fill-in prompt and clear edge
+ * labels/triggers, so a clinician can print the scaffold and write it in by hand in session
+ * (REQ-TEMPLATES). The model's disclaimer / crisis line are kept (they belong on the print);
+ * the title becomes a generic "… (blank template)". Render it with the normal `render*` for
+ * the diagram type. Pure; never mutates the input.
+ */
+export function blankTemplate(model: PsyumlModel): PsyumlModel {
+  return parseModel({
+    ...model,
+    meta: { ...model.meta, title: `${model.diagram} (blank template)` },
+    nodes: model.nodes.map((n) => ({
+      ...n,
+      label: { clinician: { en: KIND_PROMPT[n.kind] ?? '(…)' } },
+    })),
+    edges: model.edges.map((e) => {
+      // keep the structure (id/kind/source/target/loop/properties); drop label + trigger
+      const clean: Record<string, unknown> = {
+        id: e.id,
+        kind: e.kind,
+        source: e.source,
+        target: e.target,
+        properties: e.properties,
+      };
+      if (e.loop) clean.loop = e.loop;
+      return clean;
+    }),
+  });
 }

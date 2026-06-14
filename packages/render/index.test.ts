@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
 import {
+  blankTemplate,
   renderBodyMap,
   renderDecisionChart,
   renderDiff,
@@ -91,6 +92,20 @@ describe('label wrapping (fit-to-box)', () => {
   it('wraps a long label into multiple lines', () => {
     const svg = renderStateMap(make('A very long worried-about-everything anxious state')).svg;
     expect((svg.match(/<tspan/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('blankTemplate', () => {
+  it('replaces node labels with fill-in prompts, keeps the structure, renders blank', () => {
+    const t = blankTemplate(stateModel);
+    expect(t.nodes).toHaveLength(stateModel.nodes.length);
+    expect(t.edges).toHaveLength(stateModel.edges.length);
+    expect(t.nodes.find((n) => n.kind === 'state')?.label.clinician.en).toBe('(state…)');
+    expect(t.edges.every((e) => !e.label && !e.trigger)).toBe(true);
+    const { svg } = renderStateMap(t);
+    expect(svg).toContain('(state…)');
+    expect(svg).not.toContain('Calm / connected'); // original label gone
+    expect(stateModel.nodes[0]?.label.clinician.en).toBe('Calm / connected'); // input untouched
   });
 });
 

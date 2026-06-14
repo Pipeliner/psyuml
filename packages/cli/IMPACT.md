@@ -18,7 +18,7 @@ script. Lets validation gate CI / pre-commit the same way the editor gates expor
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Workspace manifest (`@psyuml/cli`) | — | workspace resolution | — | low |
-| `index.ts` | `run(argv, io)` — `lint` (validate, exit≠0 on error), `render` (→SVG), `convert` (JSON⇄DSL), `redact` (de-identify); auto-detects JSON vs DSL input | model, validate, render, grammar, privacy | bin.ts, tests | §J, §B/§C / REQ-TEXT-DSL, REQ-PRIVACY | low |
+| `index.ts` | `run(argv, io)` — `lint` (validate, exit≠0 on error), `render` (→SVG), `convert` (JSON⇄DSL), `redact` (de-identify), `template` (blank printable scaffold); auto-detects JSON vs DSL input | model, validate, render, grammar, privacy | bin.ts, tests | §J, §B/§C, §D / REQ-TEXT-DSL, REQ-PRIVACY, REQ-TEMPLATES | low |
 | `bin.ts` | Node wiring (fs + process streams) → `run`; bundled to `dist/cli/psyuml.mjs` | `index.ts`, `node:fs` | the built binary | — | low |
 | `index.test.ts` | Unit tests over `run` with a fake IO (clean/error lint, render, convert both ways, help/version) | `index.ts`, `examples/*.psyuml` | CI `test` | REQ-TEXT-DSL | low |
 

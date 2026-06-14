@@ -374,9 +374,10 @@
       "spec": ["§D", "§E"],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M5",
-      "status": "planned",
-      "impl": ["packages/render/**", "examples/**"],
-      "notes": "Alt-plan cross-check: hand-drawable blank templates per diagram type for paper use in session."
+      "status": "in-progress",
+      "impl": ["packages/render/**", "packages/cli/**"],
+      "tests": ["packages/render/**/*.test.ts", "packages/cli/**/*.test.ts"],
+      "notes": "Alt-plan cross-check: hand-drawable blank templates per diagram type for paper use in session. render.blankTemplate(model) keeps a diagram's structure (bands, positions, node kinds, edges) but replaces node labels with per-kind fill-in prompts and clears edge labels/triggers, keeping the disclaimer + crisis line on the print. Exposed as `psyuml template <file> [-o out.svg]` — generate a blank scaffold for ANY of the 12 diagram types from its seed. Could add ready-made template SVGs to the repo later, but the generator is the deliverable."
     },
     {
       "id": "REQ-CASE-CORPUS",
