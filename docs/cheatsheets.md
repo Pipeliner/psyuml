@@ -81,7 +81,8 @@ words, hide a part you're not ready to look at, and change it any time.
 
 **If things feel unsafe**
 - A crisis map always shows who to contact. **If you're in danger now, call your local emergency
-  number or a crisis line (e.g. 988 in the US).** This tool can't help in a crisis — reach a person.
+  number or a crisis line (use the number for your country).** This tool can't help in a crisis —
+  reach a person.
 
 **What it is / isn't**
 - It *supports* the work between you and your therapist. It does **not** diagnose you or replace care.

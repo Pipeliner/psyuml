@@ -721,11 +721,11 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M10",
-      "status": "planned",
+      "status": "in-progress",
       "impl": [
-        "docs/**"
+        "docs/handbook.md"
       ],
-      "notes": "Alt-plan cross-check: per-diagram how-tos, co-creating-in-session guidance, exercises, self-guided reflection; ethical guidance against pseudo-clinical overreach."
+      "notes": "docs/handbook.md ships the practitioner tutorial: five working principles (the §L.2/§A.3 commitments, most validator-enforced), the clinician/client layers, a 'choosing a diagram' guide, per-diagram how-tos for all 12 types (when/build/in-session/pitfall + a shipped example each, with real validator rule names), co-creating-in-session workflow (start from the client's words, draw together, mark uncertainty, progressive reveal, snapshot/compare, redact before sharing), cross-school honesty (vocabulary swap + contested-origin provenance), safety/ethics in practice (the export gates + clinician duties incl. a real local crisis contact per ADR-0008), exercises/self-guided reflection (with crisis caveat), and §9 against pseudo-clinical overreach (unvalidated v0.x; design arguments not trials; ritual evidence bounded; translations are approximations). Complements rather than duplicates cheatsheets/format-reference/style-guide/extension-guide. Still to come: in-session video/worked walkthroughs and the workshop/facilitator material (REQ-ADOPTION)."
     },
     {
       "id": "REQ-ADOPTION",
