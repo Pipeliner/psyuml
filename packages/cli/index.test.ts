@@ -124,6 +124,69 @@ describe('psyuml cli', () => {
     expect(io.written['blank.svg']).not.toContain('Calm / connected');
   });
 
+  it('lint-profile passes a well-formed §K profile and fails a rule-breaking one', () => {
+    const ok = fakeIO({
+      'p.json': JSON.stringify({
+        id: 'demo',
+        title: 'Demo',
+        version: '0.1.0',
+        stereotypes: [
+          {
+            id: 's',
+            base: 'agent',
+            glyph: '♣',
+            hand: 'circle w/ clover',
+            nonColor: 'circle + label',
+            synonyms: ['demo'],
+            compat: Object.fromEntries(
+              [
+                'state-map',
+                'parts-map',
+                'relational-field',
+                'process-loop',
+                'timeline',
+                'intervention-sequence',
+                'ritual',
+                'decision-nav',
+                'resource-anchor',
+                'body-map',
+                'mode-map',
+                'two-triangles',
+              ].map((t) => [t, 'ok']),
+            ),
+          },
+        ],
+      }),
+    });
+    expect(run(['lint-profile', 'p.json'], ok)).toBe(0);
+    expect(ok.stdout.join('\n')).toContain('✓ clean');
+
+    // base not a core element + Tier-1 claim → exit 1, rules named
+    const bad = fakeIO({
+      'bad.json': JSON.stringify({
+        id: 'x',
+        title: 'X',
+        version: '0.1.0',
+        stereotypes: [
+          {
+            id: 'bad',
+            base: 'not-a-kind',
+            tier: 1,
+            glyph: '◎',
+            hand: 'h',
+            nonColor: 'n',
+            synonyms: ['z'],
+            compat: {},
+          },
+        ],
+      }),
+    });
+    expect(run(['lint-profile', 'bad.json'], bad)).toBe(1);
+    const out = bad.stdout.join('\n');
+    expect(out).toContain('profile.base-not-core');
+    expect(out).toContain('profile.glyph-collision');
+  });
+
   it('help and version succeed; unknown command and no-files fail', () => {
     const help = fakeIO();
     expect(run(['help'], help)).toBe(0);

@@ -12,6 +12,7 @@
     "@psyuml/grammar": "workspace:*",
     "@psyuml/model": "workspace:*",
     "@psyuml/privacy": "workspace:*",
+    "@psyuml/profiles": "workspace:*",
     "@psyuml/render": "workspace:*",
     "@psyuml/validate": "workspace:*"
   }

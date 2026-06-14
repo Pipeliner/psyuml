@@ -39,6 +39,7 @@ node dist/cli/psyuml.mjs lint examples/*.psyuml
 | [`docs/format-reference.md`](docs/format-reference.md) | **Authoring quickstart** — field-level `.psyuml` reference (every field, range, default), a per-diagram quick-guide, and the validation rules to satisfy. |
 | [`docs/cheatsheets.md`](docs/cheatsheets.md) | **Quick references** — one page for clinicians (glyphs, connectors, which diagram, safety gates) and one plain-language page for clients. |
 | [`docs/style-guide.md`](docs/style-guide.md) | **Visual notation style guide** — glyph forms, colour/line semantics (colour stays redundant), encoding conventions, ritual cultural-sensitivity. |
+| [`docs/extension-guide.md`](docs/extension-guide.md) | **Extending PsyUML (§K)** — add a school/symbol via a profile + stereotypes (the four rules, semver, deprecation); validate it with `psyuml lint-profile`. |
 | [`docs/evaluation-suite.md`](docs/evaluation-suite.md) | **Evaluation suite** — what's automated-and-green vs. the human studies still owed before a clinical v1.0 (the Stage-4 gate). |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the tooling is built: the one-model/many-school-views design, metamodel, rendering pipeline, validation, tech stack, repo layout. |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | The milestone plan (M0–M10) and what's implemented vs. still planned. |

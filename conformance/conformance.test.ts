@@ -8,8 +8,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
-import { parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
+import { EdgeKind, NodeKind, parseModel, serializeModel, type PsyumlModel } from '@psyuml/model';
 import { validate } from '@psyuml/validate';
+import { CFT_PROFILE, CORE_BASES, validateProfile } from '@psyuml/profiles';
 import * as render from '@psyuml/render';
 
 type Renderer = (
@@ -77,5 +78,36 @@ describe('PsyUML conformance (§J)', () => {
     it('default render carries no colour hue (monochrome, §D)', () => {
       expect(RENDERERS[model.diagram](model).svg.toLowerCase()).not.toMatch(HUES);
     });
+  });
+});
+
+describe('extension mechanism (§K)', () => {
+  it('the worked example profile satisfies every §K rule', () => {
+    const r = validateProfile(CFT_PROFILE);
+    expect(r.ok).toBe(true);
+    expect(r.issues.some((i) => i.severity === 'error')).toBe(false);
+  });
+
+  it('the set of legal stereotype bases is exactly the core §A elements (rule 1)', () => {
+    // an extension can only specialize an element the model actually defines — no drift.
+    expect([...CORE_BASES].sort()).toEqual([...NodeKind.options, ...EdgeKind.options].sort());
+  });
+
+  it('enforces the four §K rules + the Tier-1 freeze', () => {
+    // a profile that breaks rule 1 (base), rule 2 (Tier-1), and rule 4 (glyph) at once
+    const broken = validateProfile({
+      id: 'x',
+      title: 'Broken',
+      version: '0.1.0',
+      stereotypes: [
+        { id: 'b', base: 'nope', tier: 1, glyph: '◎', hand: 'h', nonColor: 'n', synonyms: ['s'] },
+      ],
+    });
+    expect(broken.ok).toBe(false);
+    const rules = new Set(broken.issues.map((i) => i.rule));
+    expect(rules.has('profile.base-not-core')).toBe(true);
+    expect(rules.has('profile.tier-1-frozen')).toBe(true);
+    expect(rules.has('profile.glyph-collision')).toBe(true);
+    expect(rules.has('profile.compat-incomplete')).toBe(true);
   });
 });

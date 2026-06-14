@@ -24,6 +24,7 @@ choices were made.
 | `0006-rendering-robustness-fit.md` | Records content-fit viewBoxes + `fitText` fit-to-box labels (no clipping / overflow on screen or export) found by the build-a-diagram agent test | `../templates/adr.md`, `../../packages/render/index.ts` | REQ-ACCESSIBILITY, REQ-NOTATION | §D | low (append-only) |
 | `0007-cross-school-provenance-contested-origins.md` | Records the shared `schoolClaims` reader (bare + `school:` tags), validate firing on real data, and the Parts Map contested-origin marker (`⚖ A vs B`) + alt-text — making §G.2's "preserve disagreement" real | `../templates/adr.md`, `../../packages/model/index.ts` | REQ-CROSS-SCHOOL, REQ-ACCESSIBILITY | §G.2 | low (append-only) |
 | `0008-region-neutral-crisis-resources.md` | Records keeping crisis defaults region-neutral (no baked-in per-country numbers) + the `safety.crisis-localize` nudge for a concrete local contact under acute risk | `../templates/adr.md`, `../../packages/validate/index.ts` | REQ-SAFETY-TRIAGE, REQ-DECISION-NAV | §A.2-r7, §L.2 | low (append-only) |
+| `0009-extension-mechanism-validated-profiles.md` | Records implementing §K as a typed, validated profile registry in `@psyuml/profiles` (`ExtensionProfile`/`validateProfile`, the four rules + Tier-1 freeze + glyph-collision), the `lint-profile` CLI, and conformance invariants | `../templates/adr.md`, `../../packages/profiles/index.ts` | REQ-EXTENSION-MECH | §K, §B, §C | low (append-only) |
 
 ## Change checklist
 - [ ] Don't rewrite history — supersede with a new ADR and mark the old one `superseded`.

@@ -11,10 +11,12 @@
  * so it can gate CI / a pre-commit hook the same way the editor gates export.
  *
  * Traceability: REQ-TEXT-DSL (CLI), REQ-WELLFORMEDNESS / REQ-PATH-OF-HOPE / REQ-SAFETY-TRIAGE
- * (lint surfaces them), REQ-NOTATION / REQ-ACCESSIBILITY (render).
+ * (lint surfaces them), REQ-NOTATION / REQ-ACCESSIBILITY (render), REQ-EXTENSION-MECH
+ * (`lint-profile` validates a §K extension profile).
  */
 import { parseModel, PSYUML_MODEL_VERSION, serializeModel, type PsyumlModel } from '@psyuml/model';
 import { validate } from '@psyuml/validate';
+import { validateProfile } from '@psyuml/profiles';
 import { fromDSL, toDSL } from '@psyuml/grammar';
 import { deidentify } from '@psyuml/privacy';
 import {
@@ -69,6 +71,7 @@ usage:
   psyuml convert <file> [-o out]      # JSON .psyuml <-> text DSL (auto-detected)
   psyuml redact <file> [--term NAME ...] [-o out]   # de-identify before export
   psyuml template <file> [--layer L] [--color] [-o out.svg]   # blank printable scaffold
+  psyuml lint-profile <files...>      # validate a §K extension profile (JSON)
   psyuml help | version
 
 Input is auto-detected: a leading "{" is parsed as JSON; otherwise as the text DSL.
@@ -267,12 +270,41 @@ function cmdTemplate(args: string[], io: CliIO): number {
   return 0;
 }
 
+function cmdLintProfile(args: string[], io: CliIO): number {
+  const { files } = parseArgs(args);
+  if (files.length === 0) {
+    io.err('usage: psyuml lint-profile <files...>');
+    return 2;
+  }
+  let bad = false;
+  for (const f of files) {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(io.readFile(f));
+    } catch (e) {
+      io.err(`${f}: load error — ${msg(e)}`);
+      bad = true;
+      continue;
+    }
+    const report = validateProfile(raw);
+    if (report.issues.length === 0) io.out(`${f}: ✓ clean`);
+    for (const issue of report.issues) {
+      const where = issue.stereotype ? ` «${issue.stereotype}»` : '';
+      io.out(`${f}: ${issue.severity.toUpperCase()} ${issue.rule}${where} — ${issue.message}`);
+    }
+    if (!report.ok) bad = true;
+  }
+  return bad ? 1 : 0;
+}
+
 /** Dispatch a `psyuml` invocation. Returns the process exit code. */
 export function run(argv: string[], io: CliIO): number {
   const [cmd, ...rest] = argv;
   switch (cmd) {
     case 'lint':
       return cmdLint(rest, io);
+    case 'lint-profile':
+      return cmdLintProfile(rest, io);
     case 'render':
       return cmdRender(rest, io);
     case 'convert':

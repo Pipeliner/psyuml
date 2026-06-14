@@ -80,6 +80,9 @@ importers:
       '@psyuml/model':
         specifier: workspace:*
         version: link:../packages/model
+      '@psyuml/profiles':
+        specifier: workspace:*
+        version: link:../packages/profiles
       '@psyuml/render':
         specifier: workspace:*
         version: link:../packages/render
@@ -110,6 +113,9 @@ importers:
       '@psyuml/privacy':
         specifier: workspace:*
         version: link:../privacy
+      '@psyuml/profiles':
+        specifier: workspace:*
+        version: link:../profiles
       '@psyuml/render':
         specifier: workspace:*
         version: link:../render
@@ -141,7 +147,14 @@ importers:
         specifier: workspace:*
         version: link:../model
 
-  packages/profiles: {}
+  packages/profiles:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../model
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
 
   packages/render:
     dependencies:

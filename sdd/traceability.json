@@ -377,11 +377,19 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M5",
-      "status": "planned",
+      "status": "in-progress",
       "impl": [
         "packages/model/**",
-        "packages/profiles/**"
-      ]
+        "packages/profiles/**",
+        "packages/cli/index.ts",
+        "docs/extension-guide.md"
+      ],
+      "tests": [
+        "packages/profiles/index.test.ts",
+        "packages/cli/index.test.ts",
+        "conformance/conformance.test.ts"
+      ],
+      "notes": "§K implemented as a typed, VALIDATED profile registry in @psyuml/profiles (ADR-0009), per the 'validation first' directive. ExtensionProfile/StereotypeDef (zod) + validateProfile enforce the four §K rules — rule 1 base specializes a core element (CORE_BASES = model NodeKind∪EdgeKind, so it can't drift from the model), rule 2 Tier-1 is frozen (extensions default Tier 3), rule 3 a complete compat matrix per DiagramType + glyph/hand/non-color/≥1-synonym kit, rule 4 no collision with a reserved Tier-1 glyph (CORE_TIER1_GLYPHS from §B/§C, incl. ⚖) — plus unique ids, a semver warning, and a deprecation-info note; malformed input returns profile.shape issues rather than throwing. roleLabelsFromProfile feeds the renderer's roleLabels; CFT_PROFILE is a shipped worked example. Surfaces: `psyuml lint-profile <file>` (CLI) + conformance §K invariants. Still to come: live profile loading in the editor's School switcher (beyond roleLabelsFromProfile); auto-verifying the author-asserted compat matrix against each renderer; per-diagram-type custom-stereotype rendering."
     },
     {
       "id": "REQ-RESEARCH-PROFILES",
