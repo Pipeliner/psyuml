@@ -153,6 +153,12 @@ describe('renderDecisionChart', () => {
     expect(altText).toContain('always shown');
   });
 
+  it('repeats the crisis contact on the crisis node, not only in the bottom banner', () => {
+    // the crisis line (incl. "988") now appears both on the crisis node and in the banner
+    const occurrences = (renderDecisionChart(decisionModel).svg.match(/988/g) ?? []).length;
+    expect(occurrences).toBeGreaterThanOrEqual(2);
+  });
+
   it('renders the client layer vocabulary', () => {
     const { svg } = renderDecisionChart(decisionModel, { layer: 'client' });
     expect(svg).toContain('Call for help now');

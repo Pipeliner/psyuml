@@ -179,6 +179,29 @@ describe('validate', () => {
       r.issues.some((i) => i.rule === 'provenance.mixed-school' && i.severity === 'error'),
     ).toBe(false);
   });
+
+  it('surfaces opposed origin-claims on a single node (§G.2, info)', () => {
+    const m = read('state-map.psyuml');
+    const opposed = parseModel({
+      ...m,
+      nodes: m.nodes.map((n, i) =>
+        i === 0
+          ? {
+              ...n,
+              properties: {
+                ...n.properties,
+                provenance: ['school:ifs', 'school:structural-dissociation'],
+              },
+            }
+          : n,
+      ),
+    });
+    const r = validate(opposed);
+    const issue = r.issues.find((i) => i.rule === 'provenance.node-mixed-school');
+    expect(issue?.severity).toBe('info');
+    expect(issue?.nodeId).toBe(opposed.nodes[0]?.id);
+    expect(r.ok).toBe(true); // info only, never blocks
+  });
 });
 
 // CI corpus lint: every committed example must validate clean in both layers.

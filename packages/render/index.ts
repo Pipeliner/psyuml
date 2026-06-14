@@ -508,6 +508,12 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
 
   const parts: string[] = [];
 
+  // The crisis line, shown BOTH under the crisis node (at the point of need) and in the
+  // always-visible banner — a layperson on the "unsafe" branch shouldn't have to hunt for it.
+  const crisis =
+    model.meta.crisisResources ??
+    'If you are in danger now, call your local emergency number or a crisis line.';
+
   // Edges (downward, with branch labels)
   for (const e of edges) {
     const s = pos.get(e.source);
@@ -536,12 +542,21 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     parts.push(
       `<text x="${p.x}" y="${p.y + 4}" font-family="sans-serif" font-size="11" text-anchor="middle"${isCrisis ? ' font-weight="700"' : ''}>${esc(name)}</text>`,
     );
+    // Put the actual crisis contact right on the crisis node, not only in the bottom banner.
+    if (isCrisis) {
+      parts.push(
+        wrapLabel(crisis, p.x, p.y + DNODE_H / 2 + 13, {
+          size: 9,
+          anchor: 'middle',
+          maxWidth: 220,
+          maxLines: 3,
+          fill: '#333',
+        }),
+      );
+    }
   }
 
   // Crisis-resources banner — ALWAYS visible (UX-M4)
-  const crisis =
-    model.meta.crisisResources ??
-    'If you are in danger now, call your local emergency number or a crisis line.';
   const by = height - DBANNER_H;
   parts.push(
     `<rect x="0" y="${by}" width="${DEC_W}" height="${DBANNER_H}" fill="#fff" stroke="#000" stroke-width="2" />`,
@@ -655,6 +670,32 @@ const LOOP_W = 560;
 const LNODE_W = 140;
 const LNODE_H = 44;
 
+/** Order nodes by following the directed (non-exit) edge chain, so a cycle's steps land
+ * adjacent on the ring. Falls back to model order for anything not on the chain. */
+function cycleOrder(
+  nodes: PsyumlModel['nodes'],
+  edges: PsyumlModel['edges'],
+): PsyumlModel['nodes'] {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const next = new Map<string, string>();
+  for (const e of edges) {
+    if (e.kind === 'exit') continue;
+    if (!next.has(e.source) && byId.has(e.target)) next.set(e.source, e.target);
+  }
+  const targets = new Set(next.values());
+  const start = nodes.find((node) => !targets.has(node.id)) ?? nodes[0];
+  const ordered: PsyumlModel['nodes'] = [];
+  const seen = new Set<string>();
+  let cur: string | undefined = start?.id;
+  while (cur && byId.has(cur) && !seen.has(cur)) {
+    seen.add(cur);
+    ordered.push(byId.get(cur)!);
+    cur = next.get(cur);
+  }
+  for (const node of nodes) if (!seen.has(node.id)) ordered.push(node);
+  return ordered;
+}
+
 /** Render a Process / Loop map (spec §E.4): a maintaining cycle on a ring, with
  * reciprocal (double-headed) links, a reinforcing/balancing centre badge, and exits. */
 export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
@@ -669,12 +710,15 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   // Honor manual positions when present; otherwise lay the cycle out on a ring.
   const usePos = nodes.some((node) => node.position);
+  // Lay ring nodes out in CYCLE order (follow the sequential chain) so consecutive steps are
+  // adjacent and edges don't cross the middle — only the closing edge spans (pilot legibility).
+  const ringOrder = usePos ? nodes : cycleOrder(nodes, model.edges);
   const pos = new Map<string, { x: number; y: number }>();
-  nodes.forEach((node, i) => {
+  ringOrder.forEach((node, i) => {
     if (usePos && node.position) {
       pos.set(node.id, { x: node.position.x, y: node.position.y });
     } else {
-      const a = ((-90 + (i * 360) / n) * Math.PI) / 180;
+      const a = ((-90 + (i * 360) / ringOrder.length) * Math.PI) / 180;
       pos.set(node.id, { x: r1(cx + radius * Math.cos(a)), y: r1(cy + radius * Math.sin(a)) });
     }
   });

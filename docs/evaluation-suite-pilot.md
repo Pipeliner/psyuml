@@ -56,9 +56,17 @@ The CAT specialist found that the cross-school *claim* oversells the implementat
   other traditions are their own diagram types; a CBT loop vs a CAT reformulation are different
   formulations; provenance records *origin* (co-present opposed-claim surfacing is future work).
 - **Added a full worked DSL example** to `format-reference.md` so the notation is reproducible.
-- Logged as follow-ups (not blocking): repeat the crisis number inline on the "call for help"
-  node; localize the crisis line; improve loop arrow-direction legibility; let provenance carry
-  multiple opposed claims + surface them.
+**Follow-ups since done (a second commit):**
+- The crisis line now renders **on the crisis node** (wrapped), not only in the bottom banner —
+  the layperson's "the box doesn't give a number" nit.
+- The Process/Loop now lays nodes out in **cycle order** so steps are adjacent and edges stop
+  crossing the middle (only the closing edge spans) — the "tangled / direction muddy" nit.
+- `validate` now **surfaces opposed origin-claims at the node** (`provenance.node-mixed-school`,
+  info) — a step toward the CAT critique (a single element claimed by >1 school is flagged, not
+  silently merged).
+
+**Still open:** localize the crisis line beyond a US example; render multiple co-present
+provenance claims visibly (validate flags them; the renderers don't yet show two on one node).
 
 ## Caveats (why this isn't evidence)
 LLM stand-ins over-read structured text, don't carry real comprehension load or clinical

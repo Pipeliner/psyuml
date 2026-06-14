@@ -209,9 +209,25 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
 
   // --- Cross-school provenance awareness (§G.2): keep opposed origin-claims visible ---
   const schools = new Set<string>();
-  for (const n of model.nodes)
+  for (const n of model.nodes) {
+    const nodeSchools = new Set<string>();
     for (const p of n.properties.provenance ?? [])
-      if (p.startsWith('school:')) schools.add(p.slice('school:'.length));
+      if (p.startsWith('school:')) {
+        const s = p.slice('school:'.length);
+        schools.add(s);
+        nodeSchools.add(s);
+      }
+    // A single element claimed by >1 school = co-present opposed origin-claims (e.g. IFS innate
+    // vs. structural-dissociation trauma-caused). Surface it at the node — don't silently merge.
+    if (nodeSchools.size > 1) {
+      add(
+        'provenance.node-mixed-school',
+        'info',
+        `"${getText(n.label, layer)}" carries ${nodeSchools.size} opposed origin-claims (${[...nodeSchools].sort().join(', ')}) — show both; do not resolve them into one.`,
+        n.id,
+      );
+    }
+  }
   if (schools.size > 1) {
     add(
       'provenance.mixed-school',
