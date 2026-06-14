@@ -1488,9 +1488,13 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     const p = n.position ?? { x: 210, y: 140 + i * 30 };
     const intensity = n.properties.intensity ?? 0.5;
     const r = 6 + intensity * 10;
+    const labelX = r1(p.x + r + 8);
     parts.push(
       `<circle cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#000" fill-opacity="0.15" stroke="#000" stroke-width="1.5" />`,
-      `<text x="${r1(p.x + r + 8)}" y="${p.y + 4}" font-family="sans-serif" font-size="11">${esc(getText(n.label, layer, lang))} (${intensity.toFixed(1)})</text>`,
+      fitText(`${getText(n.label, layer, lang)} (${intensity.toFixed(1)})`, labelX, p.y + 4, {
+        size: 11,
+        maxWidth: BODY_W - labelX - 8,
+      }),
     );
   });
 

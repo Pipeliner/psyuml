@@ -42,8 +42,10 @@ and produced detached arrowheads on very short chords.
   correctly. Short-labelled committed examples are byte-identical (no `textLength`), so only
   the loop goldens were regenerated.
 - **Cost / limits:** a label longer than `maxLines` rows still compresses its last line
-  (squished but legible and in-frame). `renderBodyMap`'s side-list labels keep `fitText`
-  (not centered-in-box); they can move to `wrapLabel` later if needed.
+  (squished but legible and in-frame). `renderBodyMap`'s labels sit *beside* their dots, so
+  they use single-line `fitText` (compress into the right margin) rather than centered
+  `wrapLabel` — multi-line there would collide with adjacent sensations. Every node-label
+  renderer now routes through `fitText`/`wrapLabel`.
 - **Impact:** `packages/render/index.ts` (`fitText`, `wrapLabel`/`wrapLines`, content-fit
   `renderLoopMap`, `renderStateMap` clamp, and `wrapLabel` adopted by the box renderers);
   regenerated the goldens whose label attribute-order changed (process-loop, cat-sdr,
