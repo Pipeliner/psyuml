@@ -41,6 +41,7 @@ node dist/cli/psyuml.mjs lint examples/*.psyuml
 | [`docs/style-guide.md`](docs/style-guide.md) | **Visual notation style guide** — glyph forms, colour/line semantics (colour stays redundant), encoding conventions, ritual cultural-sensitivity. |
 | [`docs/handbook.md`](docs/handbook.md) | **Practitioner handbook** — how to use PsyUML in practice: choosing a diagram, per-diagram how-tos, co-creating in session, safety/ethics, exercises, and the honest limits. |
 | [`docs/extension-guide.md`](docs/extension-guide.md) | **Extending PsyUML (§K)** — add a school/symbol via a profile + stereotypes (the four rules, semver, deprecation); validate it with `psyuml lint-profile`. |
+| [`docs/adoption/`](docs/adoption/) | **Adoption pack** — a runnable clinician **workshop + facilitator script**, the notation-extension **contributor guide** (clinicians proposing symbols), and **proposed, unvalidated** comprehension/reliability/consensus **instruments + pilot-study design** (extends the evaluation suite; not evidence). |
 | [`docs/evaluation-suite.md`](docs/evaluation-suite.md) | **Evaluation suite** — what's automated-and-green vs. the human studies still owed before a clinical v1.0 (the Stage-4 gate). |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the tooling is built: the one-model/many-school-views design, metamodel, rendering pipeline, validation, tech stack, repo layout. |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | The milestone plan (M0–M10) and what's implemented vs. still planned. |

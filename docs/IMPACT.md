@@ -20,6 +20,7 @@ truth), the tooling architecture, the build roadmap, and saved research.
 - `specification/` — the normative spec (see `docs/specification/IMPACT.md`).
 - `research/` — companion source material + the idea-incorporation record.
 - `ux/` — UX research synthesis + per-persona user stories & requirements (see `docs/ux/IMPACT.md`).
+- `adoption/` — the adoption pack: workshop + facilitator script, the notation-extension contributor guide, and the **proposed, unvalidated** comprehension/reliability/consensus instruments + pilot-study design (REQ-ADOPTION; extends REQ-EVAL-SUITE — see `docs/adoption/IMPACT.md`).
 
 ## Files
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |

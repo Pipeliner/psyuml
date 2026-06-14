@@ -743,11 +743,11 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M10",
-      "status": "planned",
+      "status": "in-progress",
       "impl": [
-        "docs/**"
+        "docs/adoption/**"
       ],
-      "notes": "Alt-plan cross-check: workshop decks + facilitator scripts; a notation-extension contributor guide (clinicians proposing symbols); comprehension-test instruments + pilot-study design. Extends REQ-EVAL-SUITE."
+      "notes": "Adoption pack under docs/adoption/, three parts: (1) workshop.md — a runnable ~3h introductory clinician workshop + facilitator script (learning objectives, timed agenda, hands-on State-Map/loop-with-exit/Resource-map exercises, talking points, a safety/ethics segment, deck outline, feedback form) that teaches FROM the handbook + cheatsheets + examples; (2) extension-contributor-guide.md — the clinician PROCESS for proposing a new symbol/stereotype/profile (satisfy the four §K rules, draft an ExtensionProfile, validate with `psyuml lint-profile`, attach rationale/evidence, submit, review, semver), wrapping the §K mechanics in docs/extension-guide.md (REQ-EXTENSION-MECH); (3) comprehension-instruments.md — PROPOSED, UNVALIDATED Tier-B instruments (layperson crisis-chart/State-Map comprehension test with sample items + scoring, inter-rater formulation-reliability task, multi-school Delphi consensus sketch) + a pilot-study design with go/no-go thresholds tied to the Stage-4 gate. The instruments are proposed/unvalidated and administering them does NOT constitute evidence; the pack EXTENDS REQ-EVAL-SUITE (operationalizes its Tier B). Honest framing throughout: unvalidated v0.x, supervised pilot use, §L.2 (support-not-replace, non-pathologising, consent + secular default, no overreach)."
     }
   ]
 }
