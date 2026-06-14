@@ -5,7 +5,7 @@
   "meta": {
     "title": "R. — nervous-system ladder",
     "disclaimer": "This map supports, and does not replace, professional care.",
-    "crisisResources": "If you are in danger now, call your local emergency number or a crisis line (e.g. 988 in the US).",
+    "crisisResources": "If you are in danger now, call your local emergency number or a crisis line (use your local number).",
     "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
   },
   "bands": [

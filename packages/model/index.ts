@@ -206,3 +206,34 @@ export function getText(
   const dict = layer === 'client' && label.client ? label.client : label.clinician;
   return dict[lang] ?? Object.values(dict)[0] ?? '';
 }
+
+/**
+ * The distinct school-origin claims carried by a provenance list (spec §G.2).
+ *
+ * A claim is recorded either as an explicit `school:<id>` tag or as a bare token
+ * (the form the examples use, e.g. `IFS`, `schema`, `SD`); a tag that carries some
+ * *other* namespace (`source:`, `ref:`, …) is provenance but not a school claim and
+ * is skipped. De-duplication is case-insensitive but the first-seen display casing is
+ * kept, and order is preserved. This stays school-agnostic: it understands the
+ * provenance *format*, not any particular school — so two claims on one element
+ * (e.g. IFS's innate part vs. structural dissociation's trauma-made part) surface as
+ * a genuine disagreement instead of being silently merged.
+ */
+export function schoolClaims(provenance?: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of provenance ?? []) {
+    const t = raw.trim();
+    if (!t) continue;
+    let id: string;
+    if (/^school:/i.test(t)) id = t.slice(t.indexOf(':') + 1).trim();
+    else if (t.includes(':'))
+      continue; // a different provenance namespace, not a school
+    else id = t;
+    const key = id.toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(id);
+  }
+  return out;
+}

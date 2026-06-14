@@ -13,7 +13,7 @@
  * Traceability: REQ-WELLFORMEDNESS, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE,
  * REQ-ETHICS-GUARDRAILS, REQ-CROSS-SCHOOL.
  */
-import { getText, type PsyumlModel } from '@psyuml/model';
+import { getText, schoolClaims, type PsyumlModel } from '@psyuml/model';
 
 export type Severity = 'error' | 'warn' | 'info';
 
@@ -184,11 +184,20 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
       'warn',
       'Acute-risk flag is set — route to human clinical review now. This tool documents a formulation; it does not provide crisis care.',
     );
-    if (!model.meta.crisisResources?.trim()) {
+    const crisis = model.meta.crisisResources?.trim();
+    if (!crisis) {
       add(
         'safety.acute-risk-resources',
         'error',
         'Acute risk is flagged but no crisis resources are recorded — add a localized crisis line/number before export.',
+      );
+    } else if (!/\d|https?:|@|\bwww\./i.test(crisis)) {
+      // A generic line ("call a crisis line") is better than nothing but isn't actionable in a
+      // crisis. Nudge a *concrete, local* contact — locale-agnostic: any number / URL / handle.
+      add(
+        'safety.crisis-localize',
+        'info',
+        'Crisis resources name no concrete contact — add a number, URL, or service for the client’s own region, not a generic line.',
       );
     }
   }
@@ -208,22 +217,19 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
   }
 
   // --- Cross-school provenance awareness (§G.2): keep opposed origin-claims visible ---
-  const schools = new Set<string>();
+  // `schoolClaims` reads the provenance *format* (explicit `school:` tags and the bare tags
+  // the examples use alike), so this fires on real data, not only prefixed test fixtures.
+  const schools = new Map<string, string>(); // lowercase id -> first-seen display form
   for (const n of model.nodes) {
-    const nodeSchools = new Set<string>();
-    for (const p of n.properties.provenance ?? [])
-      if (p.startsWith('school:')) {
-        const s = p.slice('school:'.length);
-        schools.add(s);
-        nodeSchools.add(s);
-      }
+    const claims = schoolClaims(n.properties.provenance);
+    for (const s of claims) if (!schools.has(s.toLowerCase())) schools.set(s.toLowerCase(), s);
     // A single element claimed by >1 school = co-present opposed origin-claims (e.g. IFS innate
     // vs. structural-dissociation trauma-caused). Surface it at the node — don't silently merge.
-    if (nodeSchools.size > 1) {
+    if (claims.length > 1) {
       add(
         'provenance.node-mixed-school',
         'info',
-        `"${getText(n.label, layer)}" carries ${nodeSchools.size} opposed origin-claims (${[...nodeSchools].sort().join(', ')}) — show both; do not resolve them into one.`,
+        `"${getText(n.label, layer)}" carries ${claims.length} opposed origin-claims (${claims.join(', ')}) — show both; do not resolve them into one.`,
         n.id,
       );
     }
@@ -232,7 +238,7 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
     add(
       'provenance.mixed-school',
       'info',
-      `This diagram draws on ${schools.size} schools (${[...schools].sort().join(', ')}) — keep provenance tags visible; do not merge opposed claims.`,
+      `This diagram draws on ${schools.size} schools (${[...schools.values()].sort().join(', ')}) — keep provenance tags visible; do not merge opposed claims.`,
     );
   }
 

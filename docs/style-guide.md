@@ -104,7 +104,11 @@ diagram types**. Re-conceiving a CBT maintenance loop as a CAT reformulation is 
 **reformulation**, not a vocabulary swap — don't present the two as one model relabelled.
 
 **Provenance tags** record each element's **origin/school** so it isn't silently merged (§G.2).
-Surfacing two genuinely *opposed* claims co-present on one element (e.g. IFS innate multiplicity
-vs. structural-dissociation's trauma-caused division) — with the renderer showing the conflict —
-is the goal; today provenance is a single origin stamp, so treat "preserves the disagreement" as
-the intent, not a finished guarantee.
+When one element carries **two or more** opposed claims (e.g. IFS innate multiplicity vs.
+structural-dissociation's trauma-caused division), the Parts Map draws them as a
+**contested-origin marker** — `⚖ A vs B` under the node, not a merged `A / B` slash-list — and the
+alt-text says so ("Origins disagree on: … — both claims are shown, not merged"); `validate` also
+flags it (`provenance.node-mixed-school`, info). Tag a contested element with each school's id
+(bare `IFS`, `schema`, `SD` or explicit `school:ifs` both work). **Limits:** this rendering is on
+the Parts Map only so far, and it *names* the disagreeing schools without explaining *how* they
+disagree — keep that nuance in your notes.

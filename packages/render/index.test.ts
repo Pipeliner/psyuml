@@ -124,8 +124,20 @@ describe('renderPartsMap', () => {
   it('renders the client layer vocabulary and preserves provenance tags', () => {
     const { svg } = renderPartsMap(partsModel, { layer: 'client' });
     expect(svg).toContain('the young hurt part');
-    expect(svg).toContain('IFS / schema / SD');
     expect(svg).not.toContain('Little one, age 6');
+  });
+
+  it('marks a node claimed by >1 school as a contested origin, not a merged list (§G.2)', () => {
+    const { svg, altText } = renderPartsMap(partsModel);
+    // the exile carries IFS + schema + SD → shown as a disagreement, not "IFS / schema / SD"
+    expect(svg).toContain('⚖');
+    expect(svg).toContain('IFS vs schema vs SD');
+    expect(svg).not.toContain('IFS / schema / SD');
+    // a single-school node keeps the plain tag
+    expect(svg).toContain('>IFS<');
+    // and the disagreement is legible in the text channel too (§D)
+    expect(altText).toContain('Origins disagree on');
+    expect(altText).toContain('claimed by IFS and schema and SD');
   });
 
   it('re-labels role tags under a school vocabulary (roleLabels, §G)', () => {
@@ -148,14 +160,15 @@ describe('renderDecisionChart', () => {
     expect(svg.startsWith('<svg')).toBe(true);
     expect(svg).toContain('Am I safe right now?');
     expect(svg).toContain('Crisis resources (always available):');
-    expect(svg).toContain('988');
+    expect(svg).toContain('use your local number');
     expect(altText).toContain('Crisis navigation chart');
     expect(altText).toContain('always shown');
   });
 
   it('repeats the crisis contact on the crisis node, not only in the bottom banner', () => {
-    // the crisis line (incl. "988") now appears both on the crisis node and in the banner
-    const occurrences = (renderDecisionChart(decisionModel).svg.match(/988/g) ?? []).length;
+    // the crisis line appears both on the crisis node (wrapped) and in the banner. The node
+    // copy is split into tspans, so count a single un-splittable word rather than a phrase.
+    const occurrences = (renderDecisionChart(decisionModel).svg.match(/danger/g) ?? []).length;
     expect(occurrences).toBeGreaterThanOrEqual(2);
   });
 

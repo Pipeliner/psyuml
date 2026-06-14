@@ -65,8 +65,22 @@ The CAT specialist found that the cross-school *claim* oversells the implementat
   info) — a step toward the CAT critique (a single element claimed by >1 school is flagged, not
   silently merged).
 
-**Still open:** localize the crisis line beyond a US example; render multiple co-present
-provenance claims visibly (validate flags them; the renderers don't yet show two on one node).
+**Follow-ups since done (a third commit — ADR-0007, ADR-0008):**
+- **Co-present provenance now shows the disagreement.** A shared, school-agnostic
+  `schoolClaims()` reader (in `@psyuml/model`) means `validate` fires on the corpus's *bare*
+  tags, not only `school:`-prefixed fixtures — so the Parts Map exile (IFS + schema + SD) is
+  actually flagged. The Parts Map now **renders** a >1-school node as a contested-origin marker
+  (`⚖ A vs B`) instead of a merged slash-list, and names the conflict in the alt-text. The CAT
+  critique's "the renderer doesn't surface the conflict" is addressed for the Parts Map.
+- **The crisis line is region-neutral.** Examples + default no longer name "988 in the US";
+  they point to "your local number," and `validate` nudges a concrete local contact
+  (`safety.crisis-localize`, info) when acute risk is flagged with no number/URL. We
+  deliberately do **not** bake per-country numbers into the library (a stale/wrong crisis number
+  is a hazard, ADR-0008).
+
+**Still open:** surface contested origins on diagram types beyond the Parts Map; explain *how*
+two claims disagree (not just name the schools); full per-language i18n of the crisis/disclaimer
+boilerplate (a schema change tracked separately).
 
 ## Caveats (why this isn't evidence)
 LLM stand-ins over-read structured text, don't carry real comprehension load or clinical

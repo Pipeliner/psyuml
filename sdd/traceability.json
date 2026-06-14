@@ -219,7 +219,7 @@
         "apps/web/**",
         "packages/render/**"
       ],
-      "notes": "UX-M4 (crisis-for-cognitive-constriction): one decision/step, escalation ladder, localized crisis resources on every screen, means-restriction step, no dead-ends, human escalation, large text (Stanley 2018; Morrison 2024). No AI handles crises. M2: renderDecisionChart + always-visible crisis banner + decision-nav example shipped; the no-dead-ends / crisis-resource-present lint lands in M3 (REQ-SAFETY-TRIAGE). Crisis line now renders ON the crisis node (wrapped), not only in the always-visible bottom banner (pilot comprehension fix)."
+      "notes": "UX-M4 (crisis-for-cognitive-constriction): one decision/step, escalation ladder, localized crisis resources on every screen, means-restriction step, no dead-ends, human escalation, large text (Stanley 2018; Morrison 2024). No AI handles crises. M2: renderDecisionChart + always-visible crisis banner + decision-nav example shipped; the no-dead-ends / crisis-resource-present lint lands in M3 (REQ-SAFETY-TRIAGE). Crisis line now renders ON the crisis node (wrapped), not only in the always-visible bottom banner (pilot comprehension fix); and it is region-neutral — points to 'your local number' rather than a single country's line (ADR-0008, de-US-centering the pilot flagged)."
     },
     {
       "id": "REQ-RESOURCE-ANCHOR",
@@ -287,7 +287,7 @@
         "packages/render/**/*.test.ts",
         "conformance/**/*.test.ts"
       ],
-      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2). The editor itself meets WCAG 2.2 AA — keyboard operation, contrast, 200% zoom, target size, colour-redundant (UX-M1, docs/ux). M3: validate flags over-long labels (a11y.label-length); the examples corpus is lint-gated in CI. Conformance asserts, per view + both layers, role=img + aria-label + non-empty alt text and monochrome-by-default (no colour hue). Render legibility hardened (ADR-0006) after a build-a-diagram agent test: content-fit viewBoxes (renderLoopMap, incl. negative coords + honor pos), node-center clamping (state map), a fitText helper (single-line compress) and a wrapLabel helper (true multi-line tspan wrapping) adopted across the box/shape renderers (state, loop, parts, mode, relational/genogram, intervention-sequence, two-triangles) — so labels never clip or overflow on screen or in exports."
+      "notes": "Every rendered view also emits a plain-language text summary + alt text (Source 3 C8, WCAG 2.2). The editor itself meets WCAG 2.2 AA — keyboard operation, contrast, 200% zoom, target size, colour-redundant (UX-M1, docs/ux). M3: validate flags over-long labels (a11y.label-length); the examples corpus is lint-gated in CI. Conformance asserts, per view + both layers, role=img + aria-label + non-empty alt text and monochrome-by-default (no colour hue). Render legibility hardened (ADR-0006) after a build-a-diagram agent test: content-fit viewBoxes (renderLoopMap, incl. negative coords + honor pos), node-center clamping (state map), a fitText helper (single-line compress) and a wrapLabel helper (true multi-line tspan wrapping) adopted across the box/shape renderers (state, loop, parts, mode, relational/genogram, intervention-sequence, two-triangles) — so labels never clip or overflow on screen or in exports. Cross-school disagreement is carried in the text channel too: the Parts Map alt-text names any element claimed by >1 school ('Origins disagree on: … — both claims are shown, not merged', ADR-0007)."
     },
     {
       "id": "REQ-PATH-OF-HOPE",
@@ -339,12 +339,18 @@
       "milestone": "M4",
       "status": "in-progress",
       "impl": [
-        "packages/profiles/**"
+        "packages/profiles/**",
+        "packages/model/index.ts",
+        "packages/validate/index.ts",
+        "packages/render/index.ts"
       ],
       "tests": [
-        "packages/profiles/**/*.test.ts"
+        "packages/profiles/**/*.test.ts",
+        "packages/model/index.test.ts",
+        "packages/validate/index.test.ts",
+        "packages/render/index.test.ts"
       ],
-      "notes": "One immutable model, many views. M4: @psyuml/profiles ships the §G.2 parts-family translation table (TRANSLATIONS) + translate() + roleLabelsFor(); the renderer takes a roleLabels map and the editor's School switcher (IFS/schema/structural-dissociation/TA) re-labels the Parts Map vocabulary while keeping structure. SCOPE (sharpened after the simulated Tier-B pilot, ADR-adjacent honesty fix): the vocabulary swap is the parts family ONLY; CAT is deliberately excluded (reciprocal roles are dyadic, not a parts slot); other traditions (polyvagal, CAT/SDR, genogram, Malan, Karpman, ritual) are their own diagram types — a CBT loop vs a CAT reformulation are different formulations, NOT one model relabelled. Provenance tags currently record each element's origin/school; surfacing two co-present opposed claims on one element with the renderer showing the conflict is still to come (don't present 'preserves the disagreement' as finished). First step on surfacing opposed claims (from the pilot's CAT critique): validate now flags a single element claimed by >1 school (provenance.node-mixed-school, info) — rendering two co-present claims visibly is still to come. Full per-diagram profiles + more swap families still to come."
+      "notes": "One immutable model, many views. M4: @psyuml/profiles ships the §G.2 parts-family translation table (TRANSLATIONS) + translate() + roleLabelsFor(); the renderer takes a roleLabels map and the editor's School switcher (IFS/schema/structural-dissociation/TA) re-labels the Parts Map vocabulary while keeping structure. SCOPE (sharpened after the simulated Tier-B pilot, ADR-adjacent honesty fix): the vocabulary swap is the parts family ONLY; CAT is deliberately excluded (reciprocal roles are dyadic, not a parts slot); other traditions (polyvagal, CAT/SDR, genogram, Malan, Karpman, ritual) are their own diagram types — a CBT loop vs a CAT reformulation are different formulations, NOT one model relabelled. Opposed-claim surfacing (ADR-0007, from the pilot's CAT critique): @psyuml/model exports schoolClaims() (school-agnostic; reads bare AND school: tags) so validate fires on real corpus data — provenance.node-mixed-school (per element) + provenance.mixed-school (per diagram), both info — and the Parts Map now RENDERS a node claimed by >1 school as a contested-origin marker (⚖ A vs B), naming the conflict in alt-text too (§D). Still to come: contested rendering on other diagram types (Parts Map only today), explaining HOW two claims disagree (not just naming the schools), and full per-diagram profiles + more swap families."
     },
     {
       "id": "REQ-GENOGRAM",
@@ -576,7 +582,7 @@
         "packages/validate/**/*.test.ts",
         "apps/web/**/*.test.ts"
       ],
-      "notes": "Source 3 C3. Acute-risk/psychosis -> block autonomous formulation + human-review banner; risky-ritual materials -> documentation-only; typed-edge requirement; mixed-school provenance; PII redact-by-default. Gates the AI-assist pipeline. M3: crisis no-dead-ends + crisis-resources lint shipped; acute-risk + psychosis triage now act on meta.safety (escalation warning, acute-risk-requires-crisis-resources error, ritual-under-psychosis contraindication) + a mixed-school provenance notice; validate exports requiresHumanEscalation() which the editor reads to raise a clinical-escalation banner and which AI-assist (M8) reads to halt. Typed edges are enforced at parse time (EdgeKind required). PII redact-by-default still lands with privacy/AI (M8)."
+      "notes": "Source 3 C3. Acute-risk/psychosis -> block autonomous formulation + human-review banner; risky-ritual materials -> documentation-only; typed-edge requirement; mixed-school provenance; PII redact-by-default. Gates the AI-assist pipeline. M3: crisis no-dead-ends + crisis-resources lint shipped; acute-risk + psychosis triage now act on meta.safety (escalation warning, acute-risk-requires-crisis-resources error, ritual-under-psychosis contraindication) + a mixed-school provenance notice; validate exports requiresHumanEscalation() which the editor reads to raise a clinical-escalation banner and which AI-assist (M8) reads to halt. Crisis resources stay region-neutral by design (ADR-0008: no per-country numbers baked in — a wrong number is a hazard); safety.crisis-localize (info) nudges a concrete local contact (number/URL/handle) when acute risk is flagged but the line names none. Typed edges are enforced at parse time (EdgeKind required). PII redact-by-default still lands with privacy/AI (M8)."
     },
     {
       "id": "REQ-BODY-MAP",

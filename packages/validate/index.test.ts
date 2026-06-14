@@ -202,6 +202,41 @@ describe('validate', () => {
     expect(issue?.nodeId).toBe(opposed.nodes[0]?.id);
     expect(r.ok).toBe(true); // info only, never blocks
   });
+
+  it('detects bare (un-prefixed) school tags too — the form the examples use (§G.2)', () => {
+    // the parts-map exile carries bare IFS + schema + SD; an earlier rule only saw `school:`
+    // prefixes and missed this. Now both node-level and diagram-level info fire on real data.
+    const r = validate(read('parts-map.psyuml'));
+    expect(
+      r.issues.some((i) => i.rule === 'provenance.node-mixed-school' && i.severity === 'info'),
+    ).toBe(true);
+    expect(r.issues.some((i) => i.rule === 'provenance.mixed-school')).toBe(true);
+    expect(r.ok).toBe(true);
+  });
+
+  it('nudges a concrete, local crisis contact when acute risk is flagged (REQ-SAFETY-TRIAGE)', () => {
+    const m = read('state-map.psyuml');
+    // a generic line (no number / URL / handle) under acute risk → info nudge, not an error
+    const generic = parseModel({
+      ...m,
+      meta: {
+        ...m.meta,
+        safety: { acuteRiskFlag: true },
+        crisisResources: 'Call a crisis line or your local service.',
+      },
+    });
+    const r = validate(generic);
+    expect(r.issues.some((i) => i.rule === 'safety.crisis-localize' && i.severity === 'info')).toBe(
+      true,
+    );
+    expect(r.ok).toBe(true); // a nudge, never a block
+    // a concrete contact (number or URL) clears the nudge
+    const concrete = parseModel({
+      ...generic,
+      meta: { ...generic.meta, crisisResources: 'Call 13 11 14 or https://findahelpline.com' },
+    });
+    expect(validate(concrete).issues.some((i) => i.rule === 'safety.crisis-localize')).toBe(false);
+  });
 });
 
 // CI corpus lint: every committed example must validate clean in both layers.

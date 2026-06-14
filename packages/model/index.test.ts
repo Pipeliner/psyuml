@@ -5,6 +5,7 @@ import {
   getText,
   parseModel,
   PSYUML_MODEL_VERSION,
+  schoolClaims,
   serializeModel,
 } from './index';
 
@@ -45,5 +46,18 @@ describe('model', () => {
 
   it('rejects an invalid model (missing required diagram)', () => {
     expect(() => parseModel({ version: '0.1.0' })).toThrow();
+  });
+
+  it('reads school-origin claims from both bare and prefixed provenance (§G.2)', () => {
+    // bare tags (the example form) and explicit `school:` tags both count
+    expect(schoolClaims(['IFS', 'schema', 'SD'])).toEqual(['IFS', 'schema', 'SD']);
+    expect(schoolClaims(['school:ifs', 'school:structural-dissociation'])).toEqual([
+      'ifs',
+      'structural-dissociation',
+    ]);
+    // case-insensitive de-dup keeps first-seen casing; non-school namespaces are skipped
+    expect(schoolClaims(['IFS', 'ifs', 'source:notes'])).toEqual(['IFS']);
+    expect(schoolClaims([])).toEqual([]);
+    expect(schoolClaims(undefined)).toEqual([]);
   });
 });

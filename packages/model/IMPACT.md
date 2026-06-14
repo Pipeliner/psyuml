@@ -18,7 +18,7 @@ projects from. (M0: skeleton; M1: full metamodel.)
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Package manifest (`@psyuml/model`, source-level exports) | — | workspace resolution | — | low |
-| `index.ts` | Model API (M0: `createEmptyModel`, `PsyumlModel`) | — | all dependents | §A / REQ-CORE-ONTOLOGY | **high** |
+| `index.ts` | Model API (`createEmptyModel`, `PsyumlModel`, `getText`, `serializeModel`; `schoolClaims` — the school-agnostic provenance-claim reader shared by validate + render, ADR-0007) | — | all dependents | §A, §G.2 / REQ-CORE-ONTOLOGY, REQ-CROSS-SCHOOL | **high** |
 | `index.test.ts` | Unit tests for the model API | `index.ts` | CI `test` | — | low |
 
 ## Change checklist

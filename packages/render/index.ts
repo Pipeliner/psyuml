@@ -7,7 +7,7 @@
  *
  * Traceability: REQ-NOTATION, REQ-ACCESSIBILITY, REQ-EPISTEMIC-STATUS.
  */
-import { getText, parseModel, type PsyumlModel } from '@psyuml/model';
+import { getText, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
 
 type MBand = PsyumlModel['bands'][number];
@@ -394,10 +394,23 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       `<circle cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="#fff" stroke="#000" stroke-width="2" />`,
       wrapLabel(name, p.x, p.y + 3, { size: 10, anchor: 'middle', maxWidth: 110 }),
     );
-    const prov = n.properties.provenance;
-    if (prov && prov.length) {
+    const claims = schoolClaims(n.properties.provenance);
+    if (claims.length > 1) {
+      // Co-present opposed origin-claims (§G.2): mark the disagreement on the element itself
+      // ("⚖ … vs …"), don't merge it into one bland slash-list. Matches the validator's
+      // `provenance.node-mixed-school` and the alt-text below.
       parts.push(
-        `<text x="${p.x}" y="${p.y + nodeR + 13}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555">${esc(prov.join(' / '))}</text>`,
+        wrapLabel(`⚖ ${claims.join(' vs ')}`, p.x, p.y + nodeR + 13, {
+          size: 8,
+          anchor: 'middle',
+          maxWidth: 124,
+          maxLines: 2,
+          fill: '#333',
+        }),
+      );
+    } else if (n.properties.provenance?.length) {
+      parts.push(
+        `<text x="${p.x}" y="${p.y + nodeR + 13}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555">${esc(n.properties.provenance.join(' / '))}</text>`,
       );
     }
   }
@@ -416,11 +429,18 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     (p) => `${getText(p.label, layer, lang)}${p.stereotype ? ` (${p.stereotype})` : ''}`,
   );
   const exileDesc = exiles.map((e) => getText(e.label, layer, lang));
+  const contested = model.nodes
+    .map((n) => ({ n, claims: schoolClaims(n.properties.provenance) }))
+    .filter((x) => x.claims.length > 1)
+    .map((x) => `${getText(x.n.label, layer, lang)} (claimed by ${x.claims.join(' and ')})`);
   const altText =
     `Parts map${model.meta.title ? `: ${model.meta.title}` : ''}. Self at the centre. ` +
     `Protectors around it: ${protectorDesc.join(', ') || 'none'}. ` +
     `Exile(s): ${exileDesc.join(', ') || 'none'}${barrier ? ', behind a dissociative barrier from Self' : ''}. ` +
-    `Protectors guard the exile.`;
+    `Protectors guard the exile.` +
+    (contested.length
+      ? ` Origins disagree on: ${contested.join('; ')} — both claims are shown, not merged.`
+      : '');
 
   const titleText = model.meta.title
     ? `<text x="20" y="23" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
