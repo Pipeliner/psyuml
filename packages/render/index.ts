@@ -76,6 +76,63 @@ function fitText(s: string, x: number, y: number, o: TextOpts = {}): string {
   return `<text x="${r1(x)}" y="${r1(y)}" font-family="sans-serif" font-size="${size}"${a}${w}${f}${fit}>${esc(s)}</text>`;
 }
 
+interface WrapOpts extends TextOpts {
+  /** Max number of lines before the remainder is crammed onto the last line (then compressed). */
+  maxLines?: number;
+  /** Line height in px (defaults to size + 3). */
+  lineHeight?: number;
+}
+
+/** Greedily pack words into ≤ maxLines lines of ≤ maxChars; the last line keeps any overflow. */
+function wrapLines(s: string, maxChars: number, maxLines: number): string[] {
+  const words = s.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? `${cur} ${w}` : w;
+    if (cur && t.length > maxChars && lines.length < maxLines - 1) {
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = t;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+
+/**
+ * A centered node label that *wraps* to multiple lines to fit `maxWidth` (true multi-line,
+ * via `<tspan>`), centered vertically on `(cx, cy)`. A one-line label is emitted exactly as
+ * `fitText` would (so short committed labels are byte-identical); a label longer than
+ * `maxLines` still can't overflow — the last line compresses (`textLength`). The companion to
+ * `fitText` for boxes/circles where vertical room exists (ADR-0006).
+ */
+function wrapLabel(s: string, cx: number, cy: number, o: WrapOpts = {}): string {
+  const size = o.size ?? 12;
+  const maxLines = o.maxLines ?? 2;
+  const lh = o.lineHeight ?? size + 3;
+  const anchor = o.anchor ?? 'middle';
+  const maxChars = Math.max(4, Math.floor((o.maxWidth ?? Infinity) / (size * 0.58)));
+  const lines = o.maxWidth ? wrapLines(s, maxChars, maxLines) : [s];
+  if (lines.length === 1) {
+    return fitText(lines[0], cx, cy, { ...o, size, anchor });
+  }
+  const top = cy - ((lines.length - 1) * lh) / 2;
+  const w = o.weight ? ` font-weight="${o.weight}"` : '';
+  const f = o.fill ? ` fill="${o.fill}"` : '';
+  const tspans = lines
+    .map((ln, i) => {
+      const over =
+        o.maxWidth && ln.length * size * 0.58 > o.maxWidth
+          ? ` textLength="${r1(o.maxWidth)}" lengthAdjust="spacingAndGlyphs"`
+          : '';
+      return `<tspan x="${r1(cx)}" y="${r1(top + i * lh)}"${over}>${esc(ln)}</tspan>`;
+    })
+    .join('');
+  return `<text text-anchor="${anchor}" font-family="sans-serif" font-size="${size}"${w}${f}>${tspans}</text>`;
+}
+
 const patternId = (p: MBand['pattern']): string | null => (p === 'none' ? null : `p-${p}`);
 
 /** Progressive reveal (UX-M7): drop hidden nodes and any edge touching them. */
@@ -181,7 +238,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
       `<rect x="${c.cx - NODE_W / 2}" y="${c.cy - NODE_H / 2}" width="${NODE_W}" height="${NODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
     );
     parts.push(
-      fitText(getText(n.label, layer, lang), c.cx, c.cy + 4, {
+      wrapLabel(getText(n.label, layer, lang), c.cx, c.cy + 4, {
         size: 12,
         anchor: 'middle',
         maxWidth: NODE_W - 16,
@@ -335,7 +392,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     }
     parts.push(
       `<circle cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="#fff" stroke="#000" stroke-width="2" />`,
-      `<text x="${p.x}" y="${p.y + 3}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(name)}</text>`,
+      wrapLabel(name, p.x, p.y + 3, { size: 10, anchor: 'middle', maxWidth: 110 }),
     );
     const prov = n.properties.provenance;
     if (prov && prov.length) {
@@ -699,7 +756,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
       );
     }
     parts.push(
-      fitText(getText(node.label, layer, lang), p.x, p.y + labelDy, {
+      wrapLabel(getText(node.label, layer, lang), p.x, p.y + labelDy, {
         size: 11,
         anchor: 'middle',
         maxWidth: LNODE_W - 16,
@@ -957,7 +1014,11 @@ export function renderInterventionSeq(
     const h = HEX_H;
     parts.push(
       `<polygon points="${x - w / 2 + 12},${y - h / 2} ${x + w / 2 - 12},${y - h / 2} ${x + w / 2},${y} ${x + w / 2 - 12},${y + h / 2} ${x - w / 2 + 12},${y + h / 2} ${x - w / 2},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
-      `<text x="${x}" y="${y + 4}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(n.label, layer, lang))}</text>`,
+      wrapLabel(getText(n.label, layer, lang), x, y + 4, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: HEX_W - 28,
+      }),
     );
   }
 
@@ -1229,7 +1290,11 @@ export function renderRelationalField(
     parts.push(personGlyph(n.stereotype, n.properties.index === true, p.x, p.y));
     const labelDy = n.stereotype === 'system' ? 4 : 36;
     parts.push(
-      `<text x="${p.x}" y="${p.y + labelDy}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(n.label, layer, lang))}</text>`,
+      wrapLabel(getText(n.label, layer, lang), p.x, p.y + labelDy, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: 120,
+      }),
     );
   }
 
@@ -1351,7 +1416,11 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
       );
     }
     parts.push(
-      `<text x="${p.x}" y="${r1(p.y + 3)}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(n.label, layer, lang))}</text>`,
+      wrapLabel(getText(n.label, layer, lang), p.x, p.y + 3, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: 120,
+      }),
     );
     const dom = n.properties.dominance;
     if (dom !== undefined) {
@@ -1646,7 +1715,11 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     if (!p) continue;
     parts.push(
       `<rect x="${r1(p.x - TT_NODE_W / 2)}" y="${r1(p.y - TT_NODE_H / 2)}" width="${TT_NODE_W}" height="${TT_NODE_H}" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" />`,
-      `<text x="${r1(p.x)}" y="${r1(p.y + 4)}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(n.label, layer, lang))}</text>`,
+      wrapLabel(getText(n.label, layer, lang), p.x, p.y + 4, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: TT_NODE_W - 16,
+      }),
     );
   }
 

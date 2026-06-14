@@ -74,6 +74,26 @@ describe('renderStateMap', () => {
   });
 });
 
+describe('label wrapping (fit-to-box)', () => {
+  const make = (label: string) =>
+    parseModel({
+      version: '0.1.0',
+      diagram: 'state-map',
+      meta: { disclaimer: 'x' },
+      bands: [{ id: 'b', label: { clinician: { en: 'B' } }, order: 0 }],
+      nodes: [{ id: 'n', kind: 'state', bandId: 'b', label: { clinician: { en: label } } }],
+    });
+
+  it('keeps a short label on one line (no tspan, byte-identical path)', () => {
+    expect(renderStateMap(make('Calm')).svg).not.toContain('<tspan');
+  });
+
+  it('wraps a long label into multiple lines', () => {
+    const svg = renderStateMap(make('A very long worried-about-everything anxious state')).svg;
+    expect((svg.match(/<tspan/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+});
+
 describe('renderPartsMap', () => {
   it('emits self, protectors, an exile, and a dissociative barrier', () => {
     const { svg, altText } = renderPartsMap(partsModel);
@@ -308,7 +328,7 @@ describe('renderLoopMap — CAT SDR', () => {
   it('draws the observing-eye, the reciprocal role, the trap and a named exit', () => {
     const { svg, altText } = renderLoopMap(catSdrModel);
     expect(svg).toContain('rx="26" ry="15"'); // observing-eye glyph
-    expect(svg).toContain('Observing-I: spot the trap');
+    expect(svg).toContain('Observing-I'); // label (may wrap across tspans)
     expect(svg).toContain('marker-start='); // reciprocal (double-headed) role link
     expect(svg).toContain('(EXIT)');
     expect(altText).toContain('Ways out');

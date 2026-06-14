@@ -26,26 +26,32 @@ and produced detached arrowheads on very short chords.
   Implemented in `renderLoopMap` (which also now **honors `pos=`** and **clamps edge
   pull-back** so short chords don't overshoot into a floating arrowhead). The State Map
   **clamps node centers** so a box can't exit the frame.
-- **Labels never overflow.** A shared `fitText()` emits `<text>` that *compresses* (never
-  stretches) an over-long label into a given `maxWidth` via `textLength` +
-  `lengthAdjust="spacingAndGlyphs"`. Short labels are emitted unchanged. Applied to the
-  renderers the test flagged: State Map, Process/Loop (incl. its resource diamonds), and the
-  Resource map; the helper is reusable by the rest.
+- **Labels never overflow.** Two shared helpers: `fitText()` emits a single-line `<text>` that
+  *compresses* (never stretches) into `maxWidth` via `textLength` + `spacingAndGlyphs` (for
+  tight single-line spots like edge labels and the Resource list); `wrapLabel()` does **true
+  multi-line wrapping** — it greedily packs words into ≤ `maxLines` `<tspan>` rows centered on
+  the node, falling back to `fitText` compression on the last line if it still overflows. A
+  one-line label is byte-identical to `fitText`, so short committed labels don't churn.
+  `wrapLabel` is the node-label renderer across the box/shape renderers (State, Process/Loop,
+  Parts, Mode, Relational/genogram, Intervention-sequence, Two-Triangles); the Resource list
+  uses `fitText`.
 
 ## Consequences
 - **Positive:** no information is lost to clipping on screen or in exports; labels stay
   legible inside the frame; large/force-laid-out diagrams and hand-placed loops render
   correctly. Short-labelled committed examples are byte-identical (no `textLength`), so only
   the loop goldens were regenerated.
-- **Cost / limits:** compression *squishes* a very long label (acceptable vs. losing it;
-  true multi-line wrapping is a future option). Other box renderers (mode-map, two-triangles,
-  relational-field) can adopt `fitText` mechanically when needed — the helper exists.
-- **Impact:** `packages/render/index.ts` (`fitText`, `renderLoopMap`, `renderStateMap`,
-  `renderResourceMap`); regenerated `examples/process-loop.svg` + `cat-sdr.svg`.
+- **Cost / limits:** a label longer than `maxLines` rows still compresses its last line
+  (squished but legible and in-frame). `renderBodyMap`'s side-list labels keep `fitText`
+  (not centered-in-box); they can move to `wrapLabel` later if needed.
+- **Impact:** `packages/render/index.ts` (`fitText`, `wrapLabel`/`wrapLines`, content-fit
+  `renderLoopMap`, `renderStateMap` clamp, and `wrapLabel` adopted by the box renderers);
+  regenerated the goldens whose label attribute-order changed (process-loop, cat-sdr,
+  intervention-sequence, relational-field, mode-map, drama-triangle, two-triangles).
 
 ## Alternatives considered
-- **Multi-line text wrapping** (tspan/foreignObject). Better typography, but more code and
-  heavy golden churn — deferred; `fitText` is the bounded first step.
+- **`foreignObject` + CSS for wrapping.** Rejected — heavier, worse for static SVG export and
+  screen-reader text; hand-rolled `tspan` wrapping (`wrapLabel`) is portable and deterministic.
 - **Grow node boxes to the label.** Rejected for the fixed-layout renderers — it shifts
   positions and causes collisions.
 - **Keep fixed canvases and just enlarge them.** Rejected — still clips for unbounded
