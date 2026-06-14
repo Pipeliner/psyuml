@@ -18,6 +18,9 @@ coverage/
 playwright-report/
 test-results/
 
+# Claude Code agent worktrees (ephemeral harness scratch)
+.claude/worktrees/
+
 # Env & secrets
 .env
 .env.*
