@@ -365,8 +365,8 @@
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M5",
       "status": "in-progress",
-      "impl": ["docs/format-reference.md", "docs/specification/psyuml-v0.1.0.md", "assets/**"],
-      "notes": "Alt-plan cross-check (idea-incorporation §7): color semantics, line weights, emotional-valence + epistemic-status encoding, ritual cultural-sensitivity notes; quick-reference cheat sheets. Started: docs/format-reference.md gives a field-level authoring reference + a per-diagram quick-guide (which node/edge kinds, required meta, the hope marker) + the validation rules an author must satisfy. Still to come: the visual notation style guide (glyph drawing conventions, colour/line-weight semantics) and printable clinician/client cheat-sheets (REQ-TEMPLATES)."
+      "impl": ["docs/format-reference.md", "docs/cheatsheets.md", "docs/specification/psyuml-v0.1.0.md", "assets/**"],
+      "notes": "Alt-plan cross-check (idea-incorporation §7): color semantics, line weights, emotional-valence + epistemic-status encoding, ritual cultural-sensitivity notes; quick-reference cheat sheets. Shipped: docs/format-reference.md (field-level authoring reference + per-diagram quick-guide + the validation rules an author must satisfy) and docs/cheatsheets.md (one-page clinician + plain-language client quick references — glyphs, connectors, which diagram for which job, the safety gates, how to read a map). Still to come: the visual notation style guide (glyph drawing conventions, colour/line-weight semantics) and printable blank session templates (REQ-TEMPLATES)."
     },
     {
       "id": "REQ-TEMPLATES",
