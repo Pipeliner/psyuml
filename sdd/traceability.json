@@ -181,7 +181,7 @@
       "status": "in-progress",
       "impl": ["packages/profiles/**"],
       "tests": ["packages/profiles/**/*.test.ts"],
-      "notes": "One immutable model, many views. Provenance tags preserve opposed origin-claims (§G.2 caveat). M4: @psyuml/profiles ships the §G.2 translation table (TRANSLATIONS) + translate() + roleLabelsFor(); the renderer takes a roleLabels map and the editor has a School switcher (IFS/schema/structural-dissociation/TA) that re-labels the Parts Map vocabulary while keeping structure + provenance. Full per-diagram profiles (glyph/layout/validators) + more families (loops/beliefs) still to come."
+      "notes": "One immutable model, many views. M4: @psyuml/profiles ships the §G.2 parts-family translation table (TRANSLATIONS) + translate() + roleLabelsFor(); the renderer takes a roleLabels map and the editor's School switcher (IFS/schema/structural-dissociation/TA) re-labels the Parts Map vocabulary while keeping structure. SCOPE (sharpened after the simulated Tier-B pilot, ADR-adjacent honesty fix): the vocabulary swap is the parts family ONLY; CAT is deliberately excluded (reciprocal roles are dyadic, not a parts slot); other traditions (polyvagal, CAT/SDR, genogram, Malan, Karpman, ritual) are their own diagram types — a CBT loop vs a CAT reformulation are different formulations, NOT one model relabelled. Provenance tags currently record each element's origin/school; surfacing two co-present opposed claims on one element with the renderer showing the conflict is still to come (don't present 'preserves the disagreement' as finished). Full per-diagram profiles + more swap families still to come."
     },
     {
       "id": "REQ-GENOGRAM",
@@ -356,7 +356,7 @@
       "milestone": "M10",
       "status": "in-progress",
       "impl": ["docs/evaluation-suite.md", "conformance/**"],
-      "notes": "Source 3 C11. Operationalizes the §J rubric + Stage-4 gate. docs/evaluation-suite.md defines the two-tier plan: Tier A (automated, enforced in CI now — conformance round-trip/validate/a11y/monochrome, the safety + privacy + grammar-round-trip tests, the e2e build-a-diagram journey) mapped per dimension, vs. Tier B (the human studies that remain — comprehension, collaborative validity, inter-rater reliability, multi-school endorsement, and the formal safety/privacy/a11y audits). Tier A is green; Tier B is the v0.x->v1.0 gate and is explicitly outstanding. Interop (FHIR) is shelved, not faked."
+      "notes": "Source 3 C11. Operationalizes the §J rubric + Stage-4 gate. docs/evaluation-suite.md defines the two-tier plan: Tier A (automated, enforced in CI now — conformance round-trip/validate/a11y/monochrome, the safety + privacy + grammar-round-trip tests, the e2e build-a-diagram journey) mapped per dimension, vs. Tier B (the human studies that remain — comprehension, collaborative validity, inter-rater reliability, multi-school endorsement, and the formal safety/privacy/a11y audits). Tier A is green; Tier B is the v0.x->v1.0 gate and is explicitly outstanding. Interop (FHIR) is shelved, not faked. docs/evaluation-suite-pilot.md records a SIMULATED dry-run of the Tier-B instruments with LLM role-play subagents (comprehension/inter-rater/multi-school) — explicitly not evidence, but it rehearsed the instruments and surfaced two real defects since fixed: an over-broad cross-school claim (REQ-CROSS-SCHOOL) and a DSL learnability gap (a worked DSL example added to format-reference)."
     },
     {
       "id": "REQ-STYLE-GUIDE",

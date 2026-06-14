@@ -30,6 +30,7 @@ truth), the tooling architecture, the build roadmap, and saved research.
 | `cheatsheets.md` | One-page clinician + client quick references (the 8 glyphs, connectors, which diagram for which job, the safety gates; plain-language "reading the map") | spec §B/§E/§L.2, `packages/render`, `packages/validate` | clinicians, clients | REQ-STYLE-GUIDE | low |
 | `style-guide.md` | Visual notation style guide — glyph forms, colour/line-weight semantics (colour redundant), epistemic/consolidation/valence encoding, layout, ritual cultural-sensitivity, cross-school | spec §B–§D/§F/§L.2, `packages/render` | clinicians, contributors | REQ-STYLE-GUIDE | low |
 | `evaluation-suite.md` | The v0.x→v1.0 evidence plan — Tier A (automated, enforced now) vs. Tier B (human studies) per §J/Source-3 dimension + the Stage-4 go/no-go gate | spec §J, `conformance/`, `packages/validate`, `packages/privacy` | maintainers, reviewers | REQ-EVAL-SUITE | low |
+| `evaluation-suite-pilot.md` | A **simulated** (LLM role-play) dry-run of the Tier-B instruments — comprehension/inter-rater/multi-school — explicitly **not evidence**; surfaced the cross-school overclaim + DSL learnability gap (both fixed) | `evaluation-suite.md`, `docs/cheatsheets.md`, `examples/*` | maintainers | REQ-EVAL-SUITE | low |
 
 ## Change checklist
 - [ ] If you change behavior, update `specification/psyuml-v0.1.0.md` first (§K semver).

@@ -94,8 +94,17 @@ Always draw a legend strip; the renderers do (e.g. the genogram and parts legend
   appropriate closed practices; the secular variant exists so no one is required to adopt a
   belief to use the structure.
 
-## 7. Cross-school vocabulary, without flattening
+## 7. Cross-school vocabulary, scoped honestly
 
-The same model re-renders in another school's words (IFS / schema / CAT / TA…) via the School
-switch. **Provenance tags persist** so opposed origin-claims stay visible — re-labelling changes
-vocabulary, never the underlying structure, and never erases a school's disagreement (§G.2).
+The School switch re-labels the **parts-family** vocabulary — IFS / schema /
+structural-dissociation / TA — over *one* Parts Map: same structure, new words. **CAT is
+deliberately not a swap target** (its unit, the reciprocal *role pair*, is dyadic and doesn't map
+onto a single parts slot); CAT, polyvagal, genogram, Malan, Karpman, and ritual are their **own
+diagram types**. Re-conceiving a CBT maintenance loop as a CAT reformulation is genuine clinical
+**reformulation**, not a vocabulary swap — don't present the two as one model relabelled.
+
+**Provenance tags** record each element's **origin/school** so it isn't silently merged (§G.2).
+Surfacing two genuinely *opposed* claims co-present on one element (e.g. IFS innate multiplicity
+vs. structural-dissociation's trauma-caused division) — with the renderer showing the conflict —
+is the goal; today provenance is a single origin stamp, so treat "preserves the disagreement" as
+the intent, not a finished guarantee.

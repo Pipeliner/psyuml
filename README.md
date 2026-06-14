@@ -56,9 +56,11 @@ A **web-based, visual GUI editor** (TypeScript) where a clinician — and, in th
 client layer, a client — can build, render, and version PsyUML formulations:
 
 - Drag-and-drop the **8-symbol Tier-1 core**, then enrich with Tier-2/3 overlays.
-- **One model, many school views:** re-render the same map in IFS, schema, CAT/SDR,
-  polyvagal, genogram, Malan, Karpman, or ritual vocabularies — *without flattening*
-  the real theoretical disagreements between them (provenance tags preserve them).
+- **Cross-school, honestly:** a Parts Map re-labels its **vocabulary** across IFS / schema /
+  structural-dissociation / TA without changing structure; other traditions (polyvagal, CAT/SDR,
+  genogram, Malan, Karpman, ritual) are their **own diagram types** — a CBT loop and a CAT
+  reformulation are genuinely different formulations, not one relabelled. Provenance tags record
+  each element's origin so a school's claims aren't silently merged.
 - **Dual-audience:** toggle a clinician layer and a plain, non-pathologizing client layer.
 - **Accessibility-first:** no meaning by color alone; monochrome-printable; hand-drawable.
 - **Safe-by-construction:** client-facing diagrams require a disclaimer + crisis

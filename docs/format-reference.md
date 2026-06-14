@@ -100,6 +100,34 @@ node dist/cli/psyuml.mjs convert examples/state-map.psyuml     # JSON ⇄ text D
 | `resource-anchor` | categorized supports | `context`(category), `resource` | `containment` | yes | grow the soothing system |
 | `two-triangles` | Malan psychodynamic formulation | `state` in two `bands` | `excitatory`/`inhibitory`, `transference` | no (clinician aid) | — |
 
+## Worked example — the text DSL
+
+The DSL is **line-oriented**: one statement per line, `key=value` options (quote free text),
+`#` for comments. It is *not* a brace/object syntax. A complete State Map:
+
+```
+diagram state-map
+title "R. — nervous-system ladder"
+disclaimer "This map supports, and does not replace, professional care."
+crisis "If you are in danger now, call your local emergency number or a crisis line (e.g. 988 in the US)."
+
+band ventral order=0 label="Ventral / safe-social" client="Green — safe & social"
+band sympathetic order=1 pattern=diagonal label="Sympathetic / mobilized" client="Amber — revved up"
+band dorsal order=2 pattern=cross-hatch label="Dorsal / shutdown" client="Red — shut down"
+
+node calm state band=ventral epistemic=reported label="Calm / connected" client="Calm and connected"
+node anxious state band=sympathetic epistemic=reported label="Anxious / fight-flight" client="Wired"
+node numb state band=dorsal epistemic=reported label="Numb / shutdown" client="Foggy"
+
+edge e1 calm sequential anxious trigger="criticism" triggerclient="being criticized"
+edge e2 anxious sequential numb trigger="overwhelm"
+edge x1 numb exit anxious label="movement / orienting" client="move / look around"
+```
+
+Statement shapes: `node <id> <kind> [stereotype=… tier=… band=… pos=x,y hidden=true <prop>=… ] label="…" [client="…"]`
+and `edge <id> <source> <kind> <target> [loop=R|B <prop>=… trigger="…" ] [label="…" client="…"]`.
+Round-trip any `.psyuml` with `psyuml convert <file>` to see its DSL.
+
 ## Validation rules you must satisfy (`@psyuml/validate`)
 
 Errors block export; warnings are advisory (some warnings escalate to errors in the client layer).
