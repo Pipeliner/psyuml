@@ -129,7 +129,8 @@ describe('renderStateMap — parallel-edge fan-out (ADR-0010)', () => {
   it('staggers the two labels on different baselines', () => {
     const { svg } = renderStateMap(twoEdgeModel);
     const labelY = (txt: string): number => {
-      const m = svg.match(new RegExp(`<text x="[-\\d.]+" y="([-\\d.]+)"[^>]*>${txt}<`));
+      // the edge-label <text> may carry a leading data-el attr (ADR-0012); match y wherever it is
+      const m = svg.match(new RegExp(`<text [^>]*\\by="([-\\d.]+)"[^>]*>${txt}<`));
       if (!m) throw new Error(`label not found: ${txt}`);
       return Number(m[1]);
     };

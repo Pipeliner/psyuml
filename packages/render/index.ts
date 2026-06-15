@@ -9,6 +9,7 @@
  */
 import { getText, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
+import { CHAR_W, separate1D, textWidth } from './layout';
 
 type MBand = PsyumlModel['bands'][number];
 type MNode = PsyumlModel['nodes'][number];
@@ -35,8 +36,6 @@ const BAND_GAP = 10;
 const TITLE_H = 34;
 const PAD_TOP = 10;
 const LEGEND_H = 70;
-const RIGHT_LANE = WIDTH - 40;
-const LEFT_LANE = 40;
 /** Lane + label spread for parallel edges between the same state pair (ADR-0010 fan-out). */
 const STATE_FAN = 28;
 /** Okabe–Ito hues (redundant with pattern + label): safe, mobilized, shutdown. */
@@ -57,7 +56,12 @@ interface TextOpts {
   fill?: string;
   /** When set and the label is estimated wider than this, compress it to fit (never stretch). */
   maxWidth?: number;
+  /** Verification tag (ADR-0012): emitted as `data-el="…"` on the `<text>` so the overlap
+   * invariant can find this logical element and build its AABB. Purely a hook; no visual effect. */
+  dataEl?: string;
 }
+
+const elAttr = (dataEl?: string): string => (dataEl ? ` data-el="${esc(dataEl)}"` : '');
 
 /**
  * Emit a `<text>` that *compresses* into `maxWidth` when the label would overflow
@@ -70,12 +74,12 @@ function fitText(s: string, x: number, y: number, o: TextOpts = {}): string {
   const a = o.anchor ? ` text-anchor="${o.anchor}"` : '';
   const w = o.weight ? ` font-weight="${o.weight}"` : '';
   const f = o.fill ? ` fill="${o.fill}"` : '';
-  // ~0.58em per char is a safe sans-serif estimate; only compress when clearly over.
+  // The ONE text metric (layout.textWidth, ~0.58em/char); only compress when clearly over.
   const fit =
-    o.maxWidth && s.length * size * 0.58 > o.maxWidth
+    o.maxWidth && textWidth(s, size) > o.maxWidth
       ? ` textLength="${r1(o.maxWidth)}" lengthAdjust="spacingAndGlyphs"`
       : '';
-  return `<text x="${r1(x)}" y="${r1(y)}" font-family="sans-serif" font-size="${size}"${a}${w}${f}${fit}>${esc(s)}</text>`;
+  return `<text x="${r1(x)}" y="${r1(y)}" font-family="sans-serif" font-size="${size}"${a}${w}${f}${elAttr(o.dataEl)}${fit}>${esc(s)}</text>`;
 }
 
 interface WrapOpts extends TextOpts {
@@ -115,7 +119,7 @@ function wrapLabel(s: string, cx: number, cy: number, o: WrapOpts = {}): string 
   const maxLines = o.maxLines ?? 2;
   const lh = o.lineHeight ?? size + 3;
   const anchor = o.anchor ?? 'middle';
-  const maxChars = Math.max(4, Math.floor((o.maxWidth ?? Infinity) / (size * 0.58)));
+  const maxChars = Math.max(4, Math.floor((o.maxWidth ?? Infinity) / (size * CHAR_W)));
   const lines = o.maxWidth ? wrapLines(s, maxChars, maxLines) : [s];
   if (lines.length === 1) {
     return fitText(lines[0], cx, cy, { ...o, size, anchor });
@@ -126,13 +130,13 @@ function wrapLabel(s: string, cx: number, cy: number, o: WrapOpts = {}): string 
   const tspans = lines
     .map((ln, i) => {
       const over =
-        o.maxWidth && ln.length * size * 0.58 > o.maxWidth
+        o.maxWidth && textWidth(ln, size) > o.maxWidth
           ? ` textLength="${r1(o.maxWidth)}" lengthAdjust="spacingAndGlyphs"`
           : '';
       return `<tspan x="${r1(cx)}" y="${r1(top + i * lh)}"${over}>${esc(ln)}</tspan>`;
     })
     .join('');
-  return `<text text-anchor="${anchor}" font-family="sans-serif" font-size="${size}"${w}${f}>${tspans}</text>`;
+  return `<text text-anchor="${anchor}" font-family="sans-serif" font-size="${size}"${w}${f}${elAttr(o.dataEl)}>${tspans}</text>`;
 }
 
 const patternId = (p: MBand['pattern']): string | null => (p === 'none' ? null : `p-${p}`);
@@ -156,7 +160,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
   const monochrome = options.monochrome ?? true;
 
   const bands = [...model.bands].sort((a, b) => a.order - b.order);
-  const height = TITLE_H + PAD_TOP + bands.length * (BAND_H + BAND_GAP) + LEGEND_H;
+  const bandH = bands.length * (BAND_H + BAND_GAP);
 
   const bandTop = new Map<string, number>();
   bands.forEach((b, i) => bandTop.set(b.id, TITLE_H + PAD_TOP + i * (BAND_H + BAND_GAP)));
@@ -169,49 +173,21 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     else nodesByBand.set(key, [n]);
   }
 
-  const center = new Map<string, { cx: number; cy: number }>();
-  for (const b of bands) {
-    const list = nodesByBand.get(b.id) ?? [];
-    const top = bandTop.get(b.id) ?? 0;
-    list.forEach((n, idx) => {
-      const raw = 20 + ((idx + 1) / (list.length + 1)) * (WIDTH - 40);
-      // Keep the node box inside the frame so a crowded band can't clip at the edge.
-      const cx = Math.max(20 + NODE_W / 2, Math.min(WIDTH - 20 - NODE_W / 2, raw));
-      center.set(n.id, { cx, cy: top + BAND_H / 2 });
-    });
-  }
-
   const nodeName = (id: string): string => {
     const n = model.nodes.find((x) => x.id === id);
     return n ? getText(n.label, layer, lang) : id;
   };
 
-  const parts: string[] = [];
-
-  // Bands
-  bands.forEach((b, i) => {
-    const top = bandTop.get(b.id) ?? 0;
-    const hue = !monochrome ? BAND_HUE[i % BAND_HUE.length] : '#ffffff';
-    parts.push(
-      `<rect x="20" y="${top}" width="${WIDTH - 40}" height="${BAND_H}" fill="${hue}" fill-opacity="${monochrome ? 1 : 0.14}" stroke="#000" stroke-width="2" />`,
-    );
-    const pid = patternId(b.pattern);
-    if (pid) {
-      parts.push(
-        `<rect x="20" y="${top}" width="${WIDTH - 40}" height="${BAND_H}" fill="url(#${pid})" stroke="none" />`,
-      );
-    }
-    parts.push(
-      `<text x="28" y="${top + 18}" font-family="sans-serif" font-size="13" font-weight="700">${esc(getText(b.label, layer, lang))}</text>`,
-    );
-  });
-
-  // Edges (orthogonal lanes: transitions route right, exits route left + dashed).
-  // Parallel-edge fan-out (ADR-0010): ≥2 edges sharing a state pair on the same side used to
-  // share one vertical lane and stack their labels at the same point, smearing them into an
-  // unreadable blur. Group by side + unordered pair, then give each edge its own lane offset
-  // and stagger its label vertically so every edge and label stays legible.
   type MEdge = (typeof model.edges)[number];
+  const edgeText = (e: MEdge): string => {
+    const src = e.trigger ?? e.label;
+    let txt = src ? getText(src, layer, lang) : '';
+    if (e.kind === 'exit') txt = txt ? `${txt} (EXIT)` : 'EXIT';
+    return txt;
+  };
+
+  // Parallel-edge fan-out (ADR-0010/0012): edges sharing a state pair on the same side get
+  // distinct lanes; group by side + unordered pair.
   const fanKey = (e: MEdge): string => {
     const side = e.kind === 'exit' ? 'L' : 'R';
     const [a, b] = [e.source, e.target].sort();
@@ -225,7 +201,90 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     fanIndex.set(e, i);
     fanGroups.set(k, i + 1);
   }
+  const maxFan = (side: 'L' | 'R'): number => {
+    let m = 1;
+    for (const [k, c] of fanGroups) if (k.startsWith(side)) m = Math.max(m, c);
+    return m;
+  };
 
+  // The gutters (ADR-0012 scaling guarantee): transition labels live in a RIGHT gutter, exit
+  // labels in a LEFT gutter, both OUTSIDE the node columns so a long trigger label can never
+  // strike a node box. Each gutter is wide enough for its widest label + the lane fan-out. The
+  // lanes sit at the inner edge of the gutter and labels extend outward into it.
+  const labelW = (e: MEdge): number => textWidth(edgeText(e), 11);
+  let maxTransW = 0;
+  let maxExitW = 0;
+  for (const e of model.edges) {
+    if (e.kind === 'exit') maxExitW = Math.max(maxExitW, labelW(e));
+    else maxTransW = Math.max(maxTransW, labelW(e));
+  }
+  const LANE_PAD = 16;
+  const rightFan = (maxFan('R') - 1) * STATE_FAN;
+  const leftFan = (maxFan('L') - 1) * STATE_FAN;
+  const rightGutter = model.edges.some((e) => e.kind !== 'exit' && edgeText(e))
+    ? rightFan + maxTransW + LANE_PAD + 18
+    : 40;
+  const leftGutter = model.edges.some((e) => e.kind === 'exit' && edgeText(e))
+    ? leftFan + maxExitW + LANE_PAD + 18
+    : 40;
+
+  // Node columns: between the gutters, each band's nodes spread with `separate1D` so boxes never
+  // collide; the column width grows to the widest separated band.
+  const innerL = Math.max(40, leftGutter);
+  let colW = WIDTH - innerL - Math.max(40, rightGutter);
+  for (const b of bands) {
+    const list = nodesByBand.get(b.id) ?? [];
+    const need = list.length * (NODE_W + 30) + 30;
+    colW = Math.max(colW, need);
+  }
+  const innerR = innerL + colW;
+  const width = innerR + Math.max(40, rightGutter);
+  const height = TITLE_H + PAD_TOP + bandH + LEGEND_H;
+
+  const center = new Map<string, { cx: number; cy: number }>();
+  for (const b of bands) {
+    const list = nodesByBand.get(b.id) ?? [];
+    const top = bandTop.get(b.id) ?? 0;
+    const slot = colW / (list.length + 1);
+    const centers = separate1D(
+      list.map((_, idx) => ({ center: innerL + slot * (idx + 1), half: NODE_W / 2 })),
+      30,
+    );
+    list.forEach((n, idx) => center.set(n.id, { cx: r1(centers[idx]), cy: top + BAND_H / 2 }));
+  }
+
+  const parts: string[] = [];
+
+  // Bands
+  bands.forEach((b, i) => {
+    const top = bandTop.get(b.id) ?? 0;
+    const hue = !monochrome ? BAND_HUE[i % BAND_HUE.length] : '#ffffff';
+    parts.push(
+      `<rect data-el="band:${esc(b.id)}" x="20" y="${top}" width="${r1(width - 40)}" height="${BAND_H}" fill="${hue}" fill-opacity="${monochrome ? 1 : 0.14}" stroke="#000" stroke-width="2" />`,
+    );
+    const pid = patternId(b.pattern);
+    if (pid) {
+      parts.push(
+        `<rect x="20" y="${top}" width="${r1(width - 40)}" height="${BAND_H}" fill="url(#${pid})" stroke="none" />`,
+      );
+    }
+    parts.push(
+      `<text x="28" y="${top + 18}" font-family="sans-serif" font-size="13" font-weight="700">${esc(getText(b.label, layer, lang))}</text>`,
+    );
+  });
+
+  // Edges (orthogonal lanes: transitions route right into the right gutter, exits route left
+  // into the left gutter + dashed). Collect each group's labels and stagger their baselines with
+  // `separate1D` (perpendicular axis, ADR-0012) so parallel labels never collide — and place
+  // them in the gutter so they never strike a node box.
+  interface EdgeLabel {
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+    anchor: 'start' | 'end';
+  }
+  const edgeLabels: EdgeLabel[] = [];
   for (const e of model.edges) {
     const s = center.get(e.source);
     const t = center.get(e.target);
@@ -233,32 +292,44 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     const isExit = e.kind === 'exit';
     const count = fanGroups.get(fanKey(e)) ?? 1;
     const idx = fanIndex.get(e) ?? 0;
-    // Centre the fan on the base lane: a single edge gets offset 0 (byte-identical to before);
-    // siblings spread evenly. Transitions route right (lane shifts left/inward as idx grows);
-    // exits route left (lane shifts right/inward) — `dir` keeps the spread between node + lane.
     const spread = (idx - (count - 1) / 2) * STATE_FAN;
-    const dir = isExit ? 1 : -1;
-    const lane = (isExit ? LEFT_LANE : RIGHT_LANE) + spread * dir;
+    // Lanes sit just inside the gutter; siblings fan by STATE_FAN. Transitions on the right
+    // (extend label rightward), exits on the left (extend label leftward).
+    const lane = isExit ? innerL - LANE_PAD + spread : innerR + LANE_PAD + spread;
     const sx = isExit ? s.cx - NODE_W / 2 : s.cx + NODE_W / 2;
     const ex = isExit ? t.cx - NODE_W / 2 : t.cx + NODE_W / 2;
     const dash = isExit ? ' stroke-dasharray="6 5"' : '';
     parts.push(
-      `<path d="M ${sx},${s.cy} H ${r1(lane)} V ${t.cy} H ${ex}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
+      `<path d="M ${r1(sx)},${s.cy} H ${r1(lane)} V ${t.cy} H ${r1(ex)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
     );
-    const labelSource = e.trigger ?? e.label;
-    let txt = labelSource ? getText(labelSource, layer, lang) : '';
-    if (isExit) txt = txt ? `${txt} (EXIT)` : 'EXIT';
+    const txt = edgeText(e);
     if (txt) {
-      // Stagger labels by fan index so two labels on a pair never land on the same baseline,
-      // and give each a white halo (paint-order=stroke) so the band-boundary line + arrows don't
-      // strike through the text — the two together keep parallel-edge labels legible (eval finding).
-      const midY = (s.cy + t.cy) / 2 - 4 + (idx - (count - 1) / 2) * 17;
-      const lx = isExit ? lane + 8 : lane - 8;
-      const anchor = isExit ? 'start' : 'end';
-      parts.push(
-        `<text x="${r1(lx)}" y="${r1(midY)}" font-family="sans-serif" font-size="11" text-anchor="${anchor}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(txt)}</text>`,
-      );
+      edgeLabels.push({
+        id: e.id,
+        text: txt,
+        x: isExit ? lane - 8 : lane + 8,
+        y: (s.cy + t.cy) / 2 - 4 + spread,
+        anchor: isExit ? 'end' : 'start',
+      });
     }
+  }
+  // Group by side; within a side, separate all labels on y (their baselines), since they share
+  // the narrow gutter column. 14px line slots keep size-11 text clear.
+  for (const side of ['start', 'end'] as const) {
+    const group = edgeLabels.filter((el) => el.anchor === side).sort((a, b) => a.y - b.y);
+    if (group.length < 2) continue;
+    const ys = separate1D(
+      group.map((el) => ({ center: el.y, half: 7 })),
+      4,
+    );
+    group.forEach((el, i) => {
+      el.y = ys[i];
+    });
+  }
+  for (const el of edgeLabels) {
+    parts.push(
+      `<text data-el="edgelabel:${esc(el.id)}" x="${r1(el.x)}" y="${r1(el.y)}" font-family="sans-serif" font-size="11" text-anchor="${el.anchor}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(el.text)}</text>`,
+    );
   }
 
   // Nodes (states = rounded rectangles)
@@ -266,29 +337,43 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     const c = center.get(n.id);
     if (!c) continue;
     parts.push(
-      `<rect x="${c.cx - NODE_W / 2}" y="${c.cy - NODE_H / 2}" width="${NODE_W}" height="${NODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<rect data-el="node:${esc(n.id)}" x="${r1(c.cx - NODE_W / 2)}" y="${c.cy - NODE_H / 2}" width="${NODE_W}" height="${NODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
     );
     parts.push(
       wrapLabel(getText(n.label, layer, lang), c.cx, c.cy + 4, {
         size: 12,
         anchor: 'middle',
         maxWidth: NODE_W - 16,
+        dataEl: `nodelabel:${n.id}`,
       }),
     );
   }
 
-  // Legend
+  // Legend (chrome): two key rows on the left, the orientation note + disclaimer on the right.
   const ly = height - LEGEND_H + 20;
+  const noteX = Math.min(320, innerL + 300);
   parts.push(
     `<line x1="28" y1="${ly}" x2="60" y2="${ly}" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
     `<text x="68" y="${ly + 4}" font-family="sans-serif" font-size="11">transition (what leads here)</text>`,
     `<line x1="28" y1="${ly + 20}" x2="60" y2="${ly + 20}" stroke="#000" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)" />`,
     `<text x="68" y="${ly + 24}" font-family="sans-serif" font-size="11">exit — a way out</text>`,
-    `<text x="320" y="${ly + 4}" font-family="sans-serif" font-size="11">Bands are ordered top → bottom; patterns (not colour) mark the zones.</text>`,
+    fitText(
+      'Bands are ordered top → bottom; patterns (not colour) mark the zones.',
+      noteX,
+      ly + 4,
+      {
+        size: 11,
+        maxWidth: width - noteX - 16,
+      },
+    ),
   );
   if (model.meta.disclaimer) {
     parts.push(
-      `<text x="320" y="${ly + 24}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+      fitText(model.meta.disclaimer, noteX, ly + 24, {
+        size: 10,
+        fill: '#333',
+        maxWidth: width - noteX - 16,
+      }),
     );
   }
 
@@ -325,10 +410,10 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     : '';
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r1(width)} ${height}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'State map')}</title><desc>${esc(altText)}</desc>` +
     defs +
-    `<rect x="0" y="0" width="${WIDTH}" height="${height}" fill="#fff" />` +
+    `<rect x="0" y="0" width="${r1(width)}" height="${height}" fill="#fff" />` +
     titleText +
     parts.join('') +
     '</svg>';
@@ -346,37 +431,66 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
 
-  // A title pushes the whole map down so the top protectors don't collide with it (eval finding).
   const titleH = model.meta.title ? 28 : 0;
-  const partsH = PARTS_H + titleH;
-  const cx = PARTS_W / 2;
-  const cy = 175 + titleH;
-  const orbitR = 140;
   const nodeR = 34;
 
   const self = model.nodes.find((n) => n.kind === 'self');
   const exiles = model.nodes.filter((n) => n.stereotype === 'exile');
   const protectors = model.nodes.filter((n) => n.kind !== 'self' && n.stereotype !== 'exile');
 
+  // GROW the orbit radius so protectors (circle + role tag above + wrapped label + provenance
+  // below) never collide, then size the canvas to it (ADR-0012 scaling guarantee). Each protector
+  // claims a footprint ~PROT_FW wide; on a ring the chord between adjacent angular slots is
+  // 2R·sin(Δθ/2), so R must satisfy 2R·sin(Δθ/2) >= PROT_FW + gap. Protectors sit on an arc over
+  // the TOP (avoiding the downward cone reserved for the barrier + exiles).
+  const PROT_FW = 132; // footprint width: max(2·nodeR, label/prov maxWidth 124) + slack
+  const PROT_GAP = 16;
+  const arcStartDeg = 158; // lower-left, going up and over the top to…
+  const arcEndDeg = 382; // …lower-right (=22°); a 224° arc clear of the bottom
+  const n = protectors.length;
+  const dTheta = n > 1 ? ((arcEndDeg - arcStartDeg) * Math.PI) / 180 / (n - 1) : 0;
+  const minR = n > 1 ? (PROT_FW + PROT_GAP) / (2 * Math.sin(dTheta / 2)) : 0;
+  const orbitR = Math.max(140, minR);
+
+  // The footprint also extends radially (role tag above the circle, provenance below it). Build
+  // the canvas around the ring + that radial reach so nothing clips.
+  const radialUp = nodeR + 16; // role tag above
+  const radialDown = nodeR + 13 + 2 * 11 + 4; // up to 2 wrapped provenance lines below
+  const ringTop = orbitR + radialUp;
+
+  // Exiles spread below the Self (centred about the column) — compute their half-span first so
+  // the canvas is wide enough for BOTH the orbit and the exile row + containment orbit.
+  const EXILE_HW = 60; // exile circle + label footprint half-width
+  const exileOffsets = separate1D(
+    exiles.map((_, i) => ({ center: (i - (exiles.length - 1) / 2) * 150, half: EXILE_HW })),
+    20,
+  );
+  const exileHalfSpan = exiles.length
+    ? Math.max(...exileOffsets.map((o) => Math.abs(o))) + EXILE_HW
+    : 0;
+  const exileRx = Math.max(130, exileHalfSpan + 16);
+  const margin = PROT_FW / 2 + 24;
+  const PARTS_W2 = Math.max(PARTS_W, 2 * (orbitR + margin), 2 * (exileRx + 24));
+  const cx = PARTS_W2 / 2;
+  const cy = titleH + ringTop + 24; // Self centre: leave room above for the top protector + title
+
   const pos = new Map<string, { x: number; y: number }>();
   if (self) pos.set(self.id, { x: cx, y: cy });
   protectors.forEach((p, i) => {
-    const t = protectors.length === 1 ? 0.5 : i / (protectors.length - 1);
-    const angle = ((200 + t * 140) * Math.PI) / 180;
+    const deg = n === 1 ? 270 : arcStartDeg + (i / (n - 1)) * (arcEndDeg - arcStartDeg);
+    const angle = (deg * Math.PI) / 180;
     pos.set(p.id, { x: r1(cx + orbitR * Math.cos(angle)), y: r1(cy + orbitR * Math.sin(angle)) });
   });
-  const exileY = cy + 170;
-  exiles.forEach((e, i) => {
-    const span = exiles.length === 1 ? 0 : (i / (exiles.length - 1) - 0.5) * 200;
-    pos.set(e.id, { x: r1(cx + span), y: exileY });
-  });
+  const exileY = cy + Math.max(170, orbitR + 30);
+  exiles.forEach((e, i) => pos.set(e.id, { x: r1(cx + exileOffsets[i]), y: exileY }));
+  const partsH = Math.max(PARTS_H + titleH, exileY + radialDown + 60);
 
   const parts: string[] = [];
 
-  // Containment orbit around the exiles
+  // Containment orbit around the exiles (a container; sized to hold the spread exiles).
   if (exiles.length) {
     parts.push(
-      `<ellipse cx="${cx}" cy="${exileY}" rx="130" ry="48" fill="none" stroke="#000" stroke-width="2" />`,
+      `<ellipse data-el="band:containment" cx="${r1(cx)}" cy="${exileY}" rx="${r1(exileRx)}" ry="48" fill="none" stroke="#000" stroke-width="2" />`,
     );
   }
 
@@ -397,7 +511,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text x="${mx}" y="${r1((my + b.y) / 2)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${mx}" y="${r1((my + b.y) / 2)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
@@ -426,7 +540,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text x="${r1((a.x + b.x) / 2)}" y="${r1((a.y + b.y) / 2 - 4)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((a.x + b.x) / 2)}" y="${r1((a.y + b.y) / 2 - 4)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
@@ -436,9 +550,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   if (barrier && self && exiles.length) {
     const by = (cy + exileY) / 2;
     parts.push(
-      `<line x1="${cx - 75}" y1="${by - 3}" x2="${cx + 75}" y2="${by - 3}" stroke="#000" stroke-width="2.5" />`,
-      `<line x1="${cx - 75}" y1="${by + 3}" x2="${cx + 75}" y2="${by + 3}" stroke="#000" stroke-width="2.5" />`,
-      `<text x="${cx}" y="${by - 8}" font-family="sans-serif" font-size="10" text-anchor="middle">dissociative barrier</text>`,
+      `<line x1="${r1(cx - 75)}" y1="${by - 3}" x2="${r1(cx + 75)}" y2="${by - 3}" stroke="#000" stroke-width="2.5" />`,
+      `<line x1="${r1(cx - 75)}" y1="${by + 3}" x2="${r1(cx + 75)}" y2="${by + 3}" stroke="#000" stroke-width="2.5" />`,
+      `<text x="${r1(cx)}" y="${by - 8}" font-family="sans-serif" font-size="10" text-anchor="middle">dissociative barrier</text>`,
     );
   }
 
@@ -449,22 +563,27 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     const name = getText(n.label, layer, lang);
     if (n.kind === 'self') {
       parts.push(
-        `<circle cx="${p.x}" cy="${p.y}" r="30" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="30" fill="#fff" stroke="#000" stroke-width="2" />`,
         `<circle cx="${p.x}" cy="${p.y}" r="23" fill="none" stroke="#000" stroke-width="2" />`,
         `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#000" />`,
-        `<text x="${p.x}" y="${p.y + 50}" font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle">${esc(name)}</text>`,
+        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${p.y + 50}" font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle">${esc(name)}</text>`,
       );
       continue;
     }
     if (n.stereotype) {
       const roleTerm = options.roleLabels?.[n.stereotype] ?? n.stereotype;
       parts.push(
-        `<text x="${p.x}" y="${p.y - nodeR - 5}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">${esc(roleTerm)}</text>`,
+        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${p.y - nodeR - 5}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">${esc(roleTerm)}</text>`,
       );
     }
     parts.push(
-      `<circle cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="#fff" stroke="#000" stroke-width="2" />`,
-      wrapLabel(name, p.x, p.y + 3, { size: 10, anchor: 'middle', maxWidth: 110 }),
+      `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      wrapLabel(name, p.x, p.y + 3, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: 110,
+        dataEl: `nodelabel:${n.id}`,
+      }),
     );
     const claims = schoolClaims(n.properties.provenance);
     if (claims.length > 1) {
@@ -478,22 +597,32 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
           maxWidth: 124,
           maxLines: 2,
           fill: '#333',
+          dataEl: `nodelabel:${n.id}`,
         }),
       );
     } else if (n.properties.provenance?.length) {
       parts.push(
-        `<text x="${p.x}" y="${p.y + nodeR + 13}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555">${esc(n.properties.provenance.join(' / '))}</text>`,
+        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${p.y + nodeR + 13}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555">${esc(n.properties.provenance.join(' / '))}</text>`,
       );
     }
   }
 
-  // Legend
+  // Legend (chrome).
   parts.push(
-    `<text x="20" y="${partsH - 16}" font-family="sans-serif" font-size="11">◎ Self · ○ part · ( ) containment orbit · ═ dissociative barrier · dotted = protects · zigzag = conflict</text>`,
+    fitText(
+      '◎ Self · ○ part · ( ) containment orbit · ═ dissociative barrier · dotted = protects · zigzag = conflict',
+      20,
+      partsH - 16,
+      { size: 11, maxWidth: PARTS_W2 - 40 },
+    ),
   );
   if (model.meta.disclaimer) {
     parts.push(
-      `<text x="20" y="${partsH - 2}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+      fitText(model.meta.disclaimer, 20, partsH - 2, {
+        size: 10,
+        fill: '#333',
+        maxWidth: PARTS_W2 - 40,
+      }),
     );
   }
 
@@ -519,9 +648,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     : '';
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PARTS_W} ${partsH}" role="img" aria-label="${esc(altText)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r1(PARTS_W2)} ${r1(partsH)}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Parts map')}</title><desc>${esc(altText)}</desc>` +
-    `<rect x="0" y="0" width="${PARTS_W}" height="${partsH}" fill="#fff" />` +
+    `<rect x="0" y="0" width="${r1(PARTS_W2)}" height="${r1(partsH)}" fill="#fff" />` +
     titleText +
     parts.join('') +
     '</svg>';
@@ -535,6 +664,9 @@ const DNODE_H = 50;
 const DLAYER_GAP = 96;
 const DEC_TOP = 64;
 const DBANNER_H = 48;
+/** Max width of the crisis node's wrapped contact line; it claims this on the x-axis so the
+ * separation keeps it (not just the box) clear of siblings (ADR-0012). */
+const DEC_CRISIS_W = 220;
 /** Horizontal room between sibling nodes in a layer (so wide layers don't crowd). */
 const DNODE_GAP = 36;
 /** Side margin around the laid-out content (content-fit frame, ADR-0010). */
@@ -621,15 +753,16 @@ function layerWithCycleBreak(
 }
 
 /** Shape by decision-chart stereotype: question = diamond, crisis = thick box, else rounded box. */
-function decShape(stereotype: string | undefined, cx: number, cy: number): string {
+function decShape(stereotype: string | undefined, cx: number, cy: number, dataEl: string): string {
   const hw = DNODE_W / 2;
   const hh = DNODE_H / 2;
+  const tag = elAttr(dataEl);
   if (stereotype === 'question') {
-    return `<polygon points="${cx},${cy - hh} ${cx + hw},${cy} ${cx},${cy + hh} ${cx - hw},${cy}" fill="#fff" stroke="#000" stroke-width="2" />`;
+    return `<polygon${tag} points="${cx},${cy - hh} ${cx + hw},${cy} ${cx},${cy + hh} ${cx - hw},${cy}" fill="#fff" stroke="#000" stroke-width="2" />`;
   }
   const sw = stereotype === 'crisis' ? 3.5 : 2;
   const rx = stereotype === 'crisis' ? 6 : 10;
-  return `<rect x="${cx - hw}" y="${cy - hh}" width="${DNODE_W}" height="${DNODE_H}" rx="${rx}" ry="${rx}" fill="#fff" stroke="#000" stroke-width="${sw}" />`;
+  return `<rect${tag} x="${cx - hw}" y="${cy - hh}" width="${DNODE_W}" height="${DNODE_H}" rx="${rx}" ry="${rx}" fill="#fff" stroke="#000" stroke-width="${sw}" />`;
 }
 
 /** Render a Decision / Navigation (crisis) chart (spec §E.8): one decision per step,
@@ -657,18 +790,54 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   let maxDepth = 0;
   for (const d of layers.keys()) maxDepth = Math.max(maxDepth, d);
 
-  // Grow the drawing width to fit the widest layer: each node gets DNODE_W + a gap, so wide
-  // layers spread out instead of crowding. The frame never shrinks below DEC_W (small charts
-  // keep their familiar look). The content is laid out from x=0 and the viewBox is fit below.
-  let widestLayer = 0;
-  for (const ids of layers.values()) widestLayer = Math.max(widestLayer, ids.length);
-  const contentW = Math.max(DEC_W, widestLayer * DNODE_W + (widestLayer + 1) * DNODE_GAP);
+  // Per-node half-width on the x-axis. The box is DNODE_W wide; the crisis node also carries a
+  // wrapped contact line (up to DEC_CRISIS_W) below it, so it claims that half-width too — this
+  // is what `separate1D` uses to guarantee neither the boxes NOR the crisis text touch a sibling.
+  const halfW = (id: string): number => {
+    const n = nodes.find((x) => x.id === id);
+    return Math.max(DNODE_W / 2, n?.stereotype === 'crisis' ? DEC_CRISIS_W / 2 : 0);
+  };
 
+  // Vertical room each depth needs BELOW its box centre. A crisis node also carries up to 3
+  // wrapped contact lines, so its row must be taller — accumulate row Y's so the next row clears
+  // the crisis text (cross-layer separation, ADR-0012), instead of a fixed DLAYER_GAP.
+  const hasCrisis = (ids: string[]): boolean =>
+    ids.some((id) => nodes.find((x) => x.id === id)?.stereotype === 'crisis');
+  const rowY = new Map<number, number>();
+  let yCursor = DEC_TOP;
+  for (let d = 0; d <= maxDepth; d += 1) {
+    rowY.set(d, yCursor);
+    const below = hasCrisis(layers.get(d) ?? []) ? DNODE_H / 2 + 13 + 3 * 12 : DNODE_H / 2;
+    yCursor += Math.max(DLAYER_GAP, below + DNODE_H / 2 + 24);
+  }
+
+  // Grow the drawing width to fit the widest layer, then spread each layer's siblings with
+  // `separate1D` (VPSC 1-D core, ADR-0012) so sized slots never collide. The frame never shrinks
+  // below DEC_W (small charts keep their familiar look). Content is laid out from x=0; the
+  // viewBox is fit below. A single deterministic pass: place evenly, separate, measure the
+  // widest separated extent, then re-centre every layer within that final width.
+  let widest = DEC_W;
+  for (const ids of layers.values()) {
+    let span = DNODE_GAP;
+    for (const id of ids) span += 2 * halfW(id) + DNODE_GAP;
+    widest = Math.max(widest, span);
+  }
   const pos = new Map<string, { x: number; y: number }>();
+  let contentW = widest;
   for (const [d, ids] of layers) {
-    // Centre the layer's row within contentW; even slot widths keep siblings apart.
-    const slot = contentW / (ids.length + 1);
-    ids.forEach((id, i) => pos.set(id, { x: r1(slot * (i + 1)), y: DEC_TOP + d * DLAYER_GAP }));
+    const slot = widest / (ids.length + 1);
+    const centers = separate1D(
+      ids.map((id, i) => ({ center: slot * (i + 1), half: halfW(id) })),
+      DNODE_GAP,
+    );
+    // separate1D centres the block on its mean; shift the whole row so its left edge clears the
+    // margin, and track the true content width so nothing pokes past the frame.
+    const leftEdge = Math.min(...ids.map((id, i) => centers[i] - halfW(id)));
+    const shift = leftEdge < DEC_PAD ? DEC_PAD - leftEdge : 0;
+    const y = rowY.get(d) ?? DEC_TOP + d * DLAYER_GAP;
+    ids.forEach((id, i) => pos.set(id, { x: r1(centers[i] + shift), y }));
+    const rightEdge = Math.max(...ids.map((id, i) => centers[i] + shift + halfW(id)));
+    contentW = Math.max(contentW, rightEdge + DEC_PAD);
   }
 
   const nodeName = (id: string): string => {
@@ -678,16 +847,31 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
 
   const parts: string[] = [];
 
+  // Content bounds (ADR-0010/0012): grow with the actual drawn extent — nodes, the crisis
+  // node's wrapped contact line, AND spread branch labels — so nothing clips. Seeded with the
+  // node layout width; widened as we lay out below.
+  let minX = 0;
+  let maxX = contentW;
+
   // The crisis line, shown BOTH under the crisis node (at the point of need) and in the
   // always-visible banner — a layperson on the "unsafe" branch shouldn't have to hunt for it.
   const crisis =
     model.meta.crisisResources ??
     'If you are in danger now, call your local emergency number or a crisis line.';
 
-  // Edges (with branch labels). A back-edge (loop-back) points UP, so route from the source's
-  // top to the target's bottom; forward edges go top→bottom as before. Place the branch label
-  // partway DOWN the edge (closer to the fork) and wrap long ones, so sibling labels don't
-  // overprint each other or the boxes (ADR-0010).
+  // Edges. A back-edge (loop-back) points UP (route from the source's top to the target's
+  // bottom); forward edges go top→bottom. Branch labels sit in the inter-row GAP (clear of both
+  // boxes). Labels that share a gap are spread on x with `separate1D` so the siblings of a wide
+  // split never collide (ADR-0012); the canvas already grew to the widest layer, so there is
+  // room. We collect them first, separate per gap-row, then emit.
+  const ELBL_W = Math.max(56, DNODE_W - 40);
+  interface BranchLabel {
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+  }
+  const branchLabels: BranchLabel[] = [];
   for (const e of edges) {
     const s = pos.get(e.source);
     const t = pos.get(e.target);
@@ -700,20 +884,45 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
-      // 0.35 of the way from source to target keeps the label near the deciding fork and away
-      // from the next box; the two sibling labels of a yes/no split then sit at different x/y.
-      const lx = r1(s.x + (t.x - s.x) * 0.35);
-      const ly = r1(sy + (ty - sy) * 0.35);
-      parts.push(
-        wrapLabel(lbl, lx, ly, {
-          size: 11,
-          weight: 700,
-          anchor: 'middle',
-          maxWidth: Math.max(56, DNODE_W - 40),
-          maxLines: 2,
-        }),
-      );
+      branchLabels.push({
+        id: e.id,
+        text: lbl,
+        x: s.x + (t.x - s.x) * 0.5,
+        y: (sy + ty) / 2 + 4,
+      });
     }
+  }
+  // Spread labels that share a gap-row (same rounded y) along x so they don't overprint.
+  const byRow = new Map<number, BranchLabel[]>();
+  for (const bl of branchLabels) {
+    const key = Math.round(bl.y);
+    const arr = byRow.get(key);
+    if (arr) arr.push(bl);
+    else byRow.set(key, [bl]);
+  }
+  for (const row of byRow.values()) {
+    row.sort((a, b) => a.x - b.x);
+    const centers = separate1D(
+      row.map((bl) => ({ center: bl.x, half: ELBL_W / 2 })),
+      14,
+    );
+    row.forEach((bl, i) => {
+      bl.x = centers[i];
+    });
+    minX = Math.min(minX, ...row.map((bl) => bl.x - ELBL_W / 2));
+    maxX = Math.max(maxX, ...row.map((bl) => bl.x + ELBL_W / 2));
+  }
+  for (const bl of branchLabels) {
+    parts.push(
+      wrapLabel(bl.text, r1(bl.x), r1(bl.y), {
+        size: 11,
+        weight: 700,
+        anchor: 'middle',
+        maxWidth: ELBL_W,
+        maxLines: 2,
+        dataEl: `edgelabel:${bl.id}`,
+      }),
+    );
   }
 
   // Nodes
@@ -723,7 +932,7 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     const isCrisis = n.stereotype === 'crisis';
     const isQuestion = n.stereotype === 'question';
     const name = (isCrisis ? '! ' : '') + getText(n.label, layer, lang);
-    parts.push(decShape(n.stereotype, p.x, p.y));
+    parts.push(decShape(n.stereotype, p.x, p.y, `node:${n.id}`));
     // Wrap the label INSIDE the shape so a long clinical step doesn't overflow its box and
     // collide with a sibling (eval finding). A diamond tapers, so it gets a narrower width.
     parts.push(
@@ -732,6 +941,7 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
         anchor: 'middle',
         maxWidth: isQuestion ? 132 : DNODE_W - 24,
         maxLines: isQuestion ? 2 : 3,
+        dataEl: `nodelabel:${n.id}`,
         ...(isCrisis ? { weight: 700 } : {}),
       }),
     );
@@ -741,9 +951,10 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
         wrapLabel(crisis, p.x, p.y + DNODE_H / 2 + 13, {
           size: 9,
           anchor: 'middle',
-          maxWidth: 220,
+          maxWidth: DEC_CRISIS_W,
           maxLines: 3,
           fill: '#333',
+          dataEl: `nodelabel:${n.id}`,
         }),
       );
     }
@@ -753,14 +964,12 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   // crisis node's wrapped contact line never clips, then size the banner/disclaimer/viewBox to
   // it (mirrors renderLoopMap). The drawing starts at x=0, so minX is 0 unless a leftmost box
   // pokes negative; we measure both bounds to be safe.
-  let minX = 0;
-  let maxX = contentW;
-  let maxNodeBottom = DEC_TOP + maxDepth * DLAYER_GAP + DNODE_H / 2;
+  let maxNodeBottom = DEC_TOP + DNODE_H / 2;
   for (const n of nodes) {
     const p = pos.get(n.id);
     if (!p) continue;
-    minX = Math.min(minX, p.x - DNODE_W / 2);
-    maxX = Math.max(maxX, p.x + DNODE_W / 2);
+    minX = Math.min(minX, p.x - halfW(n.id));
+    maxX = Math.max(maxX, p.x + halfW(n.id));
     // The crisis node carries up to 3 wrapped contact lines below it (size 9, lh 12).
     const below = n.stereotype === 'crisis' ? DNODE_H / 2 + 13 + 3 * 12 : DNODE_H / 2;
     maxNodeBottom = Math.max(maxNodeBottom, p.y + below);
@@ -770,9 +979,9 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   // Crisis-resources banner — ALWAYS visible (UX-M4) — spans the (content-fit) frame width.
   const by = maxNodeBottom + 16;
   parts.push(
-    `<rect x="${r1(minX)}" y="${r1(by)}" width="${r1(drawW)}" height="${DBANNER_H}" fill="#fff" stroke="#000" stroke-width="2" />`,
+    `<rect data-el="banner:crisis" x="${r1(minX)}" y="${r1(by)}" width="${r1(drawW)}" height="${DBANNER_H}" fill="#fff" stroke="#000" stroke-width="2" />`,
     `<text x="${r1(minX + 14)}" y="${r1(by + 19)}" font-family="sans-serif" font-size="12" font-weight="700">Crisis resources (always available):</text>`,
-    `<text x="${r1(minX + 14)}" y="${r1(by + 37)}" font-family="sans-serif" font-size="11">${esc(crisis)}</text>`,
+    fitText(crisis, minX + 14, by + 37, { size: 11, maxWidth: drawW - 28 }),
   );
 
   // Disclaimer (ADR-0010): the JSON/on-screen disclaimer was omitted from the exported SVG;
@@ -859,8 +1068,12 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
       const y = 86 + i * 28;
       const dx = c * colW + 24;
       parts.push(
-        `<polygon points="${dx},${y - 6} ${dx + 7},${y} ${dx},${y + 6} ${dx - 7},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
-        fitText(getText(it.label, layer, lang), dx + 14, y + 4, { size: 12, maxWidth: colW - 50 }),
+        `<polygon data-el="node:${esc(it.id)}" points="${dx},${y - 6} ${dx + 7},${y} ${dx},${y + 6} ${dx - 7},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+        fitText(getText(it.label, layer, lang), dx + 14, y + 4, {
+          size: 12,
+          maxWidth: colW - 50,
+          dataEl: `nodelabel:${it.id}`,
+        }),
       );
     });
     altCats.push(
@@ -988,7 +1201,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     if (isExit) txt = txt ? `${txt} (EXIT)` : 'EXIT';
     if (txt) {
       parts.push(
-        `<text x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(txt)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(txt)}</text>`,
       );
     }
   }
@@ -1017,18 +1230,18 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     let labelDy = 4;
     if (node.kind === 'resource') {
       parts.push(
-        `<polygon points="${p.x},${p.y - LNODE_H / 2} ${p.x + LNODE_W / 2},${p.y} ${p.x},${p.y + LNODE_H / 2} ${p.x - LNODE_W / 2},${p.y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<polygon data-el="node:${esc(node.id)}" points="${p.x},${p.y - LNODE_H / 2} ${p.x + LNODE_W / 2},${p.y} ${p.x},${p.y + LNODE_H / 2} ${p.x - LNODE_W / 2},${p.y}" fill="#fff" stroke="#000" stroke-width="2" />`,
       );
     } else if (node.stereotype === 'observing-eye') {
       // CAT observing eye/I — the self-reflective stance that watches the trap (spec §B).
       parts.push(
-        `<ellipse cx="${p.x}" cy="${p.y}" rx="26" ry="15" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<ellipse data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" rx="26" ry="15" fill="#fff" stroke="#000" stroke-width="2" />`,
         `<circle cx="${p.x}" cy="${p.y}" r="6" fill="#000" />`,
       );
       labelDy = 30;
     } else {
       parts.push(
-        `<rect x="${p.x - LNODE_W / 2}" y="${p.y - LNODE_H / 2}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<rect data-el="node:${esc(node.id)}" x="${p.x - LNODE_W / 2}" y="${p.y - LNODE_H / 2}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
       );
     }
     parts.push(
@@ -1036,6 +1249,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
         size: 11,
         anchor: 'middle',
         maxWidth: LNODE_W - 16,
+        dataEl: `nodelabel:${node.id}`,
       }),
     );
   }
@@ -1148,13 +1362,19 @@ export function renderTimeline(model: PsyumlModel, options: RenderOptions = {}):
     );
   }
 
-  // Cells
+  // Cells. Wrap the label INSIDE the cell so a long entry can't overflow into the next column.
   for (const node of model.nodes) {
     const p = pos.get(node.id);
     if (!p) continue;
     parts.push(
-      `<rect x="${r1(p.x - boxW / 2)}" y="${p.y - boxH / 2}" width="${r1(boxW)}" height="${boxH}" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" />`,
-      `<text x="${p.x}" y="${p.y + 4}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(node.label, layer, lang))}</text>`,
+      `<rect data-el="node:${esc(node.id)}" x="${r1(p.x - boxW / 2)}" y="${p.y - boxH / 2}" width="${r1(boxW)}" height="${boxH}" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" />`,
+      wrapLabel(getText(node.label, layer, lang), p.x, p.y + 4, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: boxW - 12,
+        maxLines: 3,
+        dataEl: `nodelabel:${node.id}`,
+      }),
     );
   }
 
@@ -1276,7 +1496,11 @@ export function renderInterventionSeq(
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text x="${r1((s.x + t.x) / 2 + 4)}" y="${r1((sy + ty) / 2)}" font-family="sans-serif" font-size="10">${esc(lbl)}</text>`,
+        fitText(lbl, (s.x + t.x) / 2 + 4, (sy + ty) / 2, {
+          size: 10,
+          maxWidth: Math.max(40, laneW - 16),
+          dataEl: `edgelabel:${e.id}`,
+        }),
       );
     }
   }
@@ -1289,11 +1513,12 @@ export function renderInterventionSeq(
     const w = HEX_W;
     const h = HEX_H;
     parts.push(
-      `<polygon points="${x - w / 2 + 12},${y - h / 2} ${x + w / 2 - 12},${y - h / 2} ${x + w / 2},${y} ${x + w / 2 - 12},${y + h / 2} ${x - w / 2 + 12},${y + h / 2} ${x - w / 2},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<polygon data-el="node:${esc(n.id)}" points="${r1(x - w / 2 + 12)},${y - h / 2} ${r1(x + w / 2 - 12)},${y - h / 2} ${r1(x + w / 2)},${y} ${r1(x + w / 2 - 12)},${y + h / 2} ${r1(x - w / 2 + 12)},${y + h / 2} ${r1(x - w / 2)},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
       wrapLabel(getText(n.label, layer, lang), x, y + 4, {
         size: 10,
         anchor: 'middle',
         maxWidth: HEX_W - 28,
+        dataEl: `nodelabel:${n.id}`,
       }),
     );
   }
@@ -1371,12 +1596,12 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
 
   const parts: string[] = [];
 
-  // Phase columns (LIMINAL dashed)
+  // Phase columns (LIMINAL dashed) — containers.
   phases.forEach((p, ci) => {
     const isLiminal = getText(p.label, 'clinician', 'en').toLowerCase().includes('liminal');
     const dash = isLiminal ? ' stroke-dasharray="6 5"' : '';
     parts.push(
-      `<rect x="${r1(ci * colW + 6)}" y="50" width="${r1(colW - 12)}" height="${r1(phasesBottom - 50)}" fill="#fff" stroke="#000" stroke-width="1.5"${dash} />`,
+      `<rect data-el="band:${esc(p.id)}" x="${r1(ci * colW + 6)}" y="50" width="${r1(colW - 12)}" height="${r1(phasesBottom - 50)}" fill="#fff" stroke="#000" stroke-width="1.5"${dash} />`,
       `<text x="${r1(ci * colW + colW / 2)}" y="42" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700">${esc(getText(p.label, layer, lang))}</text>`,
     );
   });
@@ -1395,8 +1620,14 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
     if (!p) continue;
     const { x, y } = p;
     parts.push(
-      `<polygon points="${x - nw / 2 + 12},${y - RNODE_H / 2} ${x + nw / 2 - 12},${y - RNODE_H / 2} ${x + nw / 2},${y} ${x + nw / 2 - 12},${y + RNODE_H / 2} ${x - nw / 2 + 12},${y + RNODE_H / 2} ${x - nw / 2},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
-      `<text x="${x}" y="${y + 4}" text-anchor="middle" font-family="sans-serif" font-size="10">${esc(getText(node.label, layer, lang))}</text>`,
+      `<polygon data-el="node:${esc(node.id)}" points="${r1(x - nw / 2 + 12)},${y - RNODE_H / 2} ${r1(x + nw / 2 - 12)},${y - RNODE_H / 2} ${r1(x + nw / 2)},${y} ${r1(x + nw / 2 - 12)},${y + RNODE_H / 2} ${r1(x - nw / 2 + 12)},${y + RNODE_H / 2} ${r1(x - nw / 2)},${y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      wrapLabel(getText(node.label, layer, lang), x, y + 4, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: nw - 28,
+        maxLines: 2,
+        dataEl: `nodelabel:${node.id}`,
+      }),
     );
   }
 
@@ -1485,21 +1716,23 @@ function personGlyph(
   index: boolean,
   cx: number,
   cy: number,
+  dataEl: string,
 ): string {
   const r = 22;
+  const tag = elAttr(dataEl);
   let out: string;
   if (stereotype === 'male') {
-    out = `<rect x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" fill="#fff" stroke="#000" stroke-width="2" />`;
+    out = `<rect${tag} x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" fill="#fff" stroke="#000" stroke-width="2" />`;
     if (index)
       out += `<rect x="${cx - r - 4}" y="${cy - r - 4}" width="${2 * r + 8}" height="${2 * r + 8}" fill="none" stroke="#000" stroke-width="2" />`;
   } else if (stereotype === 'unknown' || stereotype === 'nonbinary') {
-    out = `<polygon points="${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}" fill="#fff" stroke="#000" stroke-width="2" />`;
+    out = `<polygon${tag} points="${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}" fill="#fff" stroke="#000" stroke-width="2" />`;
     if (index)
       out += `<polygon points="${cx},${cy - r - 4} ${cx + r + 4},${cy} ${cx},${cy + r + 4} ${cx - r - 4},${cy}" fill="none" stroke="#000" stroke-width="2" />`;
   } else if (stereotype === 'system') {
-    out = `<rect x="${cx - 50}" y="${cy - 18}" width="100" height="36" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" stroke-dasharray="4 3" />`;
+    out = `<rect${tag} x="${cx - 50}" y="${cy - 18}" width="100" height="36" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" stroke-dasharray="4 3" />`;
   } else {
-    out = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="#000" stroke-width="2" />`;
+    out = `<circle${tag} cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="#000" stroke-width="2" />`;
     if (index)
       out += `<circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="none" stroke="#000" stroke-width="2" />`;
   }
@@ -1554,7 +1787,7 @@ export function renderRelationalField(
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 4}" text-anchor="middle" font-family="sans-serif" font-size="9">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 4}" text-anchor="middle" font-family="sans-serif" font-size="9">${esc(lbl)}</text>`,
       );
     }
   }
@@ -1567,11 +1800,12 @@ export function renderRelationalField(
     const labelDy = n.stereotype === 'system' ? 4 : 36;
     parts.push(
       `<g data-node-id="${esc(n.id)}">` +
-        personGlyph(n.stereotype, n.properties.index === true, p.x, p.y) +
+        personGlyph(n.stereotype, n.properties.index === true, p.x, p.y, `node:${n.id}`) +
         wrapLabel(getText(n.label, layer, lang), p.x, p.y + labelDy, {
           size: 10,
           anchor: 'middle',
           maxWidth: 120,
+          dataEl: `nodelabel:${n.id}`,
         }) +
         `</g>`,
     );
@@ -1667,7 +1901,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9">${esc(lbl)}</text>`,
       );
     }
   }
@@ -1679,7 +1913,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     const r = radius(n);
     const isHealthy = n.kind === 'self' || n.stereotype === 'healthy-adult';
     parts.push(
-      `<circle cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#fff" stroke="#000" stroke-width="2" />`,
     );
     if (isHealthy) {
       parts.push(
@@ -1699,12 +1933,13 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
         size: 10,
         anchor: 'middle',
         maxWidth: 120,
+        dataEl: `nodelabel:${n.id}`,
       }),
     );
     const dom = n.properties.dominance;
     if (dom !== undefined) {
       parts.push(
-        `<text x="${p.x}" y="${r1(p.y + r + 12)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555">dom ${dom.toFixed(2)}</text>`,
+        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${r1(p.y + r + 12)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555">dom ${dom.toFixed(2)}</text>`,
       );
     }
   }
@@ -1763,16 +1998,56 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     '<line x1="228" y1="290" x2="242" y2="436" stroke="#000" stroke-width="2" />',
   ];
 
-  model.nodes.forEach((n, i) => {
+  // Precompute each sensation's marker so a label can be capped to stop BEFORE any neighbour to
+  // its right (labels sit beside the dots — ADR-0006 — so a long label must not reach another
+  // dot; ADR-0012 keeps label↔non-owner-node clear by shrinking the label, never overlapping).
+  const marks = model.nodes.map((n, i) => {
     const p = n.position ?? { x: 210, y: 140 + i * 30 };
     const intensity = n.properties.intensity ?? 0.5;
-    const r = 6 + intensity * 10;
-    const labelX = r1(p.x + r + 8);
+    return { n, p, intensity, r: 6 + intensity * 10 };
+  });
+  // Room on a given side before hitting a neighbouring marker (or the frame) within the label's
+  // ~13px-tall band — the label sits beside the dot, so it must clear other dots (ADR-0006).
+  const roomToRight = (id: string, fromX: number, y: number): number => {
+    let cap = BODY_W - fromX - 8;
+    for (const m of marks) {
+      if (m.n.id === id || m.p.x <= fromX || Math.abs(m.p.y - y) > m.r + 9) continue;
+      cap = Math.min(cap, m.p.x - m.r - fromX - 4);
+    }
+    return cap;
+  };
+  const roomToLeft = (id: string, fromX: number, y: number): number => {
+    let cap = fromX - 8;
+    for (const m of marks) {
+      if (m.n.id === id || m.p.x >= fromX || Math.abs(m.p.y - y) > m.r + 9) continue;
+      cap = Math.min(cap, fromX - (m.p.x + m.r) - 4);
+    }
+    return cap;
+  };
+  marks.forEach(({ n, p, intensity, r }) => {
+    const text = `${getText(n.label, layer, lang)} (${intensity.toFixed(1)})`;
+    const rightX = r1(p.x + r + 8);
+    const leftX = r1(p.x - r - 8);
+    const capR = roomToRight(n.id, rightX, p.y);
+    const capL = roomToLeft(n.id, leftX, p.y);
+    // Prefer the right (the familiar side); flip to the left when it has clearly more room — so a
+    // dot crowded on the right (e.g. a neighbour just beside it) still gets a legible label.
+    const onLeft = capL > capR + 8;
+    const cap = Math.max(16, onLeft ? capL : capR);
+    // Shrink the font (not fake-compress) so the label fits its cap at full glyph width — fully
+    // legible, no truncation, and the natural-width box clears the neighbour (ADR-0012). Floor the
+    // size so rounding never nudges the natural width back over the cap.
+    const fit =
+      textWidth(text, 11) > cap
+        ? Math.max(6, Math.floor((cap / (text.length * CHAR_W)) * 10) / 10)
+        : 11;
     parts.push(
-      `<circle cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#000" fill-opacity="0.15" stroke="#000" stroke-width="1.5" />`,
-      fitText(`${getText(n.label, layer, lang)} (${intensity.toFixed(1)})`, labelX, p.y + 4, {
-        size: 11,
-        maxWidth: BODY_W - labelX - 8,
+      `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#000" fill-opacity="0.15" stroke="#000" stroke-width="1.5" />`,
+      fitText(text, onLeft ? leftX : rightX, p.y + 4, {
+        size: fit,
+        anchor: onLeft ? 'end' : 'start',
+        maxWidth: cap,
+        dataEl: `nodelabel:${n.id}`,
       }),
     );
   });
@@ -1973,7 +2248,7 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">${esc(lbl)}</text>`,
       );
     }
   }
@@ -1997,11 +2272,12 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     const p = pos.get(n.id);
     if (!p) continue;
     parts.push(
-      `<rect x="${r1(p.x - TT_NODE_W / 2)}" y="${r1(p.y - TT_NODE_H / 2)}" width="${TT_NODE_W}" height="${TT_NODE_H}" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" />`,
+      `<rect data-el="node:${esc(n.id)}" x="${r1(p.x - TT_NODE_W / 2)}" y="${r1(p.y - TT_NODE_H / 2)}" width="${TT_NODE_W}" height="${TT_NODE_H}" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2" />`,
       wrapLabel(getText(n.label, layer, lang), p.x, p.y + 4, {
         size: 10,
         anchor: 'middle',
         maxWidth: TT_NODE_W - 16,
+        dataEl: `nodelabel:${n.id}`,
       }),
     );
   }
