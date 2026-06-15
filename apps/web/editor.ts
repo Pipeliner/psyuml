@@ -51,17 +51,31 @@ export function nextId(prefix: string, model: PsyumlModel): string {
 export function addNode(
   model: PsyumlModel,
   label: string,
-  opts: { kind?: NodeKind; stereotype?: string } = {},
+  opts: {
+    kind?: NodeKind;
+    stereotype?: string;
+    /** Optional plain-language (client-layer) label, so a GUI-made node isn't blank in Client view. */
+    client?: string;
+    /** Origin/school provenance tags (§G.2). */
+    provenance?: string[];
+    tier?: 1 | 2 | 3;
+  } = {},
 ): PsyumlModel {
   const isParts = model.diagram === 'parts-map';
   const kind: NodeKind = opts.kind ?? (isParts ? 'agent' : 'state');
   const stereotype = opts.stereotype ?? (isParts && kind === 'agent' ? 'manager' : undefined);
+  const clinicianLabel = { en: label };
   const node: Record<string, unknown> = {
     id: nextId(opts.kind ?? (isParts ? 'part' : 'state'), model),
     kind,
-    tier: isParts ? 3 : 1,
-    label: { clinician: { en: label } },
-    properties: { epistemicStatus: 'reported' },
+    tier: opts.tier ?? (isParts ? 3 : 1),
+    label: opts.client?.trim()
+      ? { clinician: clinicianLabel, client: { en: opts.client.trim() } }
+      : { clinician: clinicianLabel },
+    properties: {
+      epistemicStatus: 'reported',
+      ...(opts.provenance && opts.provenance.length ? { provenance: opts.provenance } : {}),
+    },
   };
   if (stereotype) node.stereotype = stereotype;
   // States default into the first band so they render in a zone; other kinds float.
@@ -85,7 +99,7 @@ export function nextEdgeId(model: PsyumlModel): string {
  */
 export function addEdge(
   model: PsyumlModel,
-  opts: { source: string; target: string; kind: EdgeKind; label?: string },
+  opts: { source: string; target: string; kind: EdgeKind; label?: string; trigger?: string },
 ): PsyumlModel {
   const edge: Record<string, unknown> = {
     id: nextEdgeId(model),
@@ -94,6 +108,9 @@ export function addEdge(
     target: opts.target,
   };
   if (opts.label && opts.label.trim()) edge.label = { clinician: { en: opts.label } };
+  // A ⚑ precipitant on a transition (spec §B) — distinct from a free label, and what the State
+  // Map / Decision chart draw as the trigger word on the arrow.
+  if (opts.trigger && opts.trigger.trim()) edge.trigger = { clinician: { en: opts.trigger } };
   return parseModel({ ...model, edges: [...model.edges, edge] });
 }
 
@@ -117,6 +134,45 @@ export function setNodeLabel(
       if (layer === 'client') label.client = { ...(label.client ?? {}), en: text };
       else label.clinician = { ...label.clinician, en: text };
       return { ...n, label };
+    }),
+  });
+}
+
+/**
+ * Set (or clear, with `''`) a node's stereotype — the Tier-3 tag that drives shape/role, e.g.
+ * `question` for a decision diamond on a crisis chart, or `manager`/`exile` on a parts map (§K).
+ * Exposed in the GUI so these aren't DSL-only. Returns a new validated model.
+ */
+export function setNodeStereotype(model: PsyumlModel, id: string, stereotype: string): PsyumlModel {
+  return parseModel({
+    ...model,
+    nodes: model.nodes.map((n) => {
+      if (n.id !== id) return n;
+      const next: Record<string, unknown> = { ...n };
+      if (stereotype.trim()) next.stereotype = stereotype.trim();
+      else delete next.stereotype;
+      return next;
+    }),
+  });
+}
+
+/**
+ * Set (or clear) a node's origin/school provenance tags (§G.2) from a comma-separated string,
+ * so co-present opposed claims can be authored in the GUI, not only the DSL. New validated model.
+ */
+export function setNodeProvenance(model: PsyumlModel, id: string, tags: string): PsyumlModel {
+  const list = tags
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+  return parseModel({
+    ...model,
+    nodes: model.nodes.map((n) => {
+      if (n.id !== id) return n;
+      const properties = { ...n.properties };
+      if (list.length) properties.provenance = list;
+      else delete properties.provenance;
+      return { ...n, properties };
     }),
   });
 }

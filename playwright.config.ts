@@ -21,7 +21,10 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: {
-    command: 'pnpm run dev -- --port 5173 --strictPort',
+    // `pnpm run dev -- …` forwards the extra `--` to vite literally (vite then ignores the port),
+    // so invoke vite directly to actually honor --port/--strictPort rather than relying on 5173
+    // happening to be vite's default.
+    command: 'pnpm exec vite --port 5173 --strictPort',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

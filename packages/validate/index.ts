@@ -269,6 +269,23 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
     );
   }
 
+  // --- "Won't be drawn" notice: never silently drop a node the user added (UX, eval finding) ---
+  // The State Map only draws states placed in a band; a node with no band is saved but invisible.
+  // Surface it (info) instead of dropping it without a word — it appears in the text/JSON, not the
+  // picture; the fix is to band it, or show a support as an EXIT edge between states.
+  if (model.diagram === 'state-map') {
+    for (const n of model.nodes) {
+      if (!n.bandId) {
+        add(
+          'render.node-not-shown',
+          'info',
+          `"${getText(n.label, layer)}" won't appear on the State Map — it has no band, so it's saved but not drawn. Place it in a band, or show a support as an EXIT edge between states.`,
+          n.id,
+        );
+      }
+    }
+  }
+
   return { ok: !issues.some((i) => i.severity === 'error'), issues };
 }
 

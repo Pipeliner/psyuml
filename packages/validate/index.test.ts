@@ -214,6 +214,25 @@ describe('validate', () => {
     expect(r.ok).toBe(true);
   });
 
+  it('warns (info) when a node will not be drawn on the State Map instead of silently dropping it', () => {
+    const m = read('state-map.psyuml');
+    // a resource with no band → the State Map can't place it; surface it, don't drop it silently
+    const withFree = parseModel({
+      ...m,
+      nodes: [
+        ...m.nodes,
+        { id: 'help', kind: 'resource', label: { clinician: { en: 'A friend' } } },
+      ],
+    });
+    const r = validate(withFree);
+    const issue = r.issues.find((i) => i.rule === 'render.node-not-shown');
+    expect(issue?.severity).toBe('info');
+    expect(issue?.nodeId).toBe('help');
+    expect(r.ok).toBe(true); // info only — never blocks
+    // a fully-banded map raises no such notice
+    expect(validate(m).issues.some((i) => i.rule === 'render.node-not-shown')).toBe(false);
+  });
+
   it('nudges a concrete, local crisis contact when acute risk is flagged (REQ-SAFETY-TRIAGE)', () => {
     const m = read('state-map.psyuml');
     // a generic line (no number / URL / handle) under acute risk → info nudge, not an error

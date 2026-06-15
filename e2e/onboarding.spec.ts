@@ -119,14 +119,32 @@ test.describe('new user: diagramming a partially understood situation', () => {
   test('diagram details: editing title + disclaimer flows into the model', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('combobox', { name: 'Diagram' }).selectOption('parts-map');
-    await page.getByText('Diagram details — title, disclaimer, crisis line').click();
+    // Title is surfaced at the top now (no longer hidden in a collapsed panel).
     await page.getByLabel('Diagram title', { exact: true }).fill('JOURNEY-TITLE-XYZ');
+    // Disclaimer + crisis line live under "Diagram details".
+    await page.getByText('Diagram details — disclaimer, crisis line').click();
     await page.getByLabel('Diagram disclaimer', { exact: true }).fill('MY-OWN-DISCLAIMER-XYZ');
     // It flows into the model — visible in the text (DSL) view.
     await page.getByText(/Edit as text \(DSL\)/).click();
     const dsl = page.getByLabel('PsyUML text DSL');
     await expect(dsl).toHaveValue(/JOURNEY-TITLE-XYZ/);
     await expect(dsl).toHaveValue(/MY-OWN-DISCLAIMER-XYZ/);
+  });
+
+  test('a GUI-added node can carry its own plain-language label (not blank in Client view)', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: 'Diagram' }).selectOption('parts-map');
+    // Add a part with BOTH a clinician and a client label, entirely via the GUI form.
+    await page.getByLabel('New node label').fill('Caretaker');
+    await page
+      .getByLabel('New node client-language label (optional)')
+      .fill('the one who looks after everyone');
+    await page.getByRole('button', { name: 'Add node' }).click();
+    // In the client layer the GUI-made node shows the plain words, not a blank.
+    await page.getByRole('combobox', { name: 'Layer' }).selectOption('client');
+    await expect(diagram(page)).toContainText('the one who looks after everyone');
   });
 
   test('build a link between two nodes in the GUI — no DSL needed', async ({ page }) => {

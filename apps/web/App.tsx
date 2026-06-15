@@ -1,8 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import {
+  createEmptyModel,
   getText,
   parseModel,
   serializeModel,
+  type DiagramType,
   type EdgeKind,
   type EpistemicStatus,
   type NodeKind,
@@ -51,6 +53,8 @@ import {
   setNodeEpistemic,
   setNodeHidden,
   setNodeLabel,
+  setNodeProvenance,
+  setNodeStereotype,
   setSafetyFlag,
   snapshotModel,
   type Version,
@@ -82,6 +86,46 @@ const EDGE_KINDS: EdgeKind[] = [
   'distant',
   'cutoff',
 ];
+
+/** Plain-language names for the typed connectors, so the link dropdown doesn't speak raw jargon. */
+const EDGE_LABELS: Record<EdgeKind, string> = {
+  sequential: '→ leads to / transition',
+  excitatory: '⊕ increases',
+  inhibitory: '⊖ decreases',
+  reciprocal: '⇄ mutual / reciprocal role',
+  exit: '⇢ exit (a way out)',
+  barrier: '║ dissociative barrier',
+  containment: '◯ protects / contains',
+  invocation: '⟿ invocation',
+  transference: '↝ transference',
+  nestedWithin: '⊂ nested within (origin)',
+  close: '— close tie',
+  conflict: '⚡ conflict tie',
+  fused: '═ fused / enmeshed',
+  distant: '┈ distant tie',
+  cutoff: '⊘ cutoff / estrangement',
+};
+
+/** Common stereotypes per diagram, surfaced as a datalist so e.g. a decision diamond is discoverable. */
+const STEREOTYPE_HINTS: Partial<Record<DiagramType, string[]>> = {
+  'decision-nav': ['question', 'crisis', 'action', 'safe'],
+  'parts-map': ['Self', 'manager', 'firefighter', 'exile'],
+  'mode-map': ['healthy-adult', 'child', 'parent', 'coping'],
+  'relational-field': ['male', 'female', 'nonbinary', 'unknown', 'system', 'index'],
+  'two-triangles': ['defence', 'anxiety', 'hidden-feeling'],
+  'process-loop': ['observing-eye'],
+};
+
+/** A filesystem-friendly slug from the diagram title (so downloads aren't all "<type>.psyuml"). */
+function slugify(s: string): string {
+  return (
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || ''
+  );
+}
 
 /** Epistemic-status options for the per-node "how sure?" control (plain-language hints). */
 const EPISTEMIC_OPTIONS: { value: string; label: string }[] = [
@@ -141,24 +185,33 @@ export function App() {
 
   const { svg, altText } = useMemo(() => {
     const roleLabels = school ? roleLabelsFor(school) : undefined;
-    if (model.diagram === 'parts-map')
-      return renderPartsMap(model, { layer, monochrome, roleLabels });
-    if (model.diagram === 'decision-nav') return renderDecisionChart(model, { layer });
-    if (model.diagram === 'resource-anchor') return renderResourceMap(model, { layer });
-    if (model.diagram === 'process-loop') return renderLoopMap(model, { layer });
-    if (model.diagram === 'timeline') return renderTimeline(model, { layer });
-    if (model.diagram === 'intervention-sequence') return renderInterventionSeq(model, { layer });
-    if (model.diagram === 'ritual') return renderRitual(model, { layer });
-    if (model.diagram === 'relational-field') return renderRelationalField(model, { layer });
-    if (model.diagram === 'mode-map') return renderModeMap(model, { layer });
-    if (model.diagram === 'body-map') return renderBodyMap(model, { layer });
-    if (model.diagram === 'two-triangles') return renderTwoTriangles(model, { layer });
-    return renderStateMap(model, { layer, monochrome });
+    // monochrome applies to every renderer (color must stay redundant, §D) — not just the two
+    // that used to receive it, which made the toggle look like a no-op for most diagram types.
+    const o = { layer, monochrome };
+    if (model.diagram === 'parts-map') return renderPartsMap(model, { ...o, roleLabels });
+    if (model.diagram === 'decision-nav') return renderDecisionChart(model, o);
+    if (model.diagram === 'resource-anchor') return renderResourceMap(model, o);
+    if (model.diagram === 'process-loop') return renderLoopMap(model, o);
+    if (model.diagram === 'timeline') return renderTimeline(model, o);
+    if (model.diagram === 'intervention-sequence') return renderInterventionSeq(model, o);
+    if (model.diagram === 'ritual') return renderRitual(model, o);
+    if (model.diagram === 'relational-field') return renderRelationalField(model, o);
+    if (model.diagram === 'mode-map') return renderModeMap(model, o);
+    if (model.diagram === 'body-map') return renderBodyMap(model, o);
+    if (model.diagram === 'two-triangles') return renderTwoTriangles(model, o);
+    return renderStateMap(model, o);
   }, [model, layer, monochrome, school]);
 
   const report = useMemo(() => validate(model, { layer }), [model, layer]);
   const exportBlocked = !report.ok;
   const escalate = requiresHumanEscalation(model);
+  // Explain a disabled Save/Export AT the button (eval finding: the reason was only in the
+  // health panel, so a blocked export looked like a broken app).
+  const firstError = report.issues.find((i) => i.severity === 'error');
+  const blockReason = firstError
+    ? `Can't export yet — ${firstError.message} (see Formulation health below)`
+    : undefined;
+  const fileBase = slugify(model.meta.title ?? '') || model.diagram;
 
   // Longitudinal diff (M6): compare the loaded earlier version (before) to now (after).
   const diff = useMemo(
@@ -174,12 +227,16 @@ export function App() {
 
   // Structured authoring (add node of any kind; connect/remove links).
   const [newNodeLabel, setNewNodeLabel] = useState('');
+  const [newNodeClient, setNewNodeClient] = useState('');
   const [newNodeKind, setNewNodeKind] = useState<NodeKind>('state');
   const [newNodeStereo, setNewNodeStereo] = useState('');
+  const [newNodeProvenance, setNewNodeProvenance] = useState('');
   const [linkFrom, setLinkFrom] = useState('');
   const [linkTo, setLinkTo] = useState('');
   const [linkKind, setLinkKind] = useState<EdgeKind>('sequential');
   const [linkLabel, setLinkLabel] = useState('');
+  const [linkIsTrigger, setLinkIsTrigger] = useState(false);
+  const stereotypeHints = STEREOTYPE_HINTS[model.diagram] ?? [];
   const nodeName = (id: string): string => {
     const n = model.nodes.find((x) => x.id === id);
     return n ? getText(n.label, layer) : id;
@@ -195,11 +252,36 @@ export function App() {
       }}
     >
       <h1 style={{ marginBottom: 4 }}>PsyUML editor</h1>
-      <p role="note" style={{ margin: '0 0 1rem', color: '#444', fontSize: 14 }}>
+      <p role="note" style={{ margin: '0 0 0.5rem', color: '#444', fontSize: 14 }}>
+        Map a person's inner / relational world as a shareable, plain-language case formulation:
+        pick a diagram type, build it with the panels below, then save or export.{' '}
         <strong>Unvalidated v0.x — not a clinical instrument.</strong> Supports, and does not
-        replace, professional care. It does not diagnose. Editing is local-first — nothing leaves
-        your device.
+        replace, professional care; it does not diagnose. Editing is local-first — nothing leaves
+        your device.{' '}
+        <a href="../docs/handbook.md" style={{ color: '#0072b2' }}>
+          Practitioner handbook
+        </a>
+        .
       </p>
+
+      <label
+        style={{
+          display: 'block',
+          fontSize: 14,
+          fontWeight: 600,
+          margin: '0 0 1rem',
+          maxWidth: 560,
+        }}
+      >
+        Title{' '}
+        <input
+          aria-label="Diagram title"
+          placeholder="Name this formulation…"
+          value={model.meta.title ?? ''}
+          onChange={(e) => setModel(setMeta(model, { title: e.target.value }))}
+          style={{ width: '100%', padding: '4px 8px', fontWeight: 400 }}
+        />
+      </label>
 
       <div
         role="toolbar"
@@ -293,9 +375,48 @@ export function App() {
 
         <button
           type="button"
+          title="Start a new blank diagram of the current type (your current work isn't saved unless you Save it first)"
+          onClick={() => {
+            if (
+              model.nodes.length &&
+              !window.confirm('Start a new blank diagram? Unsaved work is lost.')
+            )
+              return;
+            setModel(createEmptyModel(model.diagram));
+            setCompareWith(null);
+            setCompareError(null);
+            setVersions([]);
+          }}
+        >
+          New (blank)
+        </button>
+        <label title="Open a saved .psyuml file to keep editing it">
+          Open…{' '}
+          <input
+            type="file"
+            accept=".psyuml,application/json"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              file
+                .text()
+                .then((text) => {
+                  setModel(parseModel(text));
+                  setCompareWith(null);
+                  setCompareError(null);
+                  setVersions([]);
+                })
+                .catch(() => setCompareError('Could not open that file as a .psyuml model.'));
+              e.target.value = '';
+            }}
+          />
+        </label>
+        <button
+          type="button"
           disabled={exportBlocked}
+          title={blockReason}
           onClick={() =>
-            downloadText(`${model.diagram}.psyuml`, serializeModel(model), 'application/json')
+            downloadText(`${fileBase}.psyuml`, serializeModel(model), 'application/json')
           }
         >
           Save .psyuml
@@ -303,7 +424,8 @@ export function App() {
         <button
           type="button"
           disabled={exportBlocked}
-          onClick={() => downloadText(`${model.diagram}.svg`, svg, 'image/svg+xml')}
+          title={blockReason}
+          onClick={() => downloadText(`${fileBase}.svg`, svg, 'image/svg+xml')}
         >
           Export SVG
         </button>
@@ -512,6 +634,7 @@ export function App() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
           <button
             type="button"
+            aria-label="Apply text — parse the DSL and update the diagram"
             onClick={() => {
               try {
                 setModel(fromDSL(dslRef.current?.value ?? ''));
@@ -532,16 +655,8 @@ export function App() {
       </details>
 
       <details style={{ marginTop: 12 }}>
-        <summary>Diagram details — title, disclaimer, crisis line</summary>
+        <summary>Diagram details — disclaimer, crisis line</summary>
         <div style={{ display: 'grid', gap: 8, marginTop: 8, maxWidth: 560 }}>
-          <label style={{ display: 'grid', gap: 2, fontSize: 14 }}>
-            Title
-            <input
-              aria-label="Diagram title"
-              value={model.meta.title ?? ''}
-              onChange={(e) => setModel(setMeta(model, { title: e.target.value }))}
-            />
-          </label>
           <label style={{ display: 'grid', gap: 2, fontSize: 14 }}>
             Disclaimer (required to share with a client)
             <textarea
@@ -579,9 +694,16 @@ export function App() {
         >
           <input
             aria-label="New node label"
-            placeholder="New node label…"
+            placeholder="label (clinician)…"
             value={newNodeLabel}
             onChange={(e) => setNewNodeLabel(e.target.value)}
+            style={{ padding: '4px 8px' }}
+          />
+          <input
+            aria-label="New node client-language label (optional)"
+            placeholder="plain words (client, optional)…"
+            value={newNodeClient}
+            onChange={(e) => setNewNodeClient(e.target.value)}
             style={{ padding: '4px 8px' }}
           />
           <select
@@ -597,9 +719,24 @@ export function App() {
           </select>
           <input
             aria-label="New node stereotype (optional)"
-            placeholder="stereotype (optional)"
+            placeholder={
+              stereotypeHints.length ? `e.g. ${stereotypeHints[0]}` : 'stereotype (optional)'
+            }
+            list="stereotype-hints"
             value={newNodeStereo}
             onChange={(e) => setNewNodeStereo(e.target.value)}
+            style={{ padding: '4px 8px', width: 150 }}
+          />
+          <datalist id="stereotype-hints">
+            {stereotypeHints.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+          <input
+            aria-label="New node provenance (optional, comma-separated schools)"
+            placeholder="origin/school (optional)"
+            value={newNodeProvenance}
+            onChange={(e) => setNewNodeProvenance(e.target.value)}
             style={{ padding: '4px 8px', width: 150 }}
           />
           <button
@@ -609,64 +746,116 @@ export function App() {
                 addNode(model, newNodeLabel.trim() || 'New node', {
                   kind: newNodeKind,
                   stereotype: newNodeStereo.trim() || undefined,
+                  client: newNodeClient.trim() || undefined,
+                  provenance: newNodeProvenance
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean),
                 }),
               );
               setNewNodeLabel('');
+              setNewNodeClient('');
               setNewNodeStereo('');
+              setNewNodeProvenance('');
             }}
           >
             Add node
           </button>
         </div>
+        {model.diagram === 'state-map' && (
+          <p style={{ fontSize: 13, color: '#555', margin: '0 0 8px' }}>
+            Tip: the State Map draws <strong>states placed in a band</strong>. To show “what helps”,
+            add it as an <strong>{EDGE_LABELS.exit}</strong> between states (below), not as a loose
+            node.
+          </p>
+        )}
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
           {model.nodes.map((n) => {
             const nodeIssues = report.issues.filter((iss) => iss.nodeId === n.id);
             return (
-              <li key={n.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                {nodeIssues.length > 0 && (
-                  <span
-                    title={nodeIssues.map((iss) => iss.message).join('; ')}
-                    aria-label={`${nodeIssues.length} issue(s) on ${n.id}`}
-                    style={{ fontWeight: 700 }}
-                  >
-                    {nodeIssues.some((iss) => iss.severity === 'error') ? '✖' : '⚠'}
-                  </span>
-                )}
-                <input
-                  aria-label={`Label for node ${n.id}`}
-                  value={getText(n.label, layer)}
-                  onChange={(e) => setModel(setNodeLabel(model, n.id, e.target.value, layer))}
-                  style={{ flex: 1, minWidth: 0, padding: '4px 8px' }}
-                />
-                <select
-                  aria-label={`Certainty for node ${n.id}`}
-                  value={n.properties.epistemicStatus ?? ''}
-                  onChange={(e) =>
-                    setModel(setNodeEpistemic(model, n.id, e.target.value as EpistemicStatus | ''))
-                  }
-                >
-                  {EPISTEMIC_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <label style={{ whiteSpace: 'nowrap' }}>
+              <li key={n.id} style={{ display: 'grid', gap: 4 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {nodeIssues.length > 0 && (
+                    <span
+                      title={nodeIssues.map((iss) => iss.message).join('; ')}
+                      aria-label={`${nodeIssues.length} issue(s) on ${n.id}`}
+                      style={{ fontWeight: 700 }}
+                    >
+                      {nodeIssues.some((iss) => iss.severity === 'error') ? '✖' : '⚠'}
+                    </span>
+                  )}
                   <input
-                    type="checkbox"
-                    checked={!n.hidden}
-                    onChange={(e) => setModel(setNodeHidden(model, n.id, !e.target.checked))}
-                  />{' '}
-                  show
-                </label>
-                <button
-                  type="button"
-                  aria-label={`Remove node ${n.id}`}
-                  title="Remove this node"
-                  onClick={() => setModel(removeNode(model, n.id))}
-                >
-                  ✕
-                </button>
+                    aria-label={`Label for node ${n.id}`}
+                    value={getText(n.label, layer)}
+                    onChange={(e) => setModel(setNodeLabel(model, n.id, e.target.value, layer))}
+                    style={{ flex: 1, minWidth: 0, padding: '4px 8px' }}
+                  />
+                  <select
+                    aria-label={`Certainty for node ${n.id}`}
+                    value={n.properties.epistemicStatus ?? ''}
+                    onChange={(e) =>
+                      setModel(
+                        setNodeEpistemic(model, n.id, e.target.value as EpistemicStatus | ''),
+                      )
+                    }
+                  >
+                    {EPISTEMIC_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <label style={{ whiteSpace: 'nowrap' }}>
+                    <input
+                      type="checkbox"
+                      checked={!n.hidden}
+                      onChange={(e) => setModel(setNodeHidden(model, n.id, !e.target.checked))}
+                    />{' '}
+                    show
+                  </label>
+                  <button
+                    type="button"
+                    aria-label={`Remove node ${n.id}`}
+                    title="Remove this node"
+                    onClick={() => setModel(removeNode(model, n.id))}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <details style={{ marginLeft: 18, fontSize: 13 }}>
+                  <summary style={{ color: '#555' }}>more — plain words, shape, origin</summary>
+                  <div style={{ display: 'grid', gap: 4, marginTop: 4, maxWidth: 480 }}>
+                    <label style={{ display: 'grid', gap: 2 }}>
+                      Plain-language (client) label
+                      <input
+                        aria-label={`Client label for node ${n.id}`}
+                        value={n.label.client?.en ?? ''}
+                        placeholder="how the client would say it"
+                        onChange={(e) =>
+                          setModel(setNodeLabel(model, n.id, e.target.value, 'client'))
+                        }
+                      />
+                    </label>
+                    <label style={{ display: 'grid', gap: 2 }}>
+                      Stereotype (shape/role — e.g. {stereotypeHints[0] ?? 'manager'})
+                      <input
+                        aria-label={`Stereotype for node ${n.id}`}
+                        list="stereotype-hints"
+                        value={n.stereotype ?? ''}
+                        onChange={(e) => setModel(setNodeStereotype(model, n.id, e.target.value))}
+                      />
+                    </label>
+                    <label style={{ display: 'grid', gap: 2 }}>
+                      Origin / school (comma-separated; co-present claims are shown, not merged)
+                      <input
+                        aria-label={`Provenance for node ${n.id}`}
+                        value={(n.properties.provenance ?? []).join(', ')}
+                        placeholder="e.g. IFS, schema"
+                        onChange={(e) => setModel(setNodeProvenance(model, n.id, e.target.value))}
+                      />
+                    </label>
+                  </div>
+                </details>
               </li>
             );
           })}
@@ -681,6 +870,7 @@ export function App() {
               <span style={{ flex: 1, minWidth: 0 }}>
                 {nodeName(e.source)} —{e.kind}→ {nodeName(e.target)}
                 {e.label ? ` (${getText(e.label, layer)})` : ''}
+                {e.trigger ? ` ⚑${getText(e.trigger, layer)}` : ''}
               </span>
               <button
                 type="button"
@@ -720,7 +910,7 @@ export function App() {
           >
             {EDGE_KINDS.map((k) => (
               <option key={k} value={k}>
-                {k}
+                {EDGE_LABELS[k]}
               </option>
             ))}
           </select>
@@ -734,21 +924,34 @@ export function App() {
           </select>
           <input
             aria-label="Link label (optional)"
-            placeholder="label (optional)"
+            placeholder={linkIsTrigger ? 'trigger word…' : 'label (optional)'}
             value={linkLabel}
             onChange={(e) => setLinkLabel(e.target.value)}
             style={{ padding: '4px 8px', width: 150 }}
           />
+          <label
+            style={{ whiteSpace: 'nowrap', fontSize: 13 }}
+            title="Mark this label as a ⚑ trigger / precipitant (drawn on the arrow)"
+          >
+            <input
+              type="checkbox"
+              checked={linkIsTrigger}
+              onChange={(e) => setLinkIsTrigger(e.target.checked)}
+            />{' '}
+            ⚑ trigger
+          </label>
           <button
             type="button"
             disabled={!linkFrom || !linkTo || linkFrom === linkTo}
             onClick={() => {
+              const text = linkLabel.trim() || undefined;
               setModel(
                 addEdge(model, {
                   source: linkFrom,
                   target: linkTo,
                   kind: linkKind,
-                  label: linkLabel.trim() || undefined,
+                  label: linkIsTrigger ? undefined : text,
+                  trigger: linkIsTrigger ? text : undefined,
                 }),
               );
               setLinkLabel('');

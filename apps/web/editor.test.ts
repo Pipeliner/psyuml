@@ -12,6 +12,8 @@ import {
   setNodeEpistemic,
   setNodeHidden,
   setNodeLabel,
+  setNodeProvenance,
+  setNodeStereotype,
   setSafetyFlag,
   snapshotModel,
 } from './editor';
@@ -88,6 +90,47 @@ describe('editor', () => {
     expect(added?.kind).toBe('resource');
     const part = addNode(partsModel, 'Hurt Child', { kind: 'agent', stereotype: 'exile' });
     expect(part.nodes[part.nodes.length - 1]?.stereotype).toBe('exile');
+  });
+
+  it('addNode can set a client-language label and provenance (full GUI authoring)', () => {
+    const m = addNode(partsModel, 'Inner critic', {
+      kind: 'agent',
+      stereotype: 'manager',
+      client: 'the harsh voice',
+      provenance: ['IFS', 'schema'],
+    });
+    const added = m.nodes[m.nodes.length - 1];
+    expect(added?.label.client?.en).toBe('the harsh voice');
+    expect(added?.properties.provenance).toEqual(['IFS', 'schema']);
+  });
+
+  it('setNodeStereotype sets and clears a stereotype (e.g. a decision diamond)', () => {
+    const q = setNodeStereotype(stateModel, 'calm', 'question');
+    expect(q.nodes.find((x) => x.id === 'calm')?.stereotype).toBe('question');
+    const cleared = setNodeStereotype(q, 'calm', '');
+    expect(cleared.nodes.find((x) => x.id === 'calm')?.stereotype).toBeUndefined();
+  });
+
+  it('setNodeProvenance parses a comma list and clears on empty', () => {
+    const p = setNodeProvenance(partsModel, 'self', 'IFS, structural-dissociation');
+    expect(p.nodes.find((x) => x.id === 'self')?.properties.provenance).toEqual([
+      'IFS',
+      'structural-dissociation',
+    ]);
+    const cleared = setNodeProvenance(p, 'self', '  ');
+    expect(cleared.nodes.find((x) => x.id === 'self')?.properties.provenance).toBeUndefined();
+  });
+
+  it('addEdge can attach a trigger (⚑ precipitant) distinct from a free label', () => {
+    const m = addEdge(stateModel, {
+      source: 'calm',
+      target: 'numb',
+      kind: 'sequential',
+      trigger: 'criticism',
+    });
+    const added = m.edges[m.edges.length - 1];
+    expect(added?.trigger?.clinician.en).toBe('criticism');
+    expect(added?.label).toBeUndefined();
   });
 
   it('addEdge connects two nodes with a typed, optionally-labelled link', () => {
