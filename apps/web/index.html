@@ -3,7 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PsyUML</title>
+    <title>PsyUML — visual case-formulation editor</title>
+    <meta
+      name="description"
+      content="A visual, cross-school, dual-audience case-formulation editor for psychotherapy — local-first, accessible, hand-drawable. Unvalidated v0.x: supports, not replaces, professional care."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0072b2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a1722" media="(prefers-color-scheme: dark)" />
+
+    <!-- Icons (Vite rewrites the leading-slash public paths to include the base, e.g. /psyuml/). -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Open Graph / Twitter need absolute URLs (scrapers don't resolve relative). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PsyUML" />
+    <meta property="og:title" content="PsyUML — visual case-formulation editor" />
+    <meta
+      property="og:description"
+      content="A visual, cross-school, dual-audience case-formulation editor for psychotherapy. Unvalidated v0.x — supports, not replaces, care."
+    />
+    <meta property="og:url" content="https://pipeliner.github.io/psyuml/" />
+    <meta property="og:image" content="https://pipeliner.github.io/psyuml/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PsyUML — visual case-formulation editor" />
+    <meta
+      name="twitter:description"
+      content="A visual, cross-school, dual-audience case-formulation editor for psychotherapy. Unvalidated v0.x — supports, not replaces, care."
+    />
+    <meta name="twitter:image" content="https://pipeliner.github.io/psyuml/og-image.png" />
     <style>
       /* Pre-bundle baseline so the first paint already has WCAG 2.2 visible focus
          (2.4.7) and a sane background; the full design system lives in styles.css

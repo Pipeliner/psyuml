@@ -15,6 +15,7 @@
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `build-cli.mjs` | Bundle `packages/cli/bin.ts` → `dist/cli/psyuml.mjs` (a runnable Node script) via esbuild | `@psyuml/cli`, esbuild | `pnpm build:cli` | REQ-TEXT-DSL | low |
+| `gen-icons.mjs` | Generate the editor's favicons + PWA icons + OG image from one on-brand SVG mark, rasterized via Playwright/chromium (no native image deps) → `apps/web/public/` | `@playwright/test` (chromium) | `apps/web/public/*` | REQ-UX-STORIES | low |
 
 ## Change checklist
 - [ ] Keep build scripts out of `verify` (CLI logic is covered by `packages/cli` unit tests).
