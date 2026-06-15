@@ -11,23 +11,18 @@ import {
   type PsyumlModel,
 } from '@psyuml/model';
 import { fromDSL, toDSL } from '@psyuml/grammar';
-import {
-  renderBodyMap,
-  renderDecisionChart,
-  renderDiff,
-  renderInterventionSeq,
-  renderLoopMap,
-  renderModeMap,
-  renderPartsMap,
-  renderRelationalField,
-  renderResourceMap,
-  renderRitual,
-  renderStateMap,
-  renderTimeline,
-  renderTwoTriangles,
-} from '@psyuml/render';
+import { render, renderDiff } from '@psyuml/render';
 import { requiresHumanEscalation, validate } from '@psyuml/validate';
-import { roleLabelsFor, TRANSLATABLE_SCHOOLS } from '@psyuml/profiles';
+import {
+  AUDIENCE_PROFILES,
+  audienceProfile,
+  listFamilies,
+  roleLabelsFor,
+  TRANSLATABLE_SCHOOLS,
+  withinSymbolBudget,
+  type AudienceProfile,
+  type DiagramFamily,
+} from '@psyuml/profiles';
 import { diffModels, isEmptyDiff, summarizeDiff } from '@psyuml/diff';
 import stateRaw from '../../examples/state-map.psyuml?raw';
 import partsRaw from '../../examples/parts-map.psyuml?raw';
@@ -160,6 +155,26 @@ const EXAMPLES: Record<string, string> = {
   'two-triangles': twoTriRaw,
 };
 
+// The picker, grouped by the v0.2 family each example exemplifies (spec §2). Order within a
+// family is preserved; `cat-sdr` sits under **Pattern** (its dedicated pattern-map type is
+// future, §4) and `drama-triangle` under **Field** (it's a Relational Field instance).
+const EXAMPLE_CATALOG: { key: string; label: string; family: DiagramFamily }[] = [
+  { key: 'state-map', label: 'State Map', family: 'cycle' },
+  { key: 'process-loop', label: 'Process / Loop', family: 'cycle' },
+  { key: 'cat-sdr', label: 'CAT reformulation (SDR)', family: 'pattern' },
+  { key: 'parts-map', label: 'Parts / Agents Map', family: 'parts' },
+  { key: 'mode-map', label: 'Schema Mode Map', family: 'parts' },
+  { key: 'relational-field', label: 'Relational Field', family: 'field' },
+  { key: 'drama-triangle', label: 'Drama triangle (TA)', family: 'field' },
+  { key: 'resource-anchor', label: 'Resource / Anchor map', family: 'field' },
+  { key: 'body-map', label: 'Body Map', family: 'field' },
+  { key: 'timeline', label: 'Timeline / Trajectory', family: 'journey' },
+  { key: 'intervention-sequence', label: 'Intervention Sequence', family: 'change' },
+  { key: 'two-triangles', label: 'Two Triangles (Malan)', family: 'change' },
+  { key: 'decision-nav', label: 'Crisis chart', family: 'change' },
+  { key: 'ritual', label: 'Ritual Structure', family: 'ritual' },
+];
+
 function downloadText(filename: string, text: string, type: string): void {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement('a');
@@ -180,7 +195,10 @@ export function App() {
   // Serialized model as last loaded (sample switch / New / Open / Restore), to detect unsaved
   // edits so switching away can confirm before discarding work (eval finding).
   const [loadedJson, setLoadedJson] = useState<string>(() => serializeModel(parseModel(stateRaw)));
-  const [layer, setLayer] = useState<'clinician' | 'client'>('clinician');
+  // v0.2 §2 audience profile drives both the label layer and the interpretive surface; `layer`
+  // is derived from it for validate/diff (clinician → clinician labels; client/picture → client).
+  const [audience, setAudience] = useState<AudienceProfile>('clinician');
+  const layer: 'clinician' | 'client' = audience === 'clinician' ? 'clinician' : 'client';
   // Default to colour: diagrams render in the accessible (redundant) Okabe–Ito palette out of
   // the box; the Monochrome toggle below remains the print / extra-safe path (ADR-0013). This is
   // the editor's initial toggle only — @psyuml/render keeps its monochrome-by-default library default.
@@ -193,22 +211,20 @@ export function App() {
 
   const { svg, altText } = useMemo(() => {
     const roleLabels = school ? roleLabelsFor(school) : undefined;
-    // monochrome applies to every renderer (color must stay redundant, §D) — not just the two
-    // that used to receive it, which made the toggle look like a no-op for most diagram types.
-    const o = { layer, monochrome };
-    if (model.diagram === 'parts-map') return renderPartsMap(model, { ...o, roleLabels });
-    if (model.diagram === 'decision-nav') return renderDecisionChart(model, o);
-    if (model.diagram === 'resource-anchor') return renderResourceMap(model, o);
-    if (model.diagram === 'process-loop') return renderLoopMap(model, o);
-    if (model.diagram === 'timeline') return renderTimeline(model, o);
-    if (model.diagram === 'intervention-sequence') return renderInterventionSeq(model, o);
-    if (model.diagram === 'ritual') return renderRitual(model, o);
-    if (model.diagram === 'relational-field') return renderRelationalField(model, o);
-    if (model.diagram === 'mode-map') return renderModeMap(model, o);
-    if (model.diagram === 'body-map') return renderBodyMap(model, o);
-    if (model.diagram === 'two-triangles') return renderTwoTriangles(model, o);
-    return renderStateMap(model, o);
-  }, [model, layer, monochrome, school]);
+    // One dispatcher resolves the audience profile → layer + interpretive visibility (§2);
+    // monochrome applies to every renderer (colour must stay redundant, §D).
+    return render(model, { audience, monochrome, roleLabels });
+  }, [model, audience, monochrome, school]);
+
+  // v0.2 §2: the client/picture profiles cap distinct symbol kinds for cognitive load. Surface a
+  // gentle over-budget nudge (never a block; the full pictographic reduction is M14).
+  const symbolKinds = useMemo(
+    () =>
+      new Set<string>([...model.nodes.map((n) => n.kind), ...model.edges.map((e) => e.kind)]).size,
+    [model],
+  );
+  const symbolCap = audienceProfile(audience).maxSymbolKinds;
+  const overBudget = !withinSymbolBudget(symbolKinds, audience);
 
   const report = useMemo(() => validate(model, { layer }), [model, layer]);
   const exportBlocked = !report.ok;
@@ -335,33 +351,43 @@ export function App() {
               if (!loadModel(parseModel(EXAMPLES[key] ?? stateRaw), key)) e.target.value = example;
             }}
           >
-            <option value="state-map">State Map</option>
-            <option value="parts-map">Parts / Agents Map</option>
-            <option value="mode-map">Schema Mode Map</option>
-            <option value="relational-field">Relational Field</option>
-            <option value="drama-triangle">Drama triangle (TA)</option>
-            <option value="body-map">Body Map</option>
-            <option value="decision-nav">Crisis chart</option>
-            <option value="resource-anchor">Resource / Anchor map</option>
-            <option value="process-loop">Process / Loop</option>
-            <option value="cat-sdr">CAT reformulation (SDR)</option>
-            <option value="timeline">Timeline / Trajectory</option>
-            <option value="intervention-sequence">Intervention Sequence</option>
-            <option value="ritual">Ritual Structure</option>
-            <option value="two-triangles">Two Triangles (Malan)</option>
+            {/* Grouped by v0.2 family (the question each answers, §2). */}
+            {listFamilies().map((fam) => {
+              const items = EXAMPLE_CATALOG.filter((x) => x.family === fam.id);
+              return items.length ? (
+                <optgroup key={fam.id} label={fam.title}>
+                  {items.map((x) => (
+                    <option key={x.key} value={x.key}>
+                      {x.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null;
+            })}
           </select>
         </label>
 
         <label className="control">
-          Layer{' '}
+          Audience{' '}
           <select
-            value={layer}
-            onChange={(e) => setLayer(e.target.value as 'clinician' | 'client')}
+            value={audience}
+            onChange={(e) => setAudience(e.target.value as AudienceProfile)}
+            title="Audience profile (v0.2 §2): same model, different visual compression. Client/picture use plain language and hide the clinician-analytic surface."
           >
-            <option value="clinician">Clinician</option>
-            <option value="client">Client (plain language)</option>
+            {AUDIENCE_PROFILES.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
           </select>
         </label>
+
+        {overBudget && (
+          <span className="muted" role="note" aria-live="polite">
+            ⚠ {symbolKinds} symbol kinds — over the {audienceProfile(audience).title} budget of{' '}
+            {symbolCap}; consider simplifying for this audience.
+          </span>
+        )}
 
         <label className="check">
           <input

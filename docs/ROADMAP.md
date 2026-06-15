@@ -127,10 +127,10 @@ demands before any 1.0.
 - **Acceptance (met):** a Pattern diagram renders trap/dilemma/snag + exits distinguishably in monochrome; `contested` standing and confidence survive into alt-text; the overlap invariant (ADR-0012) and monochrome-redundancy checks stay green; **fully backward-compatible** — a plain v0.1 loop renders byte-identically (only `cat-sdr.svg` changed). *Still to come:* per-topology participatory + comprehension-tested glyphs (M14) and editor authoring of topology/as-if (M13).
 - **Spec refs:** v0.2 §3, §4. **REQ:** REQ-PATTERN-SEMANTICS, REQ-PROVENANCE-CONFIDENCE (+ REQ-CROSS-SCHOOL, REQ-ACCESSIBILITY).
 
-### M13 · Audience-profile rendering + editor
+### M13 · Audience-profile rendering + editor *(implementing now)*
 - **Goal:** turn the profile *registry* (M11) into real rendered output and an editor surface.
-- **Deliverables:** client/picture profiles wired through the renderers; the editor's **family-grouped** diagram picker + a profile switch (clinician ⇄ client ⇄ picture); picture-profile symbols enter the M14 comprehension-testing pipeline.
-- **Acceptance:** switching audience profile never mutates core data (parallels the school switcher); the client/picture profiles honour their plain-language + symbol-budget posture; exports respect the active profile.
+- **Deliverables (landed, ADR-0016):** a single `@psyuml/render` **`render()` dispatcher** that resolves the audience profile → label `layer` + `showInterpretive`; the client/picture profiles **hide the clinician-analytic surface** (contested ⚖, as-if, confidence, cross-school provenance) while keeping the structural loop, topology, exits, and the honest dashed border; the editor's **family-grouped** diagram picker + an **audience switch** (clinician ⇄ client ⇄ picture) rendering through the dispatcher; a `withinSymbolBudget` **nudge** when a client/picture view exceeds its symbol cap.
+- **Acceptance (met):** switching audience profile **never mutates core data** (proven by a render-does-not-mutate test, parallels the school switcher); the client/picture profiles honour their plain-language (client labels) + symbol-budget posture; exports respect the active profile (the SVG/alt-text carry it). **Back-compatible:** explicit `layer`/`showInterpretive` win, so goldens + the CLI are byte-unchanged. *Still to come:* picture-profile **pictographic** symbols via the M14 comprehension gate (picture is "client + a flag" for now).
 - **Spec refs:** v0.2 §2, §6, §8. **REQ:** REQ-AUDIENCE-PROFILES, REQ-EDITOR-MVP, REQ-ACCESSIBILITY.
 
 ### M14 · Notation comprehension testing (Tier-B) — the v0.x gate

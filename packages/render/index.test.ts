@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseModel } from '@psyuml/model';
 import {
   blankTemplate,
+  render,
   renderBodyMap,
   renderDecisionChart,
   renderDiff,
@@ -799,5 +800,63 @@ describe('renderDiff', () => {
     const { svg, altText } = renderDiff(v1, v1);
     expect(svg).toContain('No tracked changes.');
     expect(altText).toContain('No tracked changes.');
+  });
+});
+
+describe('render() dispatcher + audience profiles (v0.2 §2/§3)', () => {
+  it('routes every diagram type to its renderer, identical to a direct call (back-compatible)', () => {
+    expect(render(stateModel).svg).toBe(renderStateMap(stateModel).svg);
+    expect(render(partsModel).svg).toBe(renderPartsMap(partsModel).svg);
+    expect(render(modeModel).svg).toBe(renderModeMap(modeModel).svg);
+    expect(render(relModel).svg).toBe(renderRelationalField(relModel).svg);
+    expect(render(loopModel).svg).toBe(renderLoopMap(loopModel).svg);
+    expect(render(catSdrModel).svg).toBe(renderLoopMap(catSdrModel).svg);
+    expect(render(timelineModel).svg).toBe(renderTimeline(timelineModel).svg);
+    expect(render(seqModel).svg).toBe(renderInterventionSeq(seqModel).svg);
+    expect(render(ritualModel).svg).toBe(renderRitual(ritualModel).svg);
+    expect(render(decisionModel).svg).toBe(renderDecisionChart(decisionModel).svg);
+    expect(render(resourceModel).svg).toBe(renderResourceMap(resourceModel).svg);
+    expect(render(bodyModel).svg).toBe(renderBodyMap(bodyModel).svg);
+    expect(render(twoTriModel).svg).toBe(renderTwoTriangles(twoTriModel).svg);
+  });
+
+  it('clinician shows the interpretive surface; client/picture hide it (Pattern family)', () => {
+    const clin = render(catSdrModel, { audience: 'clinician' });
+    expect(clin.svg).toContain('⚖');
+    expect(clin.svg).toContain('(as-if)');
+    expect(clin.altText).toContain('Contested standing');
+    expect(clin.altText).toContain('Confidence —');
+    expect(clin.svg).toContain('Placate'); // clinician label ("Placate & comply")
+
+    const client = render(catSdrModel, { audience: 'client' });
+    // the clinician-analytic surface is gone …
+    expect(client.svg).not.toContain('⚖');
+    expect(client.svg).not.toContain('(as-if)');
+    expect(client.altText).not.toContain('Contested standing');
+    expect(client.altText).not.toContain('Confidence —');
+    // … but the structural loop + topology stay, in the client's own words
+    expect(client.svg).toContain('TRAP');
+    expect(client.altText).toContain('is a trap');
+    expect(client.svg).toContain('People-please'); // placate's client label
+    expect(client.svg).not.toContain('Placate');
+    // picture profile suppresses the analytic surface too
+    expect(render(catSdrModel, { audience: 'picture' }).svg).not.toContain('⚖');
+  });
+
+  it('hides cross-school provenance for the client (Parts family, ADR-0007)', () => {
+    const clin = render(perfectionismModel, { audience: 'clinician' });
+    expect(clin.svg).toContain('⚖');
+    expect(clin.altText).toContain('Origins disagree on');
+    const client = render(perfectionismModel, { audience: 'client' });
+    expect(client.svg).not.toContain('⚖');
+    expect(client.altText).not.toContain('Origins disagree on');
+  });
+
+  it('never mutates the model (profiles change rendering only, §2)', () => {
+    const before = JSON.stringify(catSdrModel);
+    render(catSdrModel, { audience: 'client' });
+    render(catSdrModel, { audience: 'picture' });
+    render(perfectionismModel, { audience: 'client' });
+    expect(JSON.stringify(catSdrModel)).toBe(before);
   });
 });

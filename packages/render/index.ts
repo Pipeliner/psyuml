@@ -16,6 +16,21 @@ type MNode = PsyumlModel['nodes'][number];
 
 export interface RenderOptions {
   layer?: 'clinician' | 'client';
+  /**
+   * v0.2 §2 audience profile. When set it derives the label `layer` (clinician → clinician
+   * labels; client/picture → client labels) and `showInterpretive` (clinician only), so a
+   * caller selects an audience *once* instead of wiring layer + analytic visibility apart.
+   * Profiles change **rendering only**, never the model (§2). An explicit `layer` /
+   * `showInterpretive` still wins — so `layer`-only callers (CLI, goldens) are unchanged.
+   */
+  audience?: 'clinician' | 'client' | 'picture';
+  /**
+   * v0.2 §3: draw the interpretive / clinician-analytic surface — provenance tags, confidence,
+   * the contested ⚖ marker, the `as-if` qualifier. Defaults to `true` (the v0.1 behaviour);
+   * the client / picture profiles set it `false` so that layer stays plain and actionable.
+   * (The descriptive-vs-interpretive dashed border is always drawn — a §3 MUST.)
+   */
+  showInterpretive?: boolean;
   lang?: string;
   /** Pure black-on-white when true (default). When false, adds redundant band hues. */
   monochrome?: boolean;
@@ -26,6 +41,48 @@ export interface RenderOptions {
 export interface RenderResult {
   svg: string;
   altText: string;
+}
+
+/**
+ * Single entry point: dispatch a model to its renderer, resolving the v0.2 §2 **audience
+ * profile** to the label layer + interpretive visibility. The editor (and any headless
+ * caller) selects an audience once; the profile changes *rendering only*, never the model.
+ * Explicit `layer` / `showInterpretive` win, so existing `layer`-only callers are unchanged.
+ */
+export function render(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  const layer: 'clinician' | 'client' =
+    options.layer ??
+    (options.audience && options.audience !== 'clinician' ? 'client' : 'clinician');
+  const showInterpretive =
+    options.showInterpretive ?? (options.audience ? options.audience === 'clinician' : true);
+  const o: RenderOptions = { ...options, layer, showInterpretive };
+  switch (model.diagram) {
+    case 'parts-map':
+      return renderPartsMap(model, o);
+    case 'mode-map':
+      return renderModeMap(model, o);
+    case 'relational-field':
+      return renderRelationalField(model, o);
+    case 'process-loop':
+      return renderLoopMap(model, o);
+    case 'timeline':
+      return renderTimeline(model, o);
+    case 'intervention-sequence':
+      return renderInterventionSeq(model, o);
+    case 'ritual':
+      return renderRitual(model, o);
+    case 'decision-nav':
+      return renderDecisionChart(model, o);
+    case 'resource-anchor':
+      return renderResourceMap(model, o);
+    case 'body-map':
+      return renderBodyMap(model, o);
+    case 'two-triangles':
+      return renderTwoTriangles(model, o);
+    case 'state-map':
+    default:
+      return renderStateMap(model, o);
+  }
 }
 
 const WIDTH = 680;
@@ -430,6 +487,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  // v0.2 §2/§3: the client/picture profiles hide the clinician-analytic surface here — the
+  // school-provenance tags and the cross-school contested-origin (⚖) marker. Default shown.
+  const showInterpretive = options.showInterpretive ?? true;
 
   const titleH = model.meta.title ? 28 : 0;
   const nodeR = 34;
@@ -586,7 +646,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       }),
     );
     const claims = schoolClaims(n.properties.provenance);
-    if (claims.length > 1) {
+    if (showInterpretive && claims.length > 1) {
       // Co-present opposed origin-claims (§G.2): mark the disagreement on the element itself
       // ("⚖ … vs …"), don't merge it into one bland slash-list. Matches the validator's
       // `provenance.node-mixed-school` and the alt-text below.
@@ -600,7 +660,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
           dataEl: `nodelabel:${n.id}`,
         }),
       );
-    } else if (n.properties.provenance?.length) {
+    } else if (showInterpretive && n.properties.provenance?.length) {
       parts.push(
         `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${p.y + nodeR + 13}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555">${esc(n.properties.provenance.join(' / '))}</text>`,
       );
@@ -639,7 +699,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     `Protectors around it: ${protectorDesc.join(', ') || 'none'}. ` +
     `Exile(s): ${exileDesc.join(', ') || 'none'}${barrier ? ', behind a dissociative barrier from Self' : ''}. ` +
     `Protectors guard the exile.` +
-    (contested.length
+    (showInterpretive && contested.length
       ? ` Origins disagree on: ${contested.join('; ')} — both claims are shown, not merged.`
       : '');
 
@@ -1175,6 +1235,10 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  // v0.2 §2/§3: the client/picture profiles hide the clinician-analytic surface (contested ⚖,
+  // as-if, provenance/confidence text) while keeping the structural loop + topology + the
+  // honest dashed border. Defaults to shown (the v0.1 + clinician behaviour).
+  const showInterpretive = options.showInterpretive ?? true;
   const nodes = model.nodes;
   const n = Math.max(1, nodes.length);
   const cx = LOOP_W / 2;
@@ -1289,8 +1353,9 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     // label (owner content — they don't enlarge the node, so the overlap invariant holds)
     // and are echoed in alt-text below.
     let labelText = getText(node.label, layer, lang);
-    if (node.properties.epistemicStatus === 'contested') labelText = `⚖ ${labelText}`;
-    if (node.properties.asIf) labelText += ' (as-if)';
+    if (showInterpretive && node.properties.epistemicStatus === 'contested')
+      labelText = `⚖ ${labelText}`;
+    if (showInterpretive && node.properties.asIf) labelText += ' (as-if)';
     parts.push(
       wrapLabel(labelText, p.x, p.y + labelDy, {
         size: 11,
@@ -1321,35 +1386,41 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   } as const;
   const extra: string[] = [];
   if (topo) extra.push(`This maintaining pattern is ${TOPO_MEANING[topo]}.`);
-  const contestedNames = nodes
-    .filter((nd) => nd.properties.epistemicStatus === 'contested')
-    .map((nd) => nodeName(nd.id));
-  if (contestedNames.length)
-    extra.push(`Contested standing (held as disputed, not settled): ${contestedNames.join('; ')}.`);
-  const interpNames = nodes
-    .filter(
-      (nd) =>
-        isInterpretive(nd.properties.epistemicStatus) &&
-        nd.properties.epistemicStatus !== 'contested',
-    )
-    .map((nd) => nodeName(nd.id));
-  if (interpNames.length)
-    extra.push(
-      `Interpretive, shown dashed (a hypothesis, less certain): ${interpNames.join('; ')}.`,
-    );
-  const asIfNames = nodes.filter((nd) => nd.properties.asIf).map((nd) => nodeName(nd.id));
-  if (asIfNames.length)
-    extra.push(`Named as-if — a metaphor, not a literal claim: ${asIfNames.join('; ')}.`);
-  const confBuckets: Record<'H' | 'M' | 'L', string[]> = { H: [], M: [], L: [] };
-  for (const nd of nodes) {
-    const c = nd.properties.confidence;
-    if (c) confBuckets[c].push(nodeName(nd.id));
+  // The standing / confidence lines are the clinician-analytic surface — hidden for the
+  // client / picture profiles (§2); the structural topology line above always shows.
+  if (showInterpretive) {
+    const contestedNames = nodes
+      .filter((nd) => nd.properties.epistemicStatus === 'contested')
+      .map((nd) => nodeName(nd.id));
+    if (contestedNames.length)
+      extra.push(
+        `Contested standing (held as disputed, not settled): ${contestedNames.join('; ')}.`,
+      );
+    const interpNames = nodes
+      .filter(
+        (nd) =>
+          isInterpretive(nd.properties.epistemicStatus) &&
+          nd.properties.epistemicStatus !== 'contested',
+      )
+      .map((nd) => nodeName(nd.id));
+    if (interpNames.length)
+      extra.push(
+        `Interpretive, shown dashed (a hypothesis, less certain): ${interpNames.join('; ')}.`,
+      );
+    const asIfNames = nodes.filter((nd) => nd.properties.asIf).map((nd) => nodeName(nd.id));
+    if (asIfNames.length)
+      extra.push(`Named as-if — a metaphor, not a literal claim: ${asIfNames.join('; ')}.`);
+    const confBuckets: Record<'H' | 'M' | 'L', string[]> = { H: [], M: [], L: [] };
+    for (const nd of nodes) {
+      const c = nd.properties.confidence;
+      if (c) confBuckets[c].push(nodeName(nd.id));
+    }
+    const confParts: string[] = [];
+    if (confBuckets.H.length) confParts.push(`high: ${confBuckets.H.join(', ')}`);
+    if (confBuckets.M.length) confParts.push(`medium: ${confBuckets.M.join(', ')}`);
+    if (confBuckets.L.length) confParts.push(`low: ${confBuckets.L.join(', ')}`);
+    if (confParts.length) extra.push(`Confidence — ${confParts.join('; ')}.`);
   }
-  const confParts: string[] = [];
-  if (confBuckets.H.length) confParts.push(`high: ${confBuckets.H.join(', ')}`);
-  if (confBuckets.M.length) confParts.push(`medium: ${confBuckets.M.join(', ')}`);
-  if (confBuckets.L.length) confParts.push(`low: ${confBuckets.L.join(', ')}`);
-  if (confParts.length) extra.push(`Confidence — ${confParts.join('; ')}.`);
 
   const altText =
     `Maintaining loop${model.meta.title ? `: ${model.meta.title}` : ''}. ` +

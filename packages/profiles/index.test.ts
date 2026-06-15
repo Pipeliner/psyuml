@@ -14,6 +14,7 @@ import {
   roleLabelsFromProfile,
   translate,
   validateProfile,
+  withinSymbolBudget,
 } from './index';
 
 /** Build a complete compat matrix (every diagram type ok) for terse fixtures. */
@@ -176,5 +177,15 @@ describe('diagram families + audience profiles (v0.2 §2)', () => {
     expect(audienceProfile('client').showInterpretive).toBe(false);
     expect(audienceProfile('picture').maxSymbolKinds).toBe(5);
     expect(() => audienceProfile('nope' as 'client')).toThrow();
+  });
+
+  it('checks the audience symbol-kind budget (graphic economy, §2)', () => {
+    // clinician has no cap → always fits
+    expect(withinSymbolBudget(20, 'clinician')).toBe(true);
+    // client cap is 6; picture cap is 5 (boundary inclusive)
+    expect(withinSymbolBudget(6, 'client')).toBe(true);
+    expect(withinSymbolBudget(7, 'client')).toBe(false);
+    expect(withinSymbolBudget(5, 'picture')).toBe(true);
+    expect(withinSymbolBudget(6, 'picture')).toBe(false);
   });
 });

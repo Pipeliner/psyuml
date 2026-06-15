@@ -806,12 +806,15 @@
       "milestone": "M11",
       "status": "in-progress",
       "impl": [
-        "packages/profiles/index.ts"
+        "packages/profiles/index.ts",
+        "packages/render/index.ts",
+        "apps/web/App.tsx"
       ],
       "tests": [
-        "packages/profiles/index.test.ts"
+        "packages/profiles/index.test.ts",
+        "packages/render/index.test.ts"
       ],
-      "notes": "v0.2 (ADR-0014, spec §2) defines three audience profiles sharing identical semantics but different visual compression: clinician (full relations + interpretation + provenance/confidence), client (plain language, capped symbols, actionable foreground), and picture (low-literacy/child; pictographic; picture symbols MUST pass the §5 comprehension gate before they are frozen). @psyuml/profiles ships AUDIENCE_PROFILES + audienceProfile(); profiles MUST NOT change the model, only its rendering (single source of truth, round-trip-safe). Still to come: the renderers + editor honor the selected profile (M13)."
+      "notes": "v0.2 (ADR-0014/0016, spec §2) defines three audience profiles sharing identical semantics but different visual compression: clinician (full relations + interpretation + provenance/confidence), client (plain language, capped symbols, actionable foreground), and picture (low-literacy/child; pictographic; picture symbols MUST pass the §5 comprehension gate before they are frozen). M11: @psyuml/profiles ships AUDIENCE_PROFILES + audienceProfile() + withinSymbolBudget(). M13 (ADR-0016): @psyuml/render gains the single render() dispatcher that resolves audience -> label layer + showInterpretive (clinician shows the analytic surface; client/picture hide the contested/as-if/confidence + cross-school provenance, keeping the structural loop, topology, exits, and the honest dashed border); the editor groups its diagram picker by family + offers the audience selector + a symbol-budget nudge. Profiles MUST NOT change the model, only rendering (proven by a render-does-not-mutate test); explicit layer/showInterpretive still win, so goldens + the CLI are unchanged. Still to come: picture-profile pictographic symbols via the M14 comprehension gate."
     },
     {
       "id": "REQ-NOTATION-TESTING",

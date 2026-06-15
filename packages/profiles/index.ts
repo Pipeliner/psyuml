@@ -483,3 +483,17 @@ export function audienceProfile(id: AudienceProfile): AudienceProfileInfo {
   if (!p) throw new Error(`unknown audience profile: ${id}`);
   return p;
 }
+
+/**
+ * Whether a diagram's distinct **symbol-kind count** fits an audience profile's graphic-economy
+ * budget (v0.2 §2: the client/picture profiles cap the symbol set for cognitive load). A profile
+ * with no `maxSymbolKinds` (clinician) always fits. This is the posture check the editor surfaces
+ * as a gentle "over budget" nudge — it never blocks; the full pictographic reduction is M14.
+ */
+export function withinSymbolBudget(
+  distinctSymbolKinds: number,
+  audience: AudienceProfile,
+): boolean {
+  const cap = audienceProfile(audience).maxSymbolKinds;
+  return cap === undefined || distinctSymbolKinds <= cap;
+}
