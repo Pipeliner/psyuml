@@ -5,18 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PsyUML</title>
     <style>
-      /* WCAG 2.2: visible focus (2.4.7) + minimum target size (2.5.8, >=24px). */
+      /* Pre-bundle baseline so the first paint already has WCAG 2.2 visible focus
+         (2.4.7) and a sane background; the full design system lives in styles.css
+         (loaded by main.tsx, ADR-0013). */
       body {
         margin: 0;
-      }
-      button,
-      select,
-      summary,
-      input {
-        min-height: 28px;
-        min-width: 28px;
-        padding: 4px 10px;
-        font-size: 14px;
+        background: #f4f6f8;
       }
       :focus-visible {
         outline: 3px solid #0072b2;

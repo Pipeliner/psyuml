@@ -1,0 +1,835 @@
+/*
+ * PsyUML editor — hand-rolled design system (no UI framework; ADR-0013).
+ *
+ * Tokens are CSS custom properties so the whole editor shares one calm, professional
+ * visual language. The accent palette is grounded in the project's colourblind-safe
+ * Okabe–Ito set (the same hues @psyuml/render uses), so the chrome and the diagrams
+ * speak the same colours. Text/UI colours are chosen for WCAG 2.2 AA contrast
+ * (>=4.5:1 body text, >=3:1 large text / UI boundaries) against their backgrounds.
+ *
+ * Layout is mobile-first: base rules target a ~360px phone with no horizontal
+ * overflow; richer multi-column structure is layered in at min-width breakpoints.
+ * Colour is never the only signal — state cues keep their text + glyph (e.g. ✖).
+ */
+
+:root {
+  /* --- Okabe–Ito accent palette (colourblind-safe) --- */
+  --oi-blue: #0072b2; /* primary */
+  --oi-blue-strong: #005a8d; /* darker blue for text/hover on light bg (AA on white) */
+  --oi-green: #009e73; /* success */
+  --oi-green-strong: #007a59; /* darker green for text on light bg (AA on white) */
+  --oi-vermillion: #d55e00; /* danger / escalation */
+  --oi-vermillion-strong: #b34d00; /* darker vermillion for text on light bg */
+  --oi-orange: #e69f00;
+  --oi-sky: #56b4e9;
+  --oi-purple: #cc79a7;
+  --oi-yellow: #f0e442;
+
+  /* --- Neutrals (slightly cool grey, calm + professional) --- */
+  --c-bg: #f4f6f8; /* app canvas */
+  --c-surface: #ffffff; /* cards / panels */
+  --c-surface-2: #f0f3f6; /* inset / subtle fill (inputs, code) */
+  --c-border: #d4dae0; /* card / control borders (>=3:1 on surface) */
+  --c-border-strong: #aeb8c2; /* stronger divider */
+  --c-text: #1b2733; /* body text (~14.5:1 on white) */
+  --c-text-muted: #51606e; /* secondary text (~6.7:1 on white — AA) */
+  --c-text-subtle: #5e6b78; /* tertiary hints (~5.7:1 on white — AA) */
+
+  /* --- Semantic roles (mapped onto Okabe–Ito) --- */
+  --c-accent: var(--oi-blue);
+  --c-accent-text: var(--oi-blue-strong);
+  --c-accent-soft: #e3f0f8; /* tinted info background */
+  --c-success: var(--oi-green);
+  --c-success-text: var(--oi-green-strong);
+  --c-danger: var(--oi-vermillion);
+  --c-danger-text: var(--oi-vermillion-strong);
+  --c-danger-soft: #fdf0e7; /* tinted warning/escalation background */
+
+  /* --- Spacing scale (4px base) --- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+
+  /* --- Radii --- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  /* --- Shadows (subtle, layered) --- */
+  --shadow-sm: 0 1px 2px rgba(16, 30, 45, 0.06);
+  --shadow-md: 0 2px 8px rgba(16, 30, 45, 0.08);
+  --shadow-lg: 0 8px 24px rgba(16, 30, 45, 0.1);
+
+  /* --- Type scale --- */
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji';
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  --fs-xs: 0.8125rem; /* 13px */
+  --fs-sm: 0.875rem; /* 14px */
+  --fs-md: 1rem; /* 16px */
+  --fs-lg: 1.125rem; /* 18px */
+  --fs-xl: 1.375rem; /* 22px */
+  --fs-2xl: 1.75rem; /* 28px */
+  --lh: 1.55;
+
+  /* --- Controls --- */
+  --control-h: 2.25rem; /* 36px base; bumped to 44px on touch below */
+  --control-pad-x: 0.625rem;
+  --focus-ring: 3px solid var(--oi-blue);
+  --focus-offset: 2px;
+}
+
+/* ---------- Reset / base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: var(--lh);
+  color: var(--c-text);
+  background: radial-gradient(1200px 600px at 100% -10%, #eaf2f8 0%, transparent 60%), var(--c-bg);
+  background-attachment: fixed;
+  /* never let a wide child force a horizontal scrollbar on the page */
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+figure {
+  margin: 0;
+}
+
+a {
+  color: var(--c-accent-text);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* WCAG 2.2: a clearly visible focus indicator (2.4.7) everywhere. */
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 3px;
+}
+
+/* ---------- App shell ---------- */
+.app {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.app__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.app__title {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--c-text);
+}
+
+.app__title::before {
+  content: '';
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.45em;
+  border-radius: 4px;
+  vertical-align: baseline;
+  /* a small Okabe–Ito mark, tying the chrome to the diagram palette */
+  background: linear-gradient(135deg, var(--oi-blue) 0%, var(--oi-green) 100%);
+}
+
+/* The standing safety note: calm, but visually distinct (role="note"). */
+.note {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: 4px solid var(--c-accent);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.note strong {
+  color: var(--c-text);
+}
+
+/* ---------- Cards / sections ---------- */
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.card--accent {
+  border-left: 4px solid var(--c-accent);
+}
+
+.section-title {
+  font-size: var(--fs-lg);
+  font-weight: 650;
+  margin-bottom: var(--sp-3);
+  color: var(--c-text);
+}
+
+.section-hint {
+  font-size: var(--fs-xs);
+  color: var(--c-text-subtle);
+  margin: var(--sp-2) 0 0;
+}
+
+.muted {
+  color: var(--c-text-muted);
+}
+
+/* ---------- Form controls ---------- */
+label {
+  font-size: var(--fs-sm);
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--c-text);
+}
+
+input[type='text'],
+input:not([type]),
+input[type='file'],
+select,
+textarea {
+  min-height: var(--control-h);
+  padding: 0.4rem var(--control-pad-x);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  max-width: 100%;
+}
+
+/* Native file inputs have a wide intrinsic min-width (button + filename) that won't
+   shrink inside a flex row — clamp it so "Open…" / "Compare with…" never overflow a
+   narrow phone. The control wraps and the input takes the remaining width. */
+input[type='file'] {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 8rem;
+  font-size: var(--fs-xs);
+}
+
+input[type='text']:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--oi-blue);
+}
+
+textarea {
+  width: 100%;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+select {
+  cursor: pointer;
+}
+
+input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  min-height: 0;
+  accent-color: var(--oi-blue);
+  vertical-align: -0.15em;
+  cursor: pointer;
+}
+
+/* Buttons — flat, calm, accessible. */
+button {
+  min-height: var(--control-h);
+  padding: 0.4rem 0.85rem;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  font-weight: 550;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--c-surface-2);
+  border-color: var(--oi-blue);
+}
+
+button:active:not(:disabled) {
+  background: #e7edf2;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary action emphasis (Save / Export-style). */
+.btn-primary:not(:disabled) {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--oi-blue-strong);
+  border-color: var(--oi-blue-strong);
+}
+
+/* Small, square-ish icon button (remove ✕, zoom +/−). */
+.btn-icon {
+  padding: 0.3rem 0.55rem;
+  min-width: var(--control-h);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* A field group: label stacked above its control. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text);
+  min-width: 0;
+}
+
+.field > input,
+.field > textarea,
+.field > select {
+  font-weight: 400;
+}
+
+.field--title {
+  max-width: 560px;
+}
+
+/* Inline label that wraps a select or file input (e.g. "Diagram <select>"). It may
+   wrap its control to a new line and shrink, so a file-picker can't overflow a phone. */
+.control {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.control > select,
+.control > input[type='file'] {
+  font-weight: 400;
+}
+
+.control > select {
+  max-width: 100%;
+}
+
+/* A checkbox + its label, kept on one line. */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* ---------- Toolbar ---------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: center;
+}
+
+/* group the file-style actions so they wrap as a block, not scattered */
+.toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.toolbar__sep {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.5rem;
+  background: var(--c-border);
+}
+
+.badge-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-success-text);
+  background: #e4f5ef;
+  border: 1px solid #b8e6d6;
+  border-radius: var(--r-pill);
+  padding: 0.15rem 0.6rem;
+}
+
+/* ---------- Status / feedback panels ---------- */
+.alert-text {
+  color: var(--c-danger-text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  margin: 0;
+}
+
+.panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel--info {
+  border-left: 4px solid var(--c-accent);
+}
+
+.panel--ok {
+  border-left: 4px solid var(--c-success);
+}
+
+.panel--error {
+  border-left: 4px solid var(--c-danger);
+}
+
+/* Escalation banner — loud but not garish (also role="alert"). */
+.panel--escalate {
+  border: 2px solid var(--c-danger);
+  background: var(--c-danger-soft);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-sm);
+}
+
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.panel__head strong {
+  margin-right: auto;
+}
+
+.panel ul,
+.list {
+  margin: var(--sp-2) 0 0;
+  padding-left: 1.15rem;
+}
+
+.list--reset {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+/* A row inside a saved-version / link list. */
+.row {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.row__grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- View controls + diagram ---------- */
+.viewbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: center;
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+.viewbar__zoom {
+  min-width: 3rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.viewbar__hint {
+  color: var(--c-text-subtle);
+}
+
+.diagram {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  overflow: auto;
+  max-height: 75vh;
+  box-shadow: var(--shadow-md);
+  /* a faint checker so transparent SVG bounds read clearly without shouting */
+  background-image:
+    linear-gradient(var(--c-surface-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--c-surface-2) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+}
+
+.diagram__canvas {
+  min-width: 100%;
+}
+
+.diagram__canvas svg {
+  display: block;
+  height: auto;
+}
+
+/* ---------- Disclosures (<details>) ---------- */
+details.disclose {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+details.disclose > summary {
+  cursor: pointer;
+  padding: var(--sp-3) var(--sp-4);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--c-text);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+details.disclose > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* a rotating chevron disclosure affordance (decorative; text remains the label) */
+details.disclose > summary::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--c-text-muted);
+  border-bottom: 2px solid var(--c-text-muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+  flex: none;
+}
+
+details.disclose[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+details.disclose > summary:hover {
+  background: var(--c-surface-2);
+}
+
+details.disclose > *:not(summary) {
+  margin: 0 var(--sp-4) var(--sp-4);
+}
+
+details.disclose > summary + * {
+  margin-top: var(--sp-1);
+}
+
+.disclose__alt {
+  font-size: var(--fs-sm);
+  color: var(--c-text);
+}
+
+/* nested per-node "more" disclosure — lighter weight, inset */
+details.disclose-inline {
+  margin-left: 1.5rem;
+  font-size: var(--fs-xs);
+}
+
+details.disclose-inline > summary {
+  cursor: pointer;
+  color: var(--c-text-muted);
+  font-weight: 600;
+  width: fit-content;
+  /* keep the secondary disclosure target comfortable (>=24px, WCAG 2.5.8 AA) */
+  padding: 0.25rem 0;
+  min-height: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.stack {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.stack--bordered {
+  margin-top: var(--sp-2);
+  max-width: 560px;
+}
+
+.form-grid {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+/* ---------- Nodes / Links editors ---------- */
+.editor-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* The add-node / add-link form: a wrapping cluster of controls. */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: center;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+}
+
+.form-row input[type='text'],
+.form-row input:not([type]) {
+  background: var(--c-surface);
+}
+
+.input--grow {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.input--sm {
+  flex: 0 1 9.5rem;
+  min-width: 0;
+}
+
+/* A single node row. */
+.node-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.node-item {
+  display: grid;
+  gap: var(--sp-2);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  box-shadow: var(--shadow-sm);
+}
+
+.node-item__main {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.node-item__label {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.node-issue {
+  font-weight: 700;
+  color: var(--c-danger-text);
+  font-size: var(--fs-md);
+}
+
+.link-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.link-item {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  font-size: var(--fs-sm);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.empty-hint {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+/* ---------- Touch: comfortable >=44px targets (WCAG 2.5.8 / 2.5.5) ---------- */
+@media (pointer: coarse) {
+  :root {
+    --control-h: 2.75rem; /* 44px */
+  }
+  input[type='checkbox'] {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+  .btn-icon {
+    min-width: 2.75rem;
+  }
+  details.disclose-inline > summary {
+    min-height: 2rem;
+    padding: 0.4rem 0;
+  }
+}
+
+/* ---------- Responsive: layer richer layout at wider widths ---------- */
+@media (min-width: 768px) {
+  .app {
+    padding: var(--sp-5);
+    gap: var(--sp-5);
+  }
+  .toolbar__sep {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app {
+    max-width: 1100px;
+  }
+}
+
+/* Below the smallest tablet, drop the decorative vertical separators so the
+   toolbar wraps cleanly without orphaned dividers on a new line. */
+@media (max-width: 767px) {
+  .toolbar__sep {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* ---------- Dark mode (nice-to-have; kept calm + AA) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #0f1620;
+    --c-surface: #18222e;
+    --c-surface-2: #202d3b;
+    --c-border: #2c3a49;
+    --c-border-strong: #3c4c5d;
+    --c-text: #e7edf3; /* ~13:1 on surface */
+    --c-text-muted: #aab8c5; /* ~7:1 on surface */
+    --c-text-subtle: #95a4b3; /* ~5.5:1 on surface */
+
+    /* lighten accents so they read on a dark surface (AA for text/large UI) */
+    --oi-blue: #4ca6dd;
+    --oi-blue-strong: #7cc2ea;
+    --oi-green: #34c79c;
+    --oi-green-strong: #5fd6b3;
+    --oi-vermillion: #f0813c;
+    --oi-vermillion-strong: #f59d66;
+
+    --c-accent: var(--oi-blue);
+    --c-accent-text: var(--oi-blue-strong);
+    --c-accent-soft: #16334a;
+    --c-success: var(--oi-green);
+    --c-success-text: var(--oi-green-strong);
+    --c-danger: var(--oi-vermillion);
+    --c-danger-text: var(--oi-vermillion-strong);
+    --c-danger-soft: #3a2417;
+  }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 100% -10%, #16263a 0%, transparent 60%), var(--c-bg);
+  }
+
+  .btn-primary:not(:disabled) {
+    color: #0b1119;
+  }
+
+  button:active:not(:disabled) {
+    background: #2a3947;
+  }
+
+  .badge-ok {
+    background: #13302a;
+    border-color: #1f5346;
+  }
+
+  /* keep the diagram surface light so the SVG ink (dark strokes) stays legible */
+  .diagram {
+    background-color: #f4f6f8;
+    background-image:
+      linear-gradient(#e7ecf1 1px, transparent 1px),
+      linear-gradient(90deg, #e7ecf1 1px, transparent 1px);
+    border-color: #2c3a49;
+  }
+}

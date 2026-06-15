@@ -181,7 +181,10 @@ export function App() {
   // edits so switching away can confirm before discarding work (eval finding).
   const [loadedJson, setLoadedJson] = useState<string>(() => serializeModel(parseModel(stateRaw)));
   const [layer, setLayer] = useState<'clinician' | 'client'>('clinician');
-  const [monochrome, setMonochrome] = useState(true);
+  // Default to colour: diagrams render in the accessible (redundant) Okabe–Ito palette out of
+  // the box; the Monochrome toggle below remains the print / extra-safe path (ADR-0013). This is
+  // the editor's initial toggle only — @psyuml/render keeps its monochrome-by-default library default.
+  const [monochrome, setMonochrome] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [school, setSchool] = useState('');
   const [compareWith, setCompareWith] = useState<PsyumlModel | null>(null);
@@ -299,58 +302,30 @@ export function App() {
   };
 
   return (
-    <main
-      style={{
-        fontFamily: 'system-ui, sans-serif',
-        padding: '1.5rem',
-        maxWidth: 860,
-        margin: '0 auto',
-      }}
-    >
-      <h1 style={{ marginBottom: 4 }}>PsyUML editor</h1>
-      <p role="note" style={{ margin: '0 0 0.5rem', color: '#444', fontSize: 14 }}>
-        Map a person's inner / relational world as a shareable, plain-language case formulation:
-        pick a diagram type, build it with the panels below, then save or export.{' '}
-        <strong>Unvalidated v0.x — not a clinical instrument.</strong> Supports, and does not
-        replace, professional care; it does not diagnose. Editing is local-first — nothing leaves
-        your device.{' '}
-        <a href="../docs/handbook.md" style={{ color: '#0072b2' }}>
-          Practitioner handbook
-        </a>
-        .
-      </p>
+    <main className="app">
+      <header className="app__header">
+        <h1 className="app__title">PsyUML editor</h1>
+        <p role="note" className="note">
+          Map a person's inner / relational world as a shareable, plain-language case formulation:
+          pick a diagram type, build it with the panels below, then save or export.{' '}
+          <strong>Unvalidated v0.x — not a clinical instrument.</strong> Supports, and does not
+          replace, professional care; it does not diagnose. Editing is local-first — nothing leaves
+          your device. <a href="../docs/handbook.md">Practitioner handbook</a>.
+        </p>
 
-      <label
-        style={{
-          display: 'block',
-          fontSize: 14,
-          fontWeight: 600,
-          margin: '0 0 1rem',
-          maxWidth: 560,
-        }}
-      >
-        Title{' '}
-        <input
-          aria-label="Diagram title"
-          placeholder="Name this formulation…"
-          value={model.meta.title ?? ''}
-          onChange={(e) => setModel(setMeta(model, { title: e.target.value }))}
-          style={{ width: '100%', padding: '4px 8px', fontWeight: 400 }}
-        />
-      </label>
+        <label className="field field--title">
+          Title
+          <input
+            aria-label="Diagram title"
+            placeholder="Name this formulation…"
+            value={model.meta.title ?? ''}
+            onChange={(e) => setModel(setMeta(model, { title: e.target.value }))}
+          />
+        </label>
+      </header>
 
-      <div
-        role="toolbar"
-        aria-label="Editor controls"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 12,
-          alignItems: 'center',
-          marginBottom: 12,
-        }}
-      >
-        <label>
+      <div role="toolbar" aria-label="Editor controls" className="toolbar">
+        <label className="control">
           Diagram{' '}
           <select
             value={example}
@@ -377,7 +352,7 @@ export function App() {
           </select>
         </label>
 
-        <label>
+        <label className="control">
           Layer{' '}
           <select
             value={layer}
@@ -388,7 +363,7 @@ export function App() {
           </select>
         </label>
 
-        <label>
+        <label className="check">
           <input
             type="checkbox"
             checked={monochrome}
@@ -397,7 +372,7 @@ export function App() {
           Monochrome
         </label>
 
-        <label>
+        <label className="control">
           School{' '}
           <select value={school} onChange={(e) => setSchool(e.target.value)}>
             <option value="">native</option>
@@ -409,7 +384,10 @@ export function App() {
           </select>
         </label>
 
-        <label title="Clinician flag: acute risk to self or others — raises an escalation banner and requires crisis resources">
+        <label
+          className="check"
+          title="Clinician flag: acute risk to self or others — raises an escalation banner and requires crisis resources"
+        >
           <input
             type="checkbox"
             checked={model.meta.safety.acuteRiskFlag}
@@ -418,7 +396,10 @@ export function App() {
           Acute risk
         </label>
 
-        <label title="Clinician flag: psychosis indicators — symbolic / reframing work needs specialist review">
+        <label
+          className="check"
+          title="Clinician flag: psychosis indicators — symbolic / reframing work needs specialist review"
+        >
           <input
             type="checkbox"
             checked={model.meta.safety.psychosisFlag}
@@ -427,131 +408,131 @@ export function App() {
           Psychosis
         </label>
 
-        <button
-          type="button"
-          title="Start a new blank diagram of the current type (your current work isn't saved unless you Save it first)"
-          onClick={() => loadModel(createEmptyModel(model.diagram), example)}
-        >
-          New (blank)
-        </button>
-        <label title="Open a saved .psyuml file to keep editing it">
-          Open…{' '}
-          <input
-            type="file"
-            accept=".psyuml,application/json"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              file
-                .text()
-                .then((text) => {
-                  const opened = parseModel(text);
-                  // Sync the diagram selector to what was opened so the dropdown isn't out of step.
-                  loadModel(opened, EXAMPLES[opened.diagram] ? opened.diagram : example);
-                })
-                .catch(() => setCompareError('Could not open that file as a .psyuml model.'));
-              e.target.value = '';
-            }}
-          />
-        </label>
-        <button
-          type="button"
-          disabled={exportBlocked}
-          title={blockReason}
-          onClick={() =>
-            downloadText(`${fileBase}.psyuml`, serializeModel(model), 'application/json')
-          }
-        >
-          Save .psyuml
-        </button>
-        <button
-          type="button"
-          disabled={exportBlocked}
-          title={blockReason}
-          onClick={() => downloadText(`${fileBase}.svg`, svg, 'image/svg+xml')}
-        >
-          Export SVG
-        </button>
-        <button
-          type="button"
-          title="Save an immutable in-session snapshot you can compare or restore"
-          onClick={() =>
-            setVersions((vs) => [
-              ...vs,
-              snapshotModel(model, `Snapshot ${vs.length + 1}`, new Date().toISOString()),
-            ])
-          }
-        >
-          Snapshot
-        </button>
-        {versions.length > 0 && (
-          <span aria-live="polite" style={{ fontSize: 13, color: '#009e73' }}>
-            ✓ {versions.length} snapshot{versions.length > 1 ? 's' : ''} saved
-          </span>
-        )}
-        <label title="Load an earlier saved .psyuml version to see what changed">
-          Compare with…{' '}
-          <input
-            type="file"
-            accept=".psyuml,application/json"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              file
-                .text()
-                .then((text) => {
-                  setCompareWith(parseModel(text));
-                  setCompareError(null);
-                })
-                .catch(() => {
-                  setCompareWith(null);
-                  setCompareError('Could not read that file as a .psyuml model.');
-                });
-            }}
-          />
-        </label>
+        <span className="toolbar__sep" aria-hidden="true" />
+
+        <div className="toolbar__group">
+          <button
+            type="button"
+            title="Start a new blank diagram of the current type (your current work isn't saved unless you Save it first)"
+            onClick={() => loadModel(createEmptyModel(model.diagram), example)}
+          >
+            New (blank)
+          </button>
+          <label className="control" title="Open a saved .psyuml file to keep editing it">
+            Open…{' '}
+            <input
+              type="file"
+              accept=".psyuml,application/json"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                file
+                  .text()
+                  .then((text) => {
+                    const opened = parseModel(text);
+                    // Sync the diagram selector to what was opened so the dropdown isn't out of step.
+                    loadModel(opened, EXAMPLES[opened.diagram] ? opened.diagram : example);
+                  })
+                  .catch(() => setCompareError('Could not open that file as a .psyuml model.'));
+                e.target.value = '';
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={exportBlocked}
+            title={blockReason}
+            onClick={() =>
+              downloadText(`${fileBase}.psyuml`, serializeModel(model), 'application/json')
+            }
+          >
+            Save .psyuml
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={exportBlocked}
+            title={blockReason}
+            onClick={() => downloadText(`${fileBase}.svg`, svg, 'image/svg+xml')}
+          >
+            Export SVG
+          </button>
+          <button
+            type="button"
+            title="Save an immutable in-session snapshot you can compare or restore"
+            onClick={() =>
+              setVersions((vs) => [
+                ...vs,
+                snapshotModel(model, `Snapshot ${vs.length + 1}`, new Date().toISOString()),
+              ])
+            }
+          >
+            Snapshot
+          </button>
+          {versions.length > 0 && (
+            <span aria-live="polite" className="badge-ok">
+              ✓ {versions.length} snapshot{versions.length > 1 ? 's' : ''} saved
+            </span>
+          )}
+          <label
+            className="control"
+            title="Load an earlier saved .psyuml version to see what changed"
+          >
+            Compare with…{' '}
+            <input
+              type="file"
+              accept=".psyuml,application/json"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                file
+                  .text()
+                  .then((text) => {
+                    setCompareWith(parseModel(text));
+                    setCompareError(null);
+                  })
+                  .catch(() => {
+                    setCompareWith(null);
+                    setCompareError('Could not read that file as a .psyuml model.');
+                  });
+              }}
+            />
+          </label>
+        </div>
       </div>
 
       {compareError && (
-        <p role="alert" style={{ color: '#d55e00', fontSize: 14 }}>
+        <p role="alert" className="alert-text">
           {compareError}
         </p>
       )}
 
       {diff && (
-        <section
-          aria-label="Changes since the loaded version"
-          style={{
-            border: '1px solid #ddd',
-            borderLeft: '4px solid #0072b2',
-            borderRadius: 8,
-            padding: '8px 12px',
-            marginBottom: 12,
-            fontSize: 14,
-          }}
-        >
-          <strong>Changes since the loaded version</strong>
-          <button
-            type="button"
-            disabled={isEmptyDiff(diff)}
-            onClick={() =>
-              downloadText(
-                `${model.diagram}-progress.svg`,
-                renderDiff(compareWith ?? model, model, { layer }).svg,
-                'image/svg+xml',
-              )
-            }
-            style={{ marginLeft: 8 }}
-          >
-            Export progress (SVG)
-          </button>
-          <button type="button" onClick={() => setCompareWith(null)} style={{ marginLeft: 8 }}>
-            clear
-          </button>
+        <section aria-label="Changes since the loaded version" className="panel panel--info">
+          <div className="panel__head">
+            <strong>Changes since the loaded version</strong>
+            <button
+              type="button"
+              disabled={isEmptyDiff(diff)}
+              onClick={() =>
+                downloadText(
+                  `${model.diagram}-progress.svg`,
+                  renderDiff(compareWith ?? model, model, { layer }).svg,
+                  'image/svg+xml',
+                )
+              }
+            >
+              Export progress (SVG)
+            </button>
+            <button type="button" onClick={() => setCompareWith(null)}>
+              clear
+            </button>
+          </div>
           {isEmptyDiff(diff) ? (
             <p style={{ margin: '6px 0 0' }}>No tracked changes.</p>
           ) : (
-            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+            <ul className="list">
               {diffLines.map((line, i) => (
                 <li key={`${i}-${line}`}>{line}</li>
               ))}
@@ -561,24 +542,12 @@ export function App() {
       )}
 
       {versions.length > 0 && (
-        <section
-          aria-label="Saved versions"
-          style={{
-            border: '1px solid #ddd',
-            borderRadius: 8,
-            padding: '8px 12px',
-            marginBottom: 12,
-            fontSize: 14,
-          }}
-        >
+        <section aria-label="Saved versions" className="panel">
           <strong>Saved versions (this session)</strong>
-          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+          <ul className="list--reset" style={{ marginTop: '0.5rem' }}>
             {versions.map((v, i) => (
-              <li
-                key={`${v.id}-${i}`}
-                style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}
-              >
-                <span style={{ flex: 1, minWidth: 0 }}>
+              <li key={`${v.id}-${i}`} className="row">
+                <span className="row__grow">
                   {v.label} · {new Date(v.at).toLocaleString()}
                 </span>
                 <button type="button" onClick={() => setCompareWith(restoreVersion(v))}>
@@ -601,18 +570,7 @@ export function App() {
       )}
 
       {escalate && (
-        <section
-          role="alert"
-          aria-label="Clinical escalation"
-          style={{
-            border: '2px solid #d55e00',
-            background: '#fff4ec',
-            borderRadius: 8,
-            padding: '8px 12px',
-            marginBottom: 12,
-            fontSize: 14,
-          }}
-        >
+        <section role="alert" aria-label="Clinical escalation" className="panel--escalate">
           <strong>⚠ Human clinical review required.</strong> A risk flag is set. This tool documents
           a formulation — it does not provide crisis care, and any AI-assisted drafting is disabled
           while a flag is active.
@@ -621,20 +579,13 @@ export function App() {
 
       <section
         aria-label="Formulation health"
-        style={{
-          border: '1px solid #ddd',
-          borderLeft: `4px solid ${report.ok ? '#009e73' : '#d55e00'}`,
-          borderRadius: 8,
-          padding: '8px 12px',
-          marginBottom: 12,
-          fontSize: 14,
-        }}
+        className={`panel ${report.ok ? 'panel--ok' : 'panel--error'}`}
       >
         <strong>Formulation health:</strong>{' '}
         {report.issues.length === 0 ? (
           <span>✓ no issues</span>
         ) : (
-          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+          <ul className="list">
             {report.issues.map((iss, i) => (
               <li key={`${iss.rule}-${i}`}>
                 <strong>
@@ -650,29 +601,29 @@ export function App() {
           </ul>
         )}
         {exportBlocked && (
-          <p style={{ margin: '6px 0 0', color: '#555' }}>Fix the errors above to export.</p>
+          <p className="muted" style={{ margin: '6px 0 0' }}>
+            Fix the errors above to export.
+          </p>
         )}
       </section>
 
-      <div
-        role="group"
-        aria-label="View controls"
-        style={{ display: 'flex', gap: 6, alignItems: 'center', margin: '4px 0', fontSize: 13 }}
-      >
-        <span style={{ color: '#555' }}>View:</span>
+      <div role="group" aria-label="View controls" className="viewbar">
+        <span className="muted">View:</span>
         <button
           type="button"
+          className="btn-icon"
           aria-label="Zoom out"
           title="Zoom out"
           onClick={() => setZoom((z) => Math.max(0.5, Math.round((z - 0.25) * 100) / 100))}
         >
           −
         </button>
-        <span aria-live="polite" style={{ minWidth: 44, textAlign: 'center' }}>
+        <span aria-live="polite" className="viewbar__zoom">
           {Math.round(zoom * 100)}%
         </span>
         <button
           type="button"
+          className="btn-icon"
           aria-label="Zoom in"
           title="Zoom in"
           onClick={() => setZoom((z) => Math.min(4, Math.round((z + 0.25) * 100) / 100))}
@@ -682,7 +633,7 @@ export function App() {
         <button type="button" onClick={() => setZoom(1)} title="Reset zoom to 100% (full size)">
           Reset
         </button>
-        <span style={{ color: '#777' }}>
+        <span className="viewbar__hint">
           {draggable
             ? 'drag a node to reposition it'
             : zoom > 1
@@ -690,24 +641,15 @@ export function App() {
               : 'zoom in to enlarge a dense diagram'}
         </span>
       </div>
-      <section
-        aria-label={`${model.diagram} diagram`}
-        style={{
-          border: '1px solid #ddd',
-          borderRadius: 12,
-          padding: '1rem',
-          overflow: 'auto',
-          maxHeight: '75vh',
-        }}
-      >
+      <section aria-label={`${model.diagram} diagram`} className="diagram">
         <div
           ref={diagramRef}
+          className="diagram__canvas"
           onPointerDown={onDiagramPointerDown}
           onPointerMove={onDiagramPointerMove}
           onPointerUp={onDiagramPointerUp}
           style={{
             width: `${zoom * 100}%`,
-            minWidth: '100%',
             touchAction: draggable ? 'none' : undefined,
             cursor: draggable ? 'grab' : undefined,
           }}
@@ -715,14 +657,14 @@ export function App() {
         />
       </section>
 
-      <details style={{ marginTop: 12 }}>
+      <details className="disclose">
         <summary>Text description (screen-reader friendly)</summary>
-        <p style={{ fontSize: 14 }}>{altText}</p>
+        <p className="disclose__alt">{altText}</p>
       </details>
 
-      <details style={{ marginTop: 12 }}>
+      <details className="disclose">
         <summary>Edit as text (DSL) — type, then click “Apply text” to update</summary>
-        <p style={{ fontSize: 13, color: '#555', margin: '6px 0 0' }}>
+        <p className="section-hint">
           Typing here does <strong>not</strong> change the diagram until you click{' '}
           <strong>Apply text</strong> below.
         </p>
@@ -733,15 +675,9 @@ export function App() {
           rows={12}
           spellCheck={false}
           aria-label="PsyUML text DSL"
-          style={{
-            width: '100%',
-            boxSizing: 'border-box',
-            fontFamily: 'ui-monospace, monospace',
-            fontSize: 12,
-            marginTop: 6,
-          }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}
         />
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
+        <div className="row" style={{ marginTop: '0.5rem' }}>
           <button
             type="button"
             aria-label="Apply text — parse the DSL and update the diagram"
@@ -757,17 +693,17 @@ export function App() {
             Apply text
           </button>
           {dslError && (
-            <span role="alert" style={{ color: '#d55e00', fontSize: 13 }}>
+            <span role="alert" className="alert-text">
               {dslError}
             </span>
           )}
         </div>
       </details>
 
-      <details style={{ marginTop: 12 }}>
+      <details className="disclose">
         <summary>Diagram details — disclaimer, crisis line</summary>
-        <div style={{ display: 'grid', gap: 8, marginTop: 8, maxWidth: 560 }}>
-          <label style={{ display: 'grid', gap: 2, fontSize: 14 }}>
+        <div className="stack stack--bordered">
+          <label className="field">
             Disclaimer (required to share with a client)
             <textarea
               aria-label="Diagram disclaimer"
@@ -776,7 +712,7 @@ export function App() {
               onChange={(e) => setModel(setMeta(model, { disclaimer: e.target.value }))}
             />
           </label>
-          <label style={{ display: 'grid', gap: 2, fontSize: 14 }}>
+          <label className="field">
             Crisis resources (required on a crisis chart)
             <input
               aria-label="Crisis resources"
@@ -787,34 +723,24 @@ export function App() {
         </div>
       </details>
 
-      <section aria-label="Nodes" style={{ marginTop: 16 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 6 }}>
+      <section aria-label="Nodes" className="card editor-section">
+        <h2 className="section-title">
           Nodes — add, rename in your words, mark how sure you are, hide, or remove
         </h2>
-        <div
-          role="group"
-          aria-label="Add node"
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 6,
-            alignItems: 'center',
-            marginBottom: 8,
-          }}
-        >
+        <div role="group" aria-label="Add node" className="form-row">
           <input
+            className="input--grow"
             aria-label="New node label"
             placeholder="label (clinician)…"
             value={newNodeLabel}
             onChange={(e) => setNewNodeLabel(e.target.value)}
-            style={{ padding: '4px 8px' }}
           />
           <input
+            className="input--grow"
             aria-label="New node client-language label (optional)"
             placeholder="plain words (client, optional)…"
             value={newNodeClient}
             onChange={(e) => setNewNodeClient(e.target.value)}
-            style={{ padding: '4px 8px' }}
           />
           <select
             aria-label="New node kind"
@@ -828,6 +754,7 @@ export function App() {
             ))}
           </select>
           <input
+            className="input--sm"
             aria-label="New node stereotype (optional)"
             placeholder={
               stereotypeHints.length ? `e.g. ${stereotypeHints[0]}` : 'stereotype (optional)'
@@ -835,7 +762,6 @@ export function App() {
             list="stereotype-hints"
             value={newNodeStereo}
             onChange={(e) => setNewNodeStereo(e.target.value)}
-            style={{ padding: '4px 8px', width: 150 }}
           />
           <datalist id="stereotype-hints">
             {stereotypeHints.map((s) => (
@@ -843,11 +769,11 @@ export function App() {
             ))}
           </datalist>
           <input
+            className="input--sm"
             aria-label="New node provenance (optional, comma-separated schools)"
             placeholder="origin/school (optional)"
             value={newNodeProvenance}
             onChange={(e) => setNewNodeProvenance(e.target.value)}
-            style={{ padding: '4px 8px', width: 150 }}
           />
           <button
             type="button"
@@ -873,32 +799,32 @@ export function App() {
           </button>
         </div>
         {model.diagram === 'state-map' && (
-          <p style={{ fontSize: 13, color: '#555', margin: '0 0 8px' }}>
+          <p className="section-hint" style={{ marginTop: 0 }}>
             Tip: the State Map draws <strong>states placed in a band</strong>. To show “what helps”,
             add it as an <strong>{EDGE_LABELS.exit}</strong> between states (below), not as a loose
             node.
           </p>
         )}
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+        <ul className="node-list">
           {model.nodes.map((n) => {
             const nodeIssues = report.issues.filter((iss) => iss.nodeId === n.id);
             return (
-              <li key={n.id} style={{ display: 'grid', gap: 4 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <li key={n.id} className="node-item">
+                <div className="node-item__main">
                   {nodeIssues.length > 0 && (
                     <span
+                      className="node-issue"
                       title={nodeIssues.map((iss) => iss.message).join('; ')}
                       aria-label={`${nodeIssues.length} issue(s) on ${n.id}`}
-                      style={{ fontWeight: 700 }}
                     >
                       {nodeIssues.some((iss) => iss.severity === 'error') ? '✖' : '⚠'}
                     </span>
                   )}
                   <input
+                    className="node-item__label"
                     aria-label={`Label for node ${n.id}`}
                     value={getText(n.label, layer)}
                     onChange={(e) => setModel(setNodeLabel(model, n.id, e.target.value, layer))}
-                    style={{ flex: 1, minWidth: 0, padding: '4px 8px' }}
                   />
                   <select
                     aria-label={`Certainty for node ${n.id}`}
@@ -915,7 +841,7 @@ export function App() {
                       </option>
                     ))}
                   </select>
-                  <label style={{ whiteSpace: 'nowrap' }}>
+                  <label className="check">
                     <input
                       type="checkbox"
                       checked={!n.hidden}
@@ -925,6 +851,7 @@ export function App() {
                   </label>
                   <button
                     type="button"
+                    className="btn-icon"
                     aria-label={`Remove node ${n.id}`}
                     title="Remove this node"
                     onClick={() => setModel(removeNode(model, n.id))}
@@ -932,10 +859,10 @@ export function App() {
                     ✕
                   </button>
                 </div>
-                <details style={{ marginLeft: 18, fontSize: 13 }}>
-                  <summary style={{ color: '#555' }}>more — plain words, shape, origin</summary>
-                  <div style={{ display: 'grid', gap: 4, marginTop: 4, maxWidth: 480 }}>
-                    <label style={{ display: 'grid', gap: 2 }}>
+                <details className="disclose-inline">
+                  <summary>more — plain words, shape, origin</summary>
+                  <div className="form-grid" style={{ maxWidth: 480 }}>
+                    <label className="field">
                       Plain-language (client) label
                       <input
                         aria-label={`Client label for node ${n.id}`}
@@ -946,7 +873,7 @@ export function App() {
                         }
                       />
                     </label>
-                    <label style={{ display: 'grid', gap: 2 }}>
+                    <label className="field">
                       Stereotype (shape/role — e.g. {stereotypeHints[0] ?? 'manager'})
                       <input
                         aria-label={`Stereotype for node ${n.id}`}
@@ -955,7 +882,7 @@ export function App() {
                         onChange={(e) => setModel(setNodeStereotype(model, n.id, e.target.value))}
                       />
                     </label>
-                    <label style={{ display: 'grid', gap: 2 }}>
+                    <label className="field">
                       Origin / school (comma-separated; co-present claims are shown, not merged)
                       <input
                         aria-label={`Provenance for node ${n.id}`}
@@ -972,18 +899,19 @@ export function App() {
         </ul>
       </section>
 
-      <section aria-label="Links" style={{ marginTop: 16 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 6 }}>Links — connect two nodes</h2>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
+      <section aria-label="Links" className="card editor-section">
+        <h2 className="section-title">Links — connect two nodes</h2>
+        <ul className="link-list">
           {model.edges.map((e) => (
-            <li key={e.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14 }}>
-              <span style={{ flex: 1, minWidth: 0 }}>
+            <li key={e.id} className="link-item">
+              <span className="row__grow">
                 {nodeName(e.source)} —{e.kind}→ {nodeName(e.target)}
                 {e.label ? ` (${getText(e.label, layer)})` : ''}
                 {e.trigger ? ` ⚑${getText(e.trigger, layer)}` : ''}
               </span>
               <button
                 type="button"
+                className="btn-icon"
                 aria-label={`Remove link ${e.id}`}
                 title="Remove this link"
                 onClick={() => setModel(removeEdge(model, e.id))}
@@ -992,15 +920,9 @@ export function App() {
               </button>
             </li>
           ))}
-          {model.edges.length === 0 && (
-            <li style={{ fontSize: 14, color: '#555' }}>No links yet.</li>
-          )}
+          {model.edges.length === 0 && <li className="empty-hint">No links yet.</li>}
         </ul>
-        <div
-          role="group"
-          aria-label="Add link"
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 8 }}
-        >
+        <div role="group" aria-label="Add link" className="form-row">
           <select
             aria-label="Link from"
             value={linkFrom}
@@ -1033,14 +955,14 @@ export function App() {
             ))}
           </select>
           <input
+            className="input--sm"
             aria-label="Link label (optional)"
             placeholder={linkIsTrigger ? 'trigger word…' : 'label (optional)'}
             value={linkLabel}
             onChange={(e) => setLinkLabel(e.target.value)}
-            style={{ padding: '4px 8px', width: 150 }}
           />
           <label
-            style={{ whiteSpace: 'nowrap', fontSize: 13 }}
+            className="check"
             title="Mark this label as a ⚑ trigger / precipitant (drawn on the arrow)"
           >
             <input
