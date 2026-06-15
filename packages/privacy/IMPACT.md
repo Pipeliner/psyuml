@@ -4,7 +4,7 @@
 (M8 privacy guardrail) — `deidentify(model, { terms })` → redacted copy + a report. The
 PII-minimization step the bounded AI-assist runs pre-extraction, and the basis for a
 de-identified interoperability export.
-**Status:** active (M8 — regex PII (email/phone/link) + caller-supplied name terms)
+**Status:** implemented (M8 — regex PII redaction + role-scoped export + audit + consent field)
 **Spec anchor / REQ:** REQ-PRIVACY (Source 3 C8; ARCH §11)
 
 ## Upstream (this depends on)
@@ -18,8 +18,8 @@ de-identified interoperability export.
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Workspace manifest (`@psyuml/privacy`) | — | workspace resolution | — | low |
-| `index.ts` | `deidentify` — scrubs node/edge/band/trigger labels + title (emails, links, phone-like runs, caller terms); leaves clinical boilerplate (disclaimer, crisis line, ritual framing) intact | `@psyuml/model` | cli, ai (M8), interop (M9) | REQ-PRIVACY | low |
-| `index.test.ts` | Unit tests (email/phone/url/term redaction, boilerplate preserved, client layer scrubbed, no-mutation) | `index.ts` | CI `test` | REQ-PRIVACY | low |
+| `index.ts` | `deidentify` — scrubs node/edge/band/trigger labels + title (emails, links, phone-like runs, caller terms); leaves clinical boilerplate (disclaimer, crisis line, ritual framing) intact. `scopeToLayer(model,layer)` — **role-scoped export**: collapse to one layer (client never leaks clinician wording; drops `hidden` nodes + incident edges). `redactionAudit(redactions)` — an auditable de-identification summary. Consent is a first-class model field (`meta.consent`), gated in the AI pipeline + at the CLI share step. | `@psyuml/model` | cli, ai (M8), interop (M9) | REQ-PRIVACY | low |
+| `index.test.ts` | Unit tests (email/phone/url/term redaction, boilerplate preserved, client layer scrubbed, no-mutation; `scopeToLayer` role-scoping + hidden-drop; `redactionAudit`) | `index.ts` | CI `test` | REQ-PRIVACY | low |
 
 ## Change checklist
 - [ ] Detection is deliberately conservative (no NER); names need explicit `terms`. Document any new detector and its false-positive risk.

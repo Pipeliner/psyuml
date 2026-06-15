@@ -115,6 +115,29 @@ describe('psyuml cli', () => {
     expect(io.stderr.join('\n')).toContain('matched nothing: Nonexistent');
   });
 
+  it('redact --for client role-scopes the export and reports it', () => {
+    const io = fakeIO({
+      'dual.psyuml': JSON.stringify({
+        version: '0.1.0',
+        diagram: 'state-map',
+        meta: { disclaimer: 'x' },
+        nodes: [
+          {
+            id: 'a',
+            kind: 'state',
+            label: { clinician: { en: 'Hypervigilant (clinical)' }, client: { en: 'On edge' } },
+          },
+        ],
+      }),
+    });
+    const code = run(['redact', 'dual.psyuml', '--for', 'client', '-o', 'client.psyuml'], io);
+    expect(code).toBe(0);
+    expect(io.written['client.psyuml']).toContain('On edge');
+    expect(io.written['client.psyuml']).not.toContain('clinical'); // clinician wording dropped
+    expect(io.stderr.join('\n')).toContain('scoped to client layer');
+    expect(io.stderr.join('\n')).toContain('no client consent recorded'); // share-time consent check
+  });
+
   it('template renders a blank printable scaffold (no original labels)', () => {
     const io = fakeIO();
     const code = run(['template', 'examples/state-map.psyuml', '-o', 'blank.svg'], io);

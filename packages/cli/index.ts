@@ -18,7 +18,7 @@ import { parseModel, PSYUML_MODEL_VERSION, serializeModel, type PsyumlModel } fr
 import { validate } from '@psyuml/validate';
 import { validateProfile } from '@psyuml/profiles';
 import { fromDSL, toDSL } from '@psyuml/grammar';
-import { deidentify } from '@psyuml/privacy';
+import { deidentify, redactionAudit, scopeToLayer } from '@psyuml/privacy';
 import {
   blankTemplate,
   renderBodyMap,
@@ -69,7 +69,7 @@ usage:
   psyuml lint <files...> [--layer clinician|client]
   psyuml render <file> [--layer clinician|client] [--color] [-o out.svg]
   psyuml convert <file> [-o out]      # JSON .psyuml <-> text DSL (auto-detected)
-  psyuml redact <file> [--term NAME ...] [-o out]   # de-identify before export
+  psyuml redact <file> [--term NAME ...] [--for clinician|client] [-o out]   # de-identify (+ role-scope) before export
   psyuml template <file> [--layer L] [--color] [-o out.svg]   # blank printable scaffold
   psyuml lint-profile <files...>      # validate a §K extension profile (JSON)
   psyuml help | version
@@ -109,6 +109,8 @@ interface Args {
   out?: string;
   color: boolean;
   terms: string[];
+  /** `--for <layer>`: role-scope a redacted export to a single layer (drops the other). */
+  scope?: Layer;
 }
 
 function parseArgs(args: string[]): Args {
@@ -117,16 +119,18 @@ function parseArgs(args: string[]): Args {
   let out: string | undefined;
   let color = false;
   const terms: string[] = [];
+  let scope: Layer | undefined;
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
     if (a === '--layer') layer = args[(i += 1)] === 'client' ? 'client' : 'clinician';
+    else if (a === '--for') scope = args[(i += 1)] === 'client' ? 'client' : 'clinician';
     else if (a === '-o' || a === '--out') out = args[(i += 1)];
     else if (a === '--term') terms.push(args[(i += 1)] ?? '');
     else if (a === '--color') color = true;
     else if (a === '--mono' || a === '--monochrome') color = false;
     else if (!a.startsWith('-')) files.push(a);
   }
-  return { files, layer, out, color, terms };
+  return { files, layer, out, color, terms, scope };
 }
 
 function cmdLint(args: string[], io: CliIO): number {
@@ -209,9 +213,9 @@ function cmdConvert(args: string[], io: CliIO): number {
 }
 
 function cmdRedact(args: string[], io: CliIO): number {
-  const { files, out, terms } = parseArgs(args);
+  const { files, out, terms, scope } = parseArgs(args);
   if (files.length !== 1) {
-    io.err('usage: psyuml redact <file> [--term NAME ...] [-o out]');
+    io.err('usage: psyuml redact <file> [--term NAME ...] [--for clinician|client] [-o out]');
     return 2;
   }
   let model: PsyumlModel;
@@ -221,7 +225,10 @@ function cmdRedact(args: string[], io: CliIO): number {
     io.err(`${files[0]}: ${msg(e)}`);
     return 1;
   }
-  const { model: clean, redactions } = deidentify(model, { terms });
+  const { model: deident, redactions } = deidentify(model, { terms });
+  // Optional role-scoped export: collapse to one layer (drops the other layer's wording,
+  // and for the client also drops hidden nodes) — REQ-PRIVACY role-scoped export.
+  const clean = scope ? scopeToLayer(deident, scope) : deident;
   const json = serializeModel(clean);
   if (out) {
     io.writeFile(out, json);
@@ -229,7 +236,15 @@ function cmdRedact(args: string[], io: CliIO): number {
   } else {
     io.out(json);
   }
-  io.err(`redacted ${redactions.length} item(s)`);
+  const audit = redactionAudit(redactions);
+  io.err(`redacted ${audit.total} item(s)${scope ? ` · scoped to ${scope} layer` : ''}`);
+  for (const line of audit.lines) io.err(`  ${line}`); // de-identification audit trail
+  // Consent is a share-time concern (§L.2-r5): when preparing a client artifact, confirm consent.
+  if (scope === 'client' && model.meta.consent?.obtained !== true) {
+    io.err(
+      'note: no client consent recorded (meta.consent.obtained) — confirm consent before sharing.',
+    );
+  }
   // Surface a --term that matched nothing, so a misspelled/ill-formed term can't masquerade
   // as a successful de-identification (defense-in-depth for the privacy guarantee).
   const matchedTerms = new Set(

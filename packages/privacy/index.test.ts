@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseModel } from '@psyuml/model';
-import { deidentify } from './index';
+import { deidentify, redactionAudit, scopeToLayer } from './index';
 
 const make = (clinician: string, opts: Record<string, unknown> = {}) =>
   parseModel({
@@ -80,5 +80,71 @@ describe('deidentify', () => {
     const { model } = deidentify(m);
     expect(() => parseModel(model)).not.toThrow();
     expect(JSON.stringify(m)).toBe(snap);
+  });
+});
+
+describe('redactionAudit', () => {
+  it('summarizes removals into an auditable record', () => {
+    const { redactions } = deidentify(make('jo@x.io and +1 (555) 123-4567'));
+    const audit = redactionAudit(redactions);
+    expect(audit.total).toBe(redactions.length);
+    expect(audit.byKind.email).toBe(1);
+    expect(audit.byKind.phone).toBe(1);
+    expect(audit.lines.length).toBe(redactions.length);
+    expect(audit.lines.every((l) => /redacted$/.test(l))).toBe(true);
+  });
+});
+
+describe('scopeToLayer (role-scoped export)', () => {
+  const dual = parseModel({
+    version: '0.1.0',
+    diagram: 'state-map',
+    language: 'en',
+    meta: { disclaimer: 'x' },
+    nodes: [
+      {
+        id: 'a',
+        kind: 'state',
+        label: { clinician: { en: 'Hypervigilant (clinical)' }, client: { en: 'On edge' } },
+      },
+      { id: 'b', kind: 'state', label: { clinician: { en: 'Clinician-only note' } } },
+      {
+        id: 'h',
+        kind: 'state',
+        hidden: true,
+        label: { clinician: { en: 'Secret' }, client: { en: 'Secret' } },
+      },
+    ],
+    edges: [{ id: 'e', kind: 'sequential', source: 'a', target: 'h' }],
+  });
+
+  it('client scope keeps only client text and never leaks clinician wording', () => {
+    const scoped = scopeToLayer(dual, 'client');
+    const a = scoped.nodes.find((n) => n.id === 'a');
+    expect(a?.label.clinician.en).toBe('On edge'); // collapsed to the client text
+    expect(JSON.stringify(scoped)).not.toContain('clinical');
+    // a node with no client label is masked, not leaked from the clinician layer
+    expect(scoped.nodes.find((n) => n.id === 'b')?.label.clinician.en).toBe('(not shared)');
+    expect(JSON.stringify(scoped)).not.toContain('Clinician-only note');
+  });
+
+  it('client scope drops hidden nodes and their incident edges', () => {
+    const scoped = scopeToLayer(dual, 'client');
+    expect(scoped.nodes.some((n) => n.id === 'h')).toBe(false);
+    expect(scoped.edges.length).toBe(0); // the edge into the hidden node is gone
+  });
+
+  it('clinician scope keeps clinician text and hidden nodes', () => {
+    const scoped = scopeToLayer(dual, 'clinician');
+    expect(scoped.nodes.find((n) => n.id === 'a')?.label.clinician.en).toBe(
+      'Hypervigilant (clinical)',
+    );
+    expect(scoped.nodes.some((n) => n.id === 'h')).toBe(true);
+  });
+
+  it('returns a valid model and never mutates the input', () => {
+    const snap = JSON.stringify(dual);
+    expect(() => parseModel(scopeToLayer(dual, 'client'))).not.toThrow();
+    expect(JSON.stringify(dual)).toBe(snap);
   });
 });

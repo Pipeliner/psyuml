@@ -156,6 +156,13 @@ export function toDSL(model: PsyumlModel): string {
   if (model.meta.title) lines.push(`title ${q(model.meta.title)}`);
   if (model.meta.disclaimer) lines.push(`disclaimer ${q(model.meta.disclaimer)}`);
   if (model.meta.crisisResources) lines.push(`crisis ${q(model.meta.crisisResources)}`);
+  if (model.meta.consent) {
+    let l = 'consent';
+    if (model.meta.consent.obtained) l += ' obtained=true';
+    if (model.meta.consent.scope !== undefined) l += ` scope=${q(model.meta.consent.scope)}`;
+    if (model.meta.consent.date !== undefined) l += ` date=${q(model.meta.consent.date)}`;
+    lines.push(l);
+  }
   if (model.meta.ritual) {
     let l = 'ritual';
     if (model.meta.ritual.framing !== undefined) l += ` framing=${q(model.meta.ritual.framing)}`;
@@ -202,7 +209,44 @@ export function toDSL(model: PsyumlModel): string {
 
 // ---- parse ---------------------------------------------------------------------------
 
-/** Parse the PsyUML text DSL back into a validated model (throws on invalid input). */
+/** Statement keywords, for a friendly "unknown statement" hint. */
+const KEYWORDS = [
+  'diagram',
+  'lang',
+  'version',
+  'title',
+  'disclaimer',
+  'crisis',
+  'consent',
+  'flag',
+  'ritual',
+  'band',
+  'node',
+  'edge',
+] as const;
+
+/** Format a zod-style validation error as readable `path: message` lines (no raw issue dump). */
+function friendlyModelError(e: unknown): string | undefined {
+  if (
+    e &&
+    typeof e === 'object' &&
+    'issues' in e &&
+    Array.isArray((e as { issues: unknown }).issues)
+  ) {
+    const issues = (e as { issues: { path?: (string | number)[]; message: string }[] }).issues;
+    return issues
+      .map((i) => `  - ${(i.path ?? []).join('.') || '(root)'}: ${i.message}`)
+      .join('\n');
+  }
+  return undefined;
+}
+
+/**
+ * Parse the PsyUML text DSL back into a validated model. On a malformed line it throws a
+ * friendly, line-numbered error (with the offending line and, for an unknown keyword, the
+ * valid set); a model that parses but fails validation is reported as readable `path: message`
+ * lines rather than a raw zod dump — so a non-programmer can fix it (REQ-TEXT-DSL).
+ */
 export function fromDSL(text: string): PsyumlModel {
   const obj: Record<string, unknown> = {};
   const meta: Record<string, unknown> = {};
@@ -213,14 +257,19 @@ export function fromDSL(text: string): PsyumlModel {
   let version = DEFAULT_VERSION;
   let language = 'en';
 
-  for (const raw of text.split('\n')) {
-    const line = raw.trim();
+  const rawLines = text.split('\n');
+  for (let ln = 0; ln < rawLines.length; ln += 1) {
+    const line = rawLines[ln].trim();
     if (!line || line.startsWith('#')) continue;
+    const fail = (m: string): never => {
+      throw new Error(`PsyUML DSL, line ${ln + 1}: ${m}\n  > ${line}`);
+    };
     const toks = splitTokens(line);
     const kw = toks[0];
 
     switch (kw) {
       case 'diagram':
+        if (!toks[1]) fail('`diagram` needs a type, e.g. `diagram state-map`.');
         obj.diagram = toks[1];
         break;
       case 'lang':
@@ -238,9 +287,18 @@ export function fromDSL(text: string): PsyumlModel {
       case 'crisis':
         meta.crisisResources = unq(toks[1] ?? '');
         break;
+      case 'consent': {
+        const o = parseOpts(toks.slice(1));
+        const c: Record<string, unknown> = { obtained: o.obtained === 'true' };
+        if (o.scope !== undefined) c.scope = o.scope;
+        if (o.date !== undefined) c.date = o.date;
+        meta.consent = c;
+        break;
+      }
       case 'flag':
         if (toks[1] === 'acute') safety.acuteRiskFlag = true;
         else if (toks[1] === 'psychosis') safety.psychosisFlag = true;
+        else fail('`flag` takes `acute` or `psychosis`.');
         break;
       case 'ritual': {
         const o = parseOpts(toks.slice(1));
@@ -251,17 +309,23 @@ export function fromDSL(text: string): PsyumlModel {
         break;
       }
       case 'band': {
+        if (!toks[1]) fail('`band` needs an id, e.g. `band ventral order=0 label="…"`.');
         const o = parseOpts(toks.slice(2));
+        if (o.order === undefined) fail(`band "${toks[1]}" needs order=<n>, e.g. order=0.`);
         const b: Record<string, unknown> = {
           id: toks[1],
           label: readLabel(o, language, 'label', 'client', 'labeljson'),
         };
-        if (o.order !== undefined) b.order = Number(o.order);
+        b.order = Number(o.order);
+        if (Number.isNaN(b.order))
+          fail(`band "${toks[1]}" order must be a number, got "${o.order}".`);
         if (o.pattern !== undefined) b.pattern = o.pattern;
         bands.push(b);
         break;
       }
       case 'node': {
+        if (!toks[1] || !toks[2])
+          fail('`node` needs an id and a kind, e.g. `node calm state label="Calm"`.');
         const o = parseOpts(toks.slice(3));
         const node: Record<string, unknown> = { id: toks[1], kind: toks[2] };
         if (o.stereotype !== undefined) node.stereotype = o.stereotype;
@@ -278,6 +342,10 @@ export function fromDSL(text: string): PsyumlModel {
         break;
       }
       case 'edge': {
+        if (!toks[1] || !toks[2] || !toks[3] || !toks[4])
+          fail(
+            '`edge` needs id, source, kind, target, e.g. `edge e1 calm sequential anxious label="…"`.',
+          );
         const o = parseOpts(toks.slice(5));
         const edge: Record<string, unknown> = {
           id: toks[1],
@@ -296,7 +364,7 @@ export function fromDSL(text: string): PsyumlModel {
         break;
       }
       default:
-        throw new Error(`Unknown PsyUML DSL statement: "${kw}"`);
+        fail(`unknown statement "${kw}". Expected one of: ${KEYWORDS.join(', ')}.`);
     }
   }
 
@@ -307,5 +375,11 @@ export function fromDSL(text: string): PsyumlModel {
   obj.bands = bands;
   obj.nodes = nodes;
   obj.edges = edges;
-  return parseModel(obj);
+  try {
+    return parseModel(obj);
+  } catch (e) {
+    const friendly = friendlyModelError(e);
+    if (friendly) throw new Error(`PsyUML DSL: the model is not valid:\n${friendly}`);
+    throw e;
+  }
 }

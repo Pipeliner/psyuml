@@ -153,6 +153,14 @@ export const Meta = z
     title: z.string().optional(),
     disclaimer: z.string().optional(),
     crisisResources: z.string().optional(),
+    /** Recorded client consent to share/use this formulation (privacy + §L.2-r5 consent ethos). */
+    consent: z
+      .object({
+        obtained: z.boolean().default(false),
+        scope: z.string().optional(),
+        date: z.string().optional(),
+      })
+      .optional(),
     /** Ritual diagrams must carry honest non-medical framing + a secular variant (spec §F, §L.2-r3). */
     ritual: z
       .object({

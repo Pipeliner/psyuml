@@ -15,7 +15,7 @@
  *
  * Traceability: REQ-PRIVACY (Source 3 C8; ARCH §11).
  */
-import { parseModel, type Label, type PsyumlModel } from '@psyuml/model';
+import { getText, parseModel, type Label, type PsyumlModel } from '@psyuml/model';
 
 export type RedactionKind = 'email' | 'phone' | 'url' | 'term';
 
@@ -129,4 +129,56 @@ export function deidentify(model: PsyumlModel, options: DeidentifyOptions = {}):
   });
 
   return { model: parseModel(clone), redactions };
+}
+
+/**
+ * Role-scoped export: reduce every label to a single layer's text so the *other* layer's
+ * wording can't leak in a shared artifact (REQ-PRIVACY). For `'client'` it reads ONLY the
+ * client text (never falling back to clinician wording — an absent client label becomes
+ * `(not shared)`) and drops progressive-reveal `hidden` nodes and their incident edges
+ * (content not yet meant for the client). For `'clinician'` it keeps the clinician text.
+ * The result is a valid model; the original is never mutated. Pair with `deidentify` for a
+ * "prepare to share with the client" step.
+ */
+export function scopeToLayer(model: PsyumlModel, layer: 'clinician' | 'client'): PsyumlModel {
+  const lang = model.language || 'en';
+  const collapse = (label: Label): Label => {
+    const text =
+      layer === 'client'
+        ? (label.client?.[lang] ?? Object.values(label.client ?? {})[0] ?? '(not shared)')
+        : getText(label, 'clinician', lang);
+    return { clinician: { [lang]: text } };
+  };
+  const clone: PsyumlModel = JSON.parse(JSON.stringify(model));
+  const keptNodes = layer === 'client' ? clone.nodes.filter((n) => !n.hidden) : clone.nodes;
+  const keptIds = new Set(keptNodes.map((n) => n.id));
+  clone.bands = clone.bands.map((b) => ({ ...b, label: collapse(b.label) }));
+  clone.nodes = keptNodes.map((n) => ({ ...n, label: collapse(n.label) }));
+  clone.edges = clone.edges
+    .filter((e) => keptIds.has(e.source) && keptIds.has(e.target))
+    .map((e) => {
+      const next = { ...e };
+      if (e.label) next.label = collapse(e.label);
+      if (e.trigger) next.trigger = collapse(e.trigger);
+      return next;
+    });
+  return parseModel(clone);
+}
+
+export interface RedactionAudit {
+  total: number;
+  byKind: Record<RedactionKind, number>;
+  /** One human-readable line per removal — a de-identification audit trail to persist/log. */
+  lines: string[];
+}
+
+/** Summarize a de-identification's removals into an auditable record (REQ-PRIVACY audit log). */
+export function redactionAudit(redactions: Redaction[]): RedactionAudit {
+  const byKind: Record<RedactionKind, number> = { email: 0, phone: 0, url: 0, term: 0 };
+  for (const r of redactions) byKind[r.kind] += 1;
+  return {
+    total: redactions.length,
+    byKind,
+    lines: redactions.map((r) => `${r.path}: ${r.kind} redacted`),
+  };
 }

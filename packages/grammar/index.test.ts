@@ -97,4 +97,53 @@ describe('grammar specifics', () => {
   it('throws on an unknown statement', () => {
     expect(() => fromDSL('wibble foo bar')).toThrow();
   });
+
+  it('round-trips a recorded consent block', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'state-map',
+      meta: { disclaimer: 'x', consent: { obtained: true, scope: 'share with client' } },
+      nodes: [{ id: 'a', kind: 'state', label: { clinician: { en: 'A' } } }],
+    });
+    const dsl = toDSL(m);
+    expect(dsl).toContain('consent obtained=true');
+    expect(fromDSL(dsl)).toEqual(m);
+  });
+});
+
+describe('friendly parse errors (REQ-TEXT-DSL)', () => {
+  it('names the line number and the offending line', () => {
+    expect(() => fromDSL('diagram state-map\nwibble foo')).toThrow(/line 2/);
+  });
+
+  it('lists the valid statements on an unknown keyword', () => {
+    expect(() => fromDSL('wibble')).toThrow(/Expected one of:.*node/);
+  });
+
+  it('explains a node missing its kind', () => {
+    expect(() => fromDSL('diagram state-map\nnode lonely')).toThrow(/needs an id and a kind/);
+  });
+
+  it('explains an edge missing endpoints', () => {
+    expect(() => fromDSL('diagram state-map\nedge e1 a sequential')).toThrow(
+      /needs id, source, kind, target/,
+    );
+  });
+
+  it('explains a band missing its order', () => {
+    expect(() => fromDSL('diagram state-map\nband b label="B"')).toThrow(/needs order=/);
+  });
+
+  it('reports a validation failure as readable path: message lines, not a raw zod dump', () => {
+    // a bad diagram type parses structurally but fails zod validation
+    let err: Error | undefined;
+    try {
+      fromDSL('diagram not-a-real-type');
+    } catch (e) {
+      err = e as Error;
+    }
+    expect(err?.message).toContain('the model is not valid');
+    expect(err?.message).toContain('diagram');
+    expect(err?.message).not.toContain('"code"'); // not the raw zod issue array
+  });
 });
