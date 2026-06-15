@@ -1507,18 +1507,21 @@ export function renderRelationalField(
     }
   }
 
-  // People + systems
+  // People + systems. Each is wrapped in a group tagged with its node id so the editor can
+  // hit-test it for drag-to-reposition (this renderer honors n.position; persisted via pos=).
   for (const n of nodes) {
     const p = pos.get(n.id);
     if (!p) continue;
-    parts.push(personGlyph(n.stereotype, n.properties.index === true, p.x, p.y));
     const labelDy = n.stereotype === 'system' ? 4 : 36;
     parts.push(
-      wrapLabel(getText(n.label, layer, lang), p.x, p.y + labelDy, {
-        size: 10,
-        anchor: 'middle',
-        maxWidth: 120,
-      }),
+      `<g data-node-id="${esc(n.id)}">` +
+        personGlyph(n.stereotype, n.properties.index === true, p.x, p.y) +
+        wrapLabel(getText(n.label, layer, lang), p.x, p.y + labelDy, {
+          size: 10,
+          anchor: 'middle',
+          maxWidth: 120,
+        }) +
+        `</g>`,
     );
   }
 

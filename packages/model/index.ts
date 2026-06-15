@@ -109,7 +109,7 @@ export const Node = z.object({
   stereotype: z.string().optional(),
   tier: Tier.default(1),
   bandId: z.string().optional(),
-  /** Manual placement for hand-laid-out diagrams (genogram/relational field; future drag-drop). */
+  /** Manual placement for hand-laid-out diagrams (genogram/relational field; set by GUI drag). */
   position: z.object({ x: z.number(), y: z.number() }).optional(),
   /** View flag for progressive reveal (UX-M7): hidden nodes + their edges are not rendered. */
   hidden: z.boolean().optional(),

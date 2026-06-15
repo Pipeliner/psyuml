@@ -12,6 +12,7 @@ import {
   setNodeEpistemic,
   setNodeHidden,
   setNodeLabel,
+  setNodePosition,
   setNodeProvenance,
   setNodeStereotype,
   setSafetyFlag,
@@ -119,6 +120,12 @@ describe('editor', () => {
     ]);
     const cleared = setNodeProvenance(p, 'self', '  ');
     expect(cleared.nodes.find((x) => x.id === 'self')?.properties.provenance).toBeUndefined();
+  });
+
+  it('setNodePosition persists a rounded manual position (drag-to-reposition)', () => {
+    const m = setNodePosition(stateModel, 'calm', 142.6, 40.2);
+    expect(m.nodes.find((x) => x.id === 'calm')?.position).toEqual({ x: 143, y: 40 });
+    expect(stateModel.nodes.find((x) => x.id === 'calm')?.position).toBeUndefined(); // input untouched
   });
 
   it('addEdge can attach a trigger (⚑ precipitant) distinct from a free label', () => {

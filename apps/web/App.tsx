@@ -53,6 +53,7 @@ import {
   setNodeEpistemic,
   setNodeHidden,
   setNodeLabel,
+  setNodePosition,
   setNodeProvenance,
   setNodeStereotype,
   setSafetyFlag,
@@ -225,6 +226,43 @@ export function App() {
   const dsl = useMemo(() => toDSL(model), [model]);
   const dslRef = useRef<HTMLTextAreaElement>(null);
   const [dslError, setDslError] = useState<string | null>(null);
+
+  // Drag-to-reposition (hand-laid-out diagrams). A node only carries a `data-node-id` hook on
+  // renderers that honor `position` (genogram / relational field), so dragging is naturally gated
+  // to those — elsewhere the pointer hit-test finds nothing and it's a no-op. Coordinates map
+  // client→SVG user space via getScreenCTM, so zoom/scroll/viewBox are handled.
+  const diagramRef = useRef<HTMLDivElement>(null);
+  const draggingId = useRef<string | null>(null);
+  const draggable = svg.includes('data-node-id');
+  const onDiagramPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
+    const hit = (e.target as Element).closest('[data-node-id]');
+    const id = hit?.getAttribute('data-node-id');
+    if (!id) return;
+    draggingId.current = id;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+  const onDiagramPointerMove = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!draggingId.current) return;
+    const el = diagramRef.current?.querySelector('svg') as SVGSVGElement | null;
+    const ctm = el?.getScreenCTM();
+    if (!el || !ctm) return;
+    const pt = el.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const u = pt.matrixTransform(ctm.inverse());
+    const id = draggingId.current;
+    setModel((m) => setNodePosition(m, id, u.x, u.y));
+  };
+  const onDiagramPointerUp = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!draggingId.current) return;
+    draggingId.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* capture may already be released */
+    }
+  };
 
   // Structured authoring (add node of any kind; connect/remove links).
   const [newNodeLabel, setNewNodeLabel] = useState('');
@@ -629,7 +667,11 @@ export function App() {
           Fit
         </button>
         <span style={{ color: '#777' }}>
-          {zoom > 1 ? 'scroll the panel to pan' : 'zoom in to enlarge a dense diagram'}
+          {draggable
+            ? 'drag a node to reposition it'
+            : zoom > 1
+              ? 'scroll the panel to pan'
+              : 'zoom in to enlarge a dense diagram'}
         </span>
       </div>
       <section
@@ -643,7 +685,16 @@ export function App() {
         }}
       >
         <div
-          style={{ width: `${zoom * 100}%`, minWidth: '100%' }}
+          ref={diagramRef}
+          onPointerDown={onDiagramPointerDown}
+          onPointerMove={onDiagramPointerMove}
+          onPointerUp={onDiagramPointerUp}
+          style={{
+            width: `${zoom * 100}%`,
+            minWidth: '100%',
+            touchAction: draggable ? 'none' : undefined,
+            cursor: draggable ? 'grab' : undefined,
+          }}
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       </section>

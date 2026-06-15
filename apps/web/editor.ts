@@ -177,6 +177,20 @@ export function setNodeProvenance(model: PsyumlModel, id: string, tags: string):
   });
 }
 
+/**
+ * Set a node's manual position (drag-to-reposition for hand-laid-out diagrams — genogram /
+ * relational field). Persisted on the node (round-trips as `pos=x,y`); renderers that honor
+ * `position` place the node there instead of auto-layout. Coordinates are rounded. New model.
+ */
+export function setNodePosition(model: PsyumlModel, id: string, x: number, y: number): PsyumlModel {
+  return parseModel({
+    ...model,
+    nodes: model.nodes.map((n) =>
+      n.id === id ? { ...n, position: { x: Math.round(x), y: Math.round(y) } } : n,
+    ),
+  });
+}
+
 /** Show/hide a node (progressive reveal, UX-M7); returns a new validated model. */
 export function setNodeHidden(model: PsyumlModel, id: string, hidden: boolean): PsyumlModel {
   return parseModel({

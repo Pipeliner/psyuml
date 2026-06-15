@@ -474,6 +474,14 @@ describe('renderRelationalField', () => {
     expect(altText).toContain('(cutoff)');
   });
 
+  it('tags each node with a data-node-id hook for drag-to-reposition', () => {
+    const { svg } = renderRelationalField(relModel);
+    // every node id appears as a data-node-id group so the editor can hit-test + drag it
+    for (const n of relModel.nodes) {
+      expect(svg).toContain(`data-node-id="${n.id}"`);
+    }
+  });
+
   it('matches the committed golden SVG', () => {
     expectGolden('relational-field.svg', renderRelationalField(relModel).svg);
   });

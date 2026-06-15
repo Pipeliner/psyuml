@@ -184,4 +184,22 @@ test.describe('new user: diagramming a partially understood situation', () => {
     await controls.getByRole('button', { name: 'Fit' }).click();
     await expect(controls).toContainText('100%');
   });
+
+  test('drag repositions a node on a hand-laid-out (genogram) diagram', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: 'Diagram' }).selectOption('relational-field');
+    const node = diagram(page).locator('[data-node-id]').first();
+    const before = await node.boundingBox();
+    if (!before) throw new Error('no node bounding box');
+    const cx = before.x + before.width / 2;
+    const cy = before.y + before.height / 2;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx + 90, cy + 60, { steps: 6 });
+    await page.mouse.up();
+    const after = await node.boundingBox();
+    if (!after) throw new Error('node vanished after drag');
+    // it actually moved on screen (drag-to-reposition wired through to the model + re-render)
+    expect(Math.abs(after.x - before.x) + Math.abs(after.y - before.y)).toBeGreaterThan(15);
+  });
 });
