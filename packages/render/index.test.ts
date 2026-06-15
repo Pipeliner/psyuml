@@ -609,8 +609,96 @@ describe('renderLoopMap — CAT SDR', () => {
     expect(altText).toContain('Ways out');
   });
 
+  it('surfaces v0.2 Pattern semantics: trap topology, contested + as-if role, confidence (§3/§4)', () => {
+    const { svg, altText } = renderLoopMap(catSdrModel);
+    // §4: the trap topology renders a redundant uppercase word (never glyph/colour alone)
+    expect(svg).toContain('TRAP');
+    // §3: the contested, low-confidence reciprocal role is dashed and carries ⚖ + (as-if)
+    expect(svg).toContain('stroke-dasharray="5 4"');
+    expect(svg).toContain('⚖');
+    expect(svg).toContain('(as-if)');
+    // …and every channel is echoed in the text channel (alt-text)
+    expect(altText).toContain('is a trap');
+    expect(altText).toContain('Contested standing');
+    expect(altText).toContain('Named as-if');
+    expect(altText).toContain('Confidence — high:');
+  });
+
   it('matches the committed golden SVG', () => {
     expectGolden('cat-sdr.svg', renderLoopMap(catSdrModel).svg);
+  });
+});
+
+describe('renderLoopMap — v0.2 Pattern semantics (§3/§4)', () => {
+  const loopWith = (topology?: 'trap' | 'dilemma' | 'snag') =>
+    parseModel({
+      version: '0.1.0',
+      diagram: 'process-loop',
+      meta: { disclaimer: 'x', title: 'T' },
+      nodes: [
+        { id: 'a', kind: 'state', label: { clinician: { en: 'A' } } },
+        { id: 'b', kind: 'state', label: { clinician: { en: 'B' } } },
+        { id: 'out', kind: 'resource', label: { clinician: { en: 'Way out' } } },
+      ],
+      edges: [
+        { id: 'e', kind: 'sequential', source: 'a', target: 'b' },
+        {
+          id: 'l',
+          kind: 'sequential',
+          source: 'b',
+          target: 'a',
+          loop: 'R',
+          ...(topology ? { loopTopology: topology } : {}),
+        },
+        { id: 'x', kind: 'exit', source: 'b', target: 'out' },
+      ],
+    });
+
+  it('renders each topology as a distinct, redundant word + names its meaning in alt-text', () => {
+    expect(renderLoopMap(loopWith('trap')).svg).toContain('TRAP');
+    expect(renderLoopMap(loopWith('dilemma')).svg).toContain('DILEMMA');
+    expect(renderLoopMap(loopWith('snag')).svg).toContain('SNAG');
+    expect(renderLoopMap(loopWith('dilemma')).altText).toContain('false-binary');
+    expect(renderLoopMap(loopWith('snag')).altText).toContain('self-truncating');
+  });
+
+  it('is backward-compatible: a plain loop shows the R badge but no topology word', () => {
+    const svg = renderLoopMap(loopWith()).svg;
+    expect(svg).not.toContain('TRAP');
+    expect(svg).not.toContain('DILEMMA');
+    expect(svg).not.toContain('SNAG');
+    expect(svg).toContain('>R<'); // reinforcing badge still renders unchanged
+  });
+
+  it('surfaces contested standing and confidence in alt-text (not colour/glyph alone)', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'process-loop',
+      meta: { disclaimer: 'x' },
+      nodes: [
+        {
+          id: 'd',
+          kind: 'state',
+          label: { clinician: { en: 'Disputed bit' } },
+          properties: { epistemicStatus: 'contested', confidence: 'L' },
+        },
+        {
+          id: 'k',
+          kind: 'state',
+          label: { clinician: { en: 'Known bit' } },
+          properties: { epistemicStatus: 'observed', confidence: 'H' },
+        },
+        { id: 'out', kind: 'resource', label: { clinician: { en: 'Way out' } } },
+      ],
+      edges: [
+        { id: 'e', kind: 'sequential', source: 'k', target: 'd' },
+        { id: 'x', kind: 'exit', source: 'd', target: 'out' },
+      ],
+    });
+    const { svg, altText } = renderLoopMap(m);
+    expect(svg).toContain('stroke-dasharray="5 4"'); // contested → interpretive → dashed
+    expect(altText).toContain('Contested standing (held as disputed, not settled): Disputed bit');
+    expect(altText).toContain('Confidence — high: Known bit; low: Disputed bit');
   });
 });
 

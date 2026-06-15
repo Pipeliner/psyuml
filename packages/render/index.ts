@@ -7,7 +7,7 @@
  *
  * Traceability: REQ-NOTATION, REQ-ACCESSIBILITY, REQ-EPISTEMIC-STATUS.
  */
-import { getText, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
+import { getText, isInterpretive, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
 import { CHAR_W, separate1D, textWidth } from './layout';
 
@@ -1141,8 +1141,36 @@ function cycleOrder(
   return ordered;
 }
 
+/**
+ * A distinct, monochrome glyph for each CAT-derived loop topology (v0.2 §4), centred at
+ * (cx, cy). Always paired with the redundant uppercase word below it, so meaning never
+ * rests on the glyph — or on colour — alone (spec §D, v0.2 §5 Tier-A redundancy).
+ */
+function loopTopologyGlyph(topo: 'trap' | 'dilemma' | 'snag', cx: number, cy: number): string {
+  const s = 'fill="none" stroke="#000" stroke-width="2"';
+  if (topo === 'trap') {
+    // self-confirming loop: a near-closed circular arrow returning on itself.
+    return (
+      `<path d="M ${cx + 9},${cy - 2} A 9 9 0 1 1 ${cx + 1},${cy - 9}" ${s} />` +
+      `<path d="M ${cx - 3},${cy - 11} L ${cx + 3},${cy - 9} L ${cx},${cy - 3} z" fill="#000" stroke="none" />`
+    );
+  }
+  if (topo === 'dilemma') {
+    // false-binary fork: one stem splitting into two arms (either / or).
+    return `<path d="M ${cx},${cy + 9} L ${cx},${cy - 1} M ${cx},${cy - 1} L ${cx - 8},${cy - 10} M ${cx},${cy - 1} L ${cx + 8},${cy - 10}" ${s} />`;
+  }
+  // snag: legitimate rise truncated — an up-arrow stopped by a bar.
+  return (
+    `<path d="M ${cx},${cy + 9} L ${cx},${cy - 5}" ${s} />` +
+    `<path d="M ${cx - 4},${cy - 2} L ${cx},${cy - 8} L ${cx + 4},${cy - 2} z" fill="#000" stroke="none" />` +
+    `<path d="M ${cx - 9},${cy - 9} L ${cx + 9},${cy - 9}" ${s} />`
+  );
+}
+
 /** Render a Process / Loop map (spec §E.4): a maintaining cycle on a ring, with
- * reciprocal (double-headed) links, a reinforcing/balancing centre badge, and exits. */
+ * reciprocal (double-headed) links, a reinforcing/balancing centre badge, and exits.
+ * v0.2 §4 adds CAT loop-topology markers (trap/dilemma/snag); v0.2 §3 surfaces
+ * interpretive standing (dashed), `contested`, confidence, and `as-if` framing. */
 export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
@@ -1206,9 +1234,10 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     }
   }
 
-  // Reinforcing / balancing loop badge in the centre
+  // Reinforcing / balancing loop badge + CAT loop-topology marker in the centre (spec §C, v0.2 §4).
   const loop = model.edges.find((e) => e.loop);
-  if (loop) {
+  const topo = model.edges.find((e) => e.loopTopology)?.loopTopology;
+  if (loop || topo) {
     let sx = 0;
     let sy = 0;
     for (const p of pos.values()) {
@@ -1217,10 +1246,19 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     }
     const bx = r1(sx / pos.size);
     const by = r1(sy / pos.size);
-    parts.push(
-      `<circle cx="${bx}" cy="${by}" r="18" fill="#fff" stroke="#000" stroke-width="2" />`,
-      `<text x="${bx}" y="${by + 5}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loop.loop ?? '')}</text>`,
-    );
+    if (loop) {
+      parts.push(
+        `<circle cx="${bx}" cy="${by}" r="18" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<text x="${bx}" y="${by + 5}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loop.loop ?? '')}</text>`,
+      );
+    }
+    if (topo) {
+      const ty = by + (loop ? 36 : 0);
+      parts.push(
+        loopTopologyGlyph(topo, bx, ty),
+        `<text x="${bx}" y="${ty + 28}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">${esc(topo.toUpperCase())}</text>`,
+      );
+    }
   }
 
   // Nodes (resources = diamonds, CAT observing-eye = eye glyph, others = rounded rects)
@@ -1228,24 +1266,33 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     const p = pos.get(node.id);
     if (!p) continue;
     let labelDy = 4;
+    // v0.2 §3: interpretive content (inferred / clinician-inferred / contested / symbolic)
+    // is drawn dashed; descriptive content stays solid.
+    const dash = isInterpretive(node.properties.epistemicStatus) ? ' stroke-dasharray="5 4"' : '';
     if (node.kind === 'resource') {
       parts.push(
-        `<polygon data-el="node:${esc(node.id)}" points="${p.x},${p.y - LNODE_H / 2} ${p.x + LNODE_W / 2},${p.y} ${p.x},${p.y + LNODE_H / 2} ${p.x - LNODE_W / 2},${p.y}" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<polygon data-el="node:${esc(node.id)}" points="${p.x},${p.y - LNODE_H / 2} ${p.x + LNODE_W / 2},${p.y} ${p.x},${p.y + LNODE_H / 2} ${p.x - LNODE_W / 2},${p.y}" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
       );
     } else if (node.stereotype === 'observing-eye') {
       // CAT observing eye/I — the self-reflective stance that watches the trap (spec §B).
       parts.push(
-        `<ellipse data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" rx="26" ry="15" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<ellipse data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" rx="26" ry="15" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
         `<circle cx="${p.x}" cy="${p.y}" r="6" fill="#000" />`,
       );
       labelDy = 30;
     } else {
       parts.push(
-        `<rect data-el="node:${esc(node.id)}" x="${p.x - LNODE_W / 2}" y="${p.y - LNODE_H / 2}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<rect data-el="node:${esc(node.id)}" x="${p.x - LNODE_W / 2}" y="${p.y - LNODE_H / 2}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
       );
     }
+    // v0.2 §3/§4: a contested marker (⚖) and an as-if qualifier ride on the node's own
+    // label (owner content — they don't enlarge the node, so the overlap invariant holds)
+    // and are echoed in alt-text below.
+    let labelText = getText(node.label, layer, lang);
+    if (node.properties.epistemicStatus === 'contested') labelText = `⚖ ${labelText}`;
+    if (node.properties.asIf) labelText += ' (as-if)';
     parts.push(
-      wrapLabel(getText(node.label, layer, lang), p.x, p.y + labelDy, {
+      wrapLabel(labelText, p.x, p.y + labelDy, {
         size: 11,
         anchor: 'middle',
         maxWidth: LNODE_W - 16,
@@ -1263,9 +1310,51 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   const exits = model.edges
     .filter((e) => e.kind === 'exit')
     .map((e) => `${nodeName(e.source)} to ${nodeName(e.target)}`);
+
+  // v0.2 §3/§4: carry the loop topology, interpretive/contested standing, confidence, and
+  // as-if framing in the text channel — never on a glyph, border, or colour alone. Each
+  // sentence is appended only when its data is present, so a plain v0.1 loop is unchanged.
+  const TOPO_MEANING = {
+    trap: 'a trap — a self-confirming loop, where actions meant to escape confirm the belief',
+    dilemma: 'a dilemma — a false-binary, polarized either/or fork',
+    snag: 'a snag — a self-truncating loop that sabotages legitimate success',
+  } as const;
+  const extra: string[] = [];
+  if (topo) extra.push(`This maintaining pattern is ${TOPO_MEANING[topo]}.`);
+  const contestedNames = nodes
+    .filter((nd) => nd.properties.epistemicStatus === 'contested')
+    .map((nd) => nodeName(nd.id));
+  if (contestedNames.length)
+    extra.push(`Contested standing (held as disputed, not settled): ${contestedNames.join('; ')}.`);
+  const interpNames = nodes
+    .filter(
+      (nd) =>
+        isInterpretive(nd.properties.epistemicStatus) &&
+        nd.properties.epistemicStatus !== 'contested',
+    )
+    .map((nd) => nodeName(nd.id));
+  if (interpNames.length)
+    extra.push(
+      `Interpretive, shown dashed (a hypothesis, less certain): ${interpNames.join('; ')}.`,
+    );
+  const asIfNames = nodes.filter((nd) => nd.properties.asIf).map((nd) => nodeName(nd.id));
+  if (asIfNames.length)
+    extra.push(`Named as-if — a metaphor, not a literal claim: ${asIfNames.join('; ')}.`);
+  const confBuckets: Record<'H' | 'M' | 'L', string[]> = { H: [], M: [], L: [] };
+  for (const nd of nodes) {
+    const c = nd.properties.confidence;
+    if (c) confBuckets[c].push(nodeName(nd.id));
+  }
+  const confParts: string[] = [];
+  if (confBuckets.H.length) confParts.push(`high: ${confBuckets.H.join(', ')}`);
+  if (confBuckets.M.length) confParts.push(`medium: ${confBuckets.M.join(', ')}`);
+  if (confBuckets.L.length) confParts.push(`low: ${confBuckets.L.join(', ')}`);
+  if (confParts.length) extra.push(`Confidence — ${confParts.join('; ')}.`);
+
   const altText =
     `Maintaining loop${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
-    `Links: ${links.join('; ') || 'none'}. Ways out: ${exits.join('; ') || 'none'}.`;
+    `Links: ${links.join('; ') || 'none'}. Ways out: ${exits.join('; ') || 'none'}.` +
+    (extra.length ? ' ' + extra.join(' ') : '');
 
   // Fit the frame to the actual content (incl. negative coords) so nothing clips on screen or in export.
   const pad = 18;

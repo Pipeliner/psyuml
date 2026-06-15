@@ -22,7 +22,16 @@ export const Label = z.object({
 });
 export type Label = z.infer<typeof Label>;
 
-/** Epistemic standing of an element — formulation is a working hypothesis (Source 3 C2). */
+/**
+ * Epistemic standing of an element — formulation is a working hypothesis (Source 3 C2).
+ *
+ * v0.2 §3 makes this the explicit **provenance axis** ("where the content came from"),
+ * orthogonal to `confidence` ("how strongly it is held"). It adds three values that the
+ * lived-experience critique surfaced: `jointly-agreed` (co-authored), `clinician-inferred`
+ * (the clinician's interpretation, distinct from the client's report), and `contested`
+ * (disputed standing — "jointly-agreed" can mask clinician dominance). The v0.1 values
+ * are retained unchanged, so this is additive/backward-compatible.
+ */
 export const EpistemicStatus = z.enum([
   'reported',
   'observed',
@@ -31,8 +40,28 @@ export const EpistemicStatus = z.enum([
   'symbolic',
   'client-believed',
   'tradition-claimed',
+  'jointly-agreed',
+  'clinician-inferred',
+  'contested',
 ]);
 export type EpistemicStatus = z.infer<typeof EpistemicStatus>;
+
+/**
+ * Interpretive standings (v0.2 §3): content arrived at by inference, clinician judgment,
+ * disputed standing, or non-literal/symbolic framing — as opposed to *descriptive* content
+ * that was directly reported, observed, jointly agreed, or planned. Rendering MUST
+ * distinguish the two (v0.1 convention: solid vs dashed border). This is the single shared
+ * predicate so renderers and lints agree on what counts as "interpretive".
+ */
+export const INTERPRETIVE_STATUSES: ReadonlySet<EpistemicStatus> = new Set([
+  'inferred',
+  'clinician-inferred',
+  'contested',
+  'symbolic',
+]);
+export function isInterpretive(status?: EpistemicStatus): boolean {
+  return status !== undefined && INTERPRETIVE_STATUSES.has(status);
+}
 
 export const Tier = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 export type Tier = z.infer<typeof Tier>;
@@ -85,6 +114,13 @@ export const Properties = z.object({
   weight: z.number().min(0).max(1).optional(),
   confidence: z.enum(['L', 'M', 'H']).optional(),
   epistemicStatus: EpistemicStatus.optional(),
+  /**
+   * Ontology-neutral "as-if" qualifier (v0.2 §4/§6): this internal node is named *as if*
+   * it were an agent / part / voice / role, without asserting that metaphysics literally.
+   * Keeps the Parts/Pattern families school-neutral — the model MUST NOT bake in one
+   * metaphysics of mind, so the metaphor is flagged rather than reified.
+   */
+  asIf: z.boolean().optional(),
   /** Provenance tags, e.g. "school:CAT" — preserve opposed origin-claims (spec §G.2). */
   provenance: z.array(z.string()).optional(),
   /** Genogram index person (double border, spec §C). */
@@ -127,6 +163,14 @@ export const Edge = z.object({
   trigger: Label.optional(),
   /** Reinforcing / Balancing loop marker (spec §C). */
   loop: z.enum(['R', 'B']).optional(),
+  /**
+   * CAT-derived loop topology (v0.2 §4): the named *shape* of a maintaining loop —
+   * `trap` (a self-confirming loop: actions meant to escape confirm the belief),
+   * `dilemma` (a false-binary fork: polarized either/or), `snag` (a self-truncating loop:
+   * sabotaging legitimate success). Tag the edge that closes/defines the loop. These are
+   * three school-agnostic shapes of maladaptive loop — ontology-neutral, not a CAT-only tag.
+   */
+  loopTopology: z.enum(['trap', 'dilemma', 'snag']).optional(),
   properties: Properties.default({}),
 });
 export type Edge = z.infer<typeof Edge>;

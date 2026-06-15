@@ -827,6 +827,48 @@
         "docs/adoption/comprehension-instruments.md"
       ],
       "notes": "Deep research (v0.2-research-synthesis §4) strongly supports comprehension-testing symbols with laypeople BEFORE freezing the asset library, and a validated method exists. v0.2 spec §5 adopts a two-tier gate: Tier-A (automatable, CI — the existing conformance + accessibility + overlap invariant + monochrome-redundancy) and Tier-B (human studies; ISO 9186 comprehension test ≥67% general / ≥85% risk markers, report wrong/opposite-meaning rate, + matching/time/recall/dual-coding, ≥30/audience, with participatory symbol generation first). Tier-B gates leaving v0.x and needs real participants; the instruments live in the adoption pack."
+    },
+    {
+      "id": "REQ-PATTERN-SEMANTICS",
+      "title": "v0.2: CAT-derived Pattern semantics — loop topologies (trap/dilemma/snag) + exits, ontology-neutral",
+      "spec": [
+        "§4"
+      ],
+      "source": "docs/specification/psyuml-v0.2.0.md",
+      "milestone": "M12",
+      "status": "in-progress",
+      "impl": [
+        "packages/model/index.ts",
+        "packages/render/index.ts",
+        "packages/grammar/index.ts",
+        "examples/cat-sdr.psyuml"
+      ],
+      "tests": [
+        "packages/model/index.test.ts",
+        "packages/render/index.test.ts",
+        "packages/grammar/index.test.ts"
+      ],
+      "notes": "v0.2 (ADR-0014/0015, spec §4) lifts CAT's SDR machinery school-agnostically: `Edge.loopTopology` names the maintaining-loop SHAPE — trap (self-confirming), dilemma (false-binary fork), snag (self-truncating) — and renderLoopMap draws a centre marker (distinct monochrome glyph + a redundant uppercase word, never colour/glyph alone) plus alt-text gloss. `exit` stays the canonical intervention marker and the path-of-hope rule (≥1 exit/resource/self) is retained in @psyuml/validate. Internal nodes are ontology-neutral: `Properties.asIf` flags an as-if/metaphor framing so the model never bakes in one metaphysics of mind (reciprocal-role / observing-eye remain optional CAT-dialect tags). All additive/backward-compatible — a plain v0.1 loop renders byte-identically (process-loop.svg unchanged). Still to come: per-topology participatory + comprehension-tested glyphs (M14); editor authoring of topology/as-if (M13)."
+    },
+    {
+      "id": "REQ-PROVENANCE-CONFIDENCE",
+      "title": "v0.2: provenance + confidence as first-class, orthogonal axes (adds `contested`); interpretive content distinguished",
+      "spec": [
+        "§3"
+      ],
+      "source": "docs/specification/psyuml-v0.2.0.md",
+      "milestone": "M12",
+      "status": "in-progress",
+      "impl": [
+        "packages/model/index.ts",
+        "packages/render/index.ts",
+        "examples/cat-sdr.psyuml"
+      ],
+      "tests": [
+        "packages/model/index.test.ts",
+        "packages/render/index.test.ts"
+      ],
+      "notes": "v0.2 (ADR-0014/0015, spec §3) makes the two orthogonal axes explicit: provenance (where content came from) extends `EpistemicStatus` with `jointly-agreed` / `clinician-inferred` / `contested` (the lived-experience critique that 'jointly-agreed' can mask clinician dominance), and confidence (L/M/H) already exists. `INTERPRETIVE_STATUSES` + `isInterpretive()` are the single shared predicate so renderers and lints agree on descriptive-vs-interpretive; renderLoopMap draws interpretive content DASHED (descriptive solid — the v0.1 convention), surfaces a `contested` ⚖ marker + as-if qualifier on the node label, and echoes contested/interpretive standing AND confidence into alt-text (never on border/colour alone). Subsumes/aligns with v0.1 epistemicStatus; additive + round-trip-safe. The exact 5-value scheme is a design-inference (see synthesis §3)."
     }
   ]
 }

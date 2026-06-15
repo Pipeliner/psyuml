@@ -19,7 +19,7 @@
       "id": "placate",
       "kind": "state",
       "label": { "clinician": { "en": "Placate & comply" }, "client": { "en": "People-please" } },
-      "properties": { "epistemicStatus": "observed", "provenance": ["school:cat"] }
+      "properties": { "epistemicStatus": "observed", "confidence": "H", "provenance": ["school:cat"] }
     },
     {
       "id": "resent",
@@ -41,7 +41,12 @@
       "kind": "agent",
       "stereotype": "reciprocal-role",
       "label": { "clinician": { "en": "Inner critic: criticizing" } },
-      "properties": { "epistemicStatus": "inferred", "provenance": ["school:cat"] }
+      "properties": {
+        "epistemicStatus": "contested",
+        "confidence": "L",
+        "asIf": true,
+        "provenance": ["school:cat"]
+      }
     },
     {
       "id": "eye",
@@ -83,6 +88,7 @@
       "source": "withdraw",
       "target": "criticized",
       "loop": "R",
+      "loopTopology": "trap",
       "label": { "clinician": { "en": "confirms criticized role" } }
     },
     {

@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import {
   createEmptyModel,
   getText,
+  INTERPRETIVE_STATUSES,
+  isInterpretive,
   parseModel,
   PSYUML_MODEL_VERSION,
   schoolClaims,
@@ -46,6 +48,62 @@ describe('model', () => {
 
   it('rejects an invalid model (missing required diagram)', () => {
     expect(() => parseModel({ version: '0.1.0' })).toThrow();
+  });
+
+  it('accepts the v0.2 §3 provenance values + §4 loop-topology / as-if fields, and round-trips them', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'process-loop',
+      meta: { disclaimer: 'x' },
+      nodes: [
+        {
+          id: 'critic',
+          kind: 'agent',
+          label: { clinician: { en: 'Inner critic' } },
+          // a v0.2 §3 contested standing + confidence and a §4 ontology-neutral as-if flag
+          properties: { epistemicStatus: 'contested', confidence: 'L', asIf: true },
+        },
+        {
+          id: 'agreed',
+          kind: 'state',
+          label: { clinician: { en: 'What we both see' } },
+          properties: { epistemicStatus: 'jointly-agreed' },
+        },
+        { id: 'out', kind: 'resource', label: { clinician: { en: 'Ask directly' } } },
+      ],
+      edges: [
+        {
+          id: 'loop',
+          kind: 'sequential',
+          source: 'agreed',
+          target: 'critic',
+          loop: 'R',
+          loopTopology: 'trap',
+        },
+        { id: 'x', kind: 'exit', source: 'critic', target: 'out' },
+      ],
+    });
+    expect(m.nodes[0]?.properties.epistemicStatus).toBe('contested');
+    expect(m.nodes[0]?.properties.asIf).toBe(true);
+    expect(m.nodes[1]?.properties.epistemicStatus).toBe('jointly-agreed');
+    expect(m.edges[0]?.loopTopology).toBe('trap');
+    // additive + backward-compatible: still round-trips losslessly
+    expect(parseModel(serializeModel(m))).toEqual(m);
+  });
+
+  it('distinguishes interpretive from descriptive standing (v0.2 §3)', () => {
+    // interpretive: arrived at by inference / clinician judgment / dispute / non-literal framing
+    expect(isInterpretive('inferred')).toBe(true);
+    expect(isInterpretive('clinician-inferred')).toBe(true);
+    expect(isInterpretive('contested')).toBe(true);
+    expect(isInterpretive('symbolic')).toBe(true);
+    // descriptive: directly given
+    expect(isInterpretive('reported')).toBe(false);
+    expect(isInterpretive('observed')).toBe(false);
+    expect(isInterpretive('jointly-agreed')).toBe(false);
+    expect(isInterpretive('planned')).toBe(false);
+    expect(isInterpretive(undefined)).toBe(false);
+    expect(INTERPRETIVE_STATUSES.has('contested')).toBe(true);
   });
 
   it('reads school-origin claims from both bare and prefixed provenance (§G.2)', () => {

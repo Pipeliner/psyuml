@@ -121,11 +121,11 @@ demands before any 1.0.
 - **Acceptance:** every `DiagramType` resolves to exactly one family; `diagramsInFamily` round-trips the map; the three profiles expose the documented posture (clinician shows interpretive layers; client is plain-language, no interpretive; picture caps symbol kinds); `node sdd/check.mjs` + the profiles tests green.
 - **Spec refs:** v0.2 §2, §8. **REQ:** REQ-DIAGRAM-FAMILIES, REQ-AUDIENCE-PROFILES.
 
-### M12 · Pattern family + provenance/confidence surfacing
+### M12 · Pattern family + provenance/confidence surfacing *(implementing now)*
 - **Goal:** make the CAT-derived **Pattern** semantics and the provenance/confidence model first-class and *visible*.
-- **Deliverables:** loop-topology tags (**trap / dilemma / snag**) + **exits** as first-class Pattern constructs; the `contested` provenance value + L/M/H **confidence** rendered on a redundant (non-colour) channel with alt-text; ontology-neutral **`as-if`** framing for Parts so no school's claims are asserted as fact.
-- **Acceptance:** a Pattern diagram renders trap/dilemma/snag + exits distinguishably in monochrome; `contested` origins and confidence survive into alt-text; gated by the overlap invariant (ADR-0012) and monochrome-redundancy checks.
-- **Spec refs:** v0.2 §3, §4. **REQ:** REQ-DIAGRAM-FAMILIES, REQ-CROSS-SCHOOL, REQ-ACCESSIBILITY.
+- **Deliverables (landed, ADR-0015):** `Edge.loopTopology` (**trap / dilemma / snag**) rendered as a centre marker — a distinct monochrome glyph **plus a redundant uppercase word** — with **exits** retained as the canonical intervention marker (path-of-hope still enforces ≥1 exit/resource/self); `EpistemicStatus` extended with the §3 provenance values (`jointly-agreed` / `clinician-inferred` / **`contested`**), with **interpretive content drawn dashed** (descriptive solid) via the shared `isInterpretive()` predicate; L/M/H **confidence**, the `contested` **⚖** marker, and the ontology-neutral **`as-if`** qualifier surfaced on a redundant (non-colour) channel + echoed in **alt-text**; DSL + JSON round-trip parity; the `cat-sdr` example demonstrates the full story end-to-end.
+- **Acceptance (met):** a Pattern diagram renders trap/dilemma/snag + exits distinguishably in monochrome; `contested` standing and confidence survive into alt-text; the overlap invariant (ADR-0012) and monochrome-redundancy checks stay green; **fully backward-compatible** — a plain v0.1 loop renders byte-identically (only `cat-sdr.svg` changed). *Still to come:* per-topology participatory + comprehension-tested glyphs (M14) and editor authoring of topology/as-if (M13).
+- **Spec refs:** v0.2 §3, §4. **REQ:** REQ-PATTERN-SEMANTICS, REQ-PROVENANCE-CONFIDENCE (+ REQ-CROSS-SCHOOL, REQ-ACCESSIBILITY).
 
 ### M13 · Audience-profile rendering + editor
 - **Goal:** turn the profile *registry* (M11) into real rendered output and an editor surface.

@@ -14,7 +14,7 @@
  *   ritual framing="…" secular="…"
  *   band <id> order=<n> [pattern=<p>] label="…"
  *   node <id> <kind> [stereotype=… tier=… band=… pos=x,y hidden=true <prop>=… ] label="…" [client="…"]
- *   edge <id> <src> <kind> <tgt> [loop=R|B <prop>=… trigger="…" ] [label="…" client="…"]
+ *   edge <id> <src> <kind> <tgt> [loop=R|B topology=trap|dilemma|snag <prop>=… trigger="…" ] [label="…" client="…"]
  * Free text is double-quoted (with \" and \\ escapes); a label that is not single-language
  * in the model's `lang` falls back to `labeljson="<json>"` so any label stays lossless.
  *
@@ -127,6 +127,7 @@ function propTokens(p: PsyumlModel['nodes'][number]['properties']): string {
   if (p.consolidation) out += ` consolidation=${p.consolidation}`;
   if (p.confidence) out += ` confidence=${p.confidence}`;
   if (p.epistemicStatus) out += ` epistemic=${p.epistemicStatus}`;
+  if (p.asIf) out += ` asIf=true`;
   if (p.provenance && p.provenance.length > 0) out += ` provenance=${p.provenance.join(',')}`;
   if (p.index) out += ` index=true`;
   return out;
@@ -138,6 +139,7 @@ function readProps(o: Record<string, string>): Record<string, unknown> {
   if (o.consolidation !== undefined) p.consolidation = o.consolidation;
   if (o.confidence !== undefined) p.confidence = o.confidence;
   if (o.epistemic !== undefined) p.epistemicStatus = o.epistemic;
+  if (o.asIf === 'true') p.asIf = true;
   if (o.provenance !== undefined) p.provenance = o.provenance.split(',');
   if (o.index === 'true') p.index = true;
   return p;
@@ -198,6 +200,7 @@ export function toDSL(model: PsyumlModel): string {
   for (const e of model.edges) {
     let l = `edge ${e.id} ${e.source} ${e.kind} ${e.target}`;
     if (e.loop) l += ` loop=${e.loop}`;
+    if (e.loopTopology) l += ` topology=${e.loopTopology}`;
     l += propTokens(e.properties);
     if (e.trigger) l += labelTokens(e.trigger, lang, 'trigger', 'triggerclient', 'triggerjson');
     if (e.label) l += labelTokens(e.label, lang, 'label', 'client', 'labeljson');
@@ -354,6 +357,7 @@ export function fromDSL(text: string): PsyumlModel {
           target: toks[4],
         };
         if (o.loop !== undefined) edge.loop = o.loop;
+        if (o.topology !== undefined) edge.loopTopology = o.topology;
         const props = readProps(o);
         if (Object.keys(props).length > 0) edge.properties = props;
         const trigger = readLabel(o, language, 'trigger', 'triggerclient', 'triggerjson');

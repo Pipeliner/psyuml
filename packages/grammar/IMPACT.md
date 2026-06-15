@@ -19,7 +19,7 @@ the editor.
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `package.json` | Workspace manifest (`@psyuml/grammar`) | — | workspace resolution | — | low |
-| `index.ts` | `toDSL(model)` / `fromDSL(text)` — line-oriented surface; omit-defaults + `labeljson` escape keep it terse yet lossless (incl. `consent`). `fromDSL` raises **friendly, line-numbered** parse errors (offending line + valid-keyword hint + per-statement shape checks) and reports a validation failure as readable `path: message` lines, not a raw zod dump | `@psyuml/model` | CLI, editor (future) | §B, §C / REQ-TEXT-DSL | low |
+| `index.ts` | `toDSL(model)` / `fromDSL(text)` — line-oriented surface; omit-defaults + `labeljson` escape keep it terse yet lossless (incl. `consent`). `fromDSL` raises **friendly, line-numbered** parse errors (offending line + valid-keyword hint + per-statement shape checks) and reports a validation failure as readable `path: message` lines, not a raw zod dump. **v0.2:** the new model fields round-trip too — `asIf=true` (property token) and `topology=trap\|dilemma\|snag` (edge token, ⇄ `Edge.loopTopology`); the new `epistemic=` values (`contested`, `jointly-agreed`, `clinician-inferred`) pass through unchanged | `@psyuml/model` | CLI, editor (future) | §B, §C, v0.2 §3/§4 / REQ-TEXT-DSL | low |
 | `index.test.ts` | Corpus round-trip (`fromDSL(toDSL(m)) == m`) + quoting/multi-lang/position/loop/trigger/consent cases + friendly-parse-error cases | `index.ts`, `examples/*.psyuml` | CI `test` | REQ-TEXT-DSL | low |
 
 ## Change checklist
