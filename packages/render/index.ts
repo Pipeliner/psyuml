@@ -38,7 +38,7 @@ const LEGEND_H = 70;
 const RIGHT_LANE = WIDTH - 40;
 const LEFT_LANE = 40;
 /** Lane + label spread for parallel edges between the same state pair (ADR-0010 fan-out). */
-const STATE_FAN = 22;
+const STATE_FAN = 28;
 /** Okabe–Ito hues (redundant with pattern + label): safe, mobilized, shutdown. */
 const BAND_HUE = ['#009E73', '#E69F00', '#D55E00'];
 
@@ -249,12 +249,14 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     let txt = labelSource ? getText(labelSource, layer, lang) : '';
     if (isExit) txt = txt ? `${txt} (EXIT)` : 'EXIT';
     if (txt) {
-      // Stagger labels by fan index so two labels on a pair never land on the same baseline.
-      const midY = (s.cy + t.cy) / 2 - 4 + (idx - (count - 1) / 2) * 14;
+      // Stagger labels by fan index so two labels on a pair never land on the same baseline,
+      // and give each a white halo (paint-order=stroke) so the band-boundary line + arrows don't
+      // strike through the text — the two together keep parallel-edge labels legible (eval finding).
+      const midY = (s.cy + t.cy) / 2 - 4 + (idx - (count - 1) / 2) * 17;
       const lx = isExit ? lane + 8 : lane - 8;
       const anchor = isExit ? 'start' : 'end';
       parts.push(
-        `<text x="${r1(lx)}" y="${r1(midY)}" font-family="sans-serif" font-size="11" text-anchor="${anchor}">${esc(txt)}</text>`,
+        `<text x="${r1(lx)}" y="${r1(midY)}" font-family="sans-serif" font-size="11" text-anchor="${anchor}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(txt)}</text>`,
       );
     }
   }
@@ -386,6 +388,15 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     parts.push(
       `<path d="M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3 4" opacity="0.7" />`,
     );
+    // Show the relationship word (e.g. "protects" / "soothes" / "numbs") on the curve, with a
+    // white halo so it stays legible over the dotted line — distinct protections shouldn't all
+    // look identical (eval finding). Placed near the curve's control point.
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      parts.push(
+        `<text x="${mx}" y="${r1((my + b.y) / 2)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
+      );
+    }
   }
 
   // Dissociative barrier (double bar) between Self and the exiles
@@ -678,10 +689,19 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     const p = pos.get(n.id);
     if (!p) continue;
     const isCrisis = n.stereotype === 'crisis';
+    const isQuestion = n.stereotype === 'question';
     const name = (isCrisis ? '! ' : '') + getText(n.label, layer, lang);
     parts.push(decShape(n.stereotype, p.x, p.y));
+    // Wrap the label INSIDE the shape so a long clinical step doesn't overflow its box and
+    // collide with a sibling (eval finding). A diamond tapers, so it gets a narrower width.
     parts.push(
-      `<text x="${p.x}" y="${p.y + 4}" font-family="sans-serif" font-size="11" text-anchor="middle"${isCrisis ? ' font-weight="700"' : ''}>${esc(name)}</text>`,
+      wrapLabel(name, p.x, p.y + 4, {
+        size: 11,
+        anchor: 'middle',
+        maxWidth: isQuestion ? 132 : DNODE_W - 24,
+        maxLines: isQuestion ? 2 : 3,
+        ...(isCrisis ? { weight: 700 } : {}),
+      }),
     );
     // Put the actual crisis contact right on the crisis node, not only in the bottom banner.
     if (isCrisis) {

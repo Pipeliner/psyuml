@@ -233,6 +233,23 @@ describe('validate', () => {
     expect(validate(m).issues.some((i) => i.rule === 'render.node-not-shown')).toBe(false);
   });
 
+  it('surfaces an edge a Parts Map will not draw, instead of dropping it silently (info)', () => {
+    const m = read('parts-map.psyuml');
+    // a conflict tie between two parts is valid + saved, but the Parts Map only draws
+    // containment + the barrier — so it must be flagged, not silently omitted.
+    const withConflict = parseModel({
+      ...m,
+      edges: [...m.edges, { id: 'cf', kind: 'conflict', source: 'controller', target: 'pleaser' }],
+    });
+    const r = validate(withConflict);
+    const issue = r.issues.find((i) => i.rule === 'render.edge-not-shown');
+    expect(issue?.severity).toBe('info');
+    expect(issue?.message).toContain('conflict');
+    expect(r.ok).toBe(true); // info only
+    // the unmodified example (only containment + barrier) raises no such notice
+    expect(validate(m).issues.some((i) => i.rule === 'render.edge-not-shown')).toBe(false);
+  });
+
   it('nudges a concrete, local crisis contact when acute risk is flagged (REQ-SAFETY-TRIAGE)', () => {
     const m = read('state-map.psyuml');
     // a generic line (no number / URL / handle) under acute risk → info nudge, not an error

@@ -177,6 +177,9 @@ function downloadText(filename: string, text: string, type: string): void {
 export function App() {
   const [model, setModel] = useState<PsyumlModel>(() => parseModel(stateRaw));
   const [example, setExample] = useState('state-map');
+  // Serialized model as last loaded (sample switch / New / Open / Restore), to detect unsaved
+  // edits so switching away can confirm before discarding work (eval finding).
+  const [loadedJson, setLoadedJson] = useState<string>(() => serializeModel(parseModel(stateRaw)));
   const [layer, setLayer] = useState<'clinician' | 'client'>('clinician');
   const [monochrome, setMonochrome] = useState(true);
   const [zoom, setZoom] = useState(1);
@@ -214,6 +217,20 @@ export function App() {
     ? `Can't export yet — ${firstError.message} (see Formulation health below)`
     : undefined;
   const fileBase = slugify(model.meta.title ?? '') || model.diagram;
+  const dirty = useMemo(() => serializeModel(model) !== loadedJson, [model, loadedJson]);
+  /** Replace the working model (sample switch / Open / New / Restore), confirming if there are
+   *  unsaved edits, and reset the loaded baseline + the diagram selector. Returns whether it ran. */
+  const loadModel = (next: PsyumlModel, exampleKey: string): boolean => {
+    if (dirty && !window.confirm('Discard unsaved changes and load a different diagram?'))
+      return false;
+    setModel(next);
+    setLoadedJson(serializeModel(next));
+    setExample(exampleKey);
+    setCompareWith(null);
+    setCompareError(null);
+    setVersions([]);
+    return true;
+  };
 
   // Longitudinal diff (M6): compare the loaded earlier version (before) to now (after).
   const diff = useMemo(
@@ -338,11 +355,9 @@ export function App() {
           <select
             value={example}
             onChange={(e) => {
-              setExample(e.target.value);
-              setModel(parseModel(EXAMPLES[e.target.value] ?? stateRaw));
-              setCompareWith(null);
-              setCompareError(null);
-              setVersions([]);
+              const key = e.target.value;
+              // Confirm before discarding unsaved edits; revert the <select> if the user cancels.
+              if (!loadModel(parseModel(EXAMPLES[key] ?? stateRaw), key)) e.target.value = example;
             }}
           >
             <option value="state-map">State Map</option>
@@ -415,17 +430,7 @@ export function App() {
         <button
           type="button"
           title="Start a new blank diagram of the current type (your current work isn't saved unless you Save it first)"
-          onClick={() => {
-            if (
-              model.nodes.length &&
-              !window.confirm('Start a new blank diagram? Unsaved work is lost.')
-            )
-              return;
-            setModel(createEmptyModel(model.diagram));
-            setCompareWith(null);
-            setCompareError(null);
-            setVersions([]);
-          }}
+          onClick={() => loadModel(createEmptyModel(model.diagram), example)}
         >
           New (blank)
         </button>
@@ -440,10 +445,9 @@ export function App() {
               file
                 .text()
                 .then((text) => {
-                  setModel(parseModel(text));
-                  setCompareWith(null);
-                  setCompareError(null);
-                  setVersions([]);
+                  const opened = parseModel(text);
+                  // Sync the diagram selector to what was opened so the dropdown isn't out of step.
+                  loadModel(opened, EXAMPLES[opened.diagram] ? opened.diagram : example);
                 })
                 .catch(() => setCompareError('Could not open that file as a .psyuml model.'));
               e.target.value = '';
@@ -575,7 +579,14 @@ export function App() {
                 <button type="button" onClick={() => setCompareWith(restoreVersion(v))}>
                   Compare
                 </button>
-                <button type="button" onClick={() => setModel(restoreVersion(v))}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const restored = restoreVersion(v);
+                    setModel(restored);
+                    setLoadedJson(serializeModel(restored));
+                  }}
+                >
                   Restore
                 </button>
               </li>

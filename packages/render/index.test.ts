@@ -189,6 +189,13 @@ describe('renderPartsMap', () => {
     expect(svg).not.toContain('Little one, age 6');
   });
 
+  it('renders the containment relationship label on the dotted line', () => {
+    // the "protects" word on each containment curve — so "soothes" vs "numbs" vs "protects"
+    // aren't all indistinguishable dotted lines (eval finding).
+    const { svg } = renderPartsMap(partsModel);
+    expect(svg).toContain('>protects<');
+  });
+
   it('marks a node claimed by >1 school as a contested origin, not a merged list (§G.2)', () => {
     const { svg, altText } = renderPartsMap(partsModel);
     // the exile carries IFS + schema + SD → shown as a disagreement, not "IFS / schema / SD"
@@ -351,6 +358,29 @@ describe('renderDecisionChart — scalable, cycle-aware layout (ADR-0010)', () =
     );
     // The cycle is broken at one back-edge, so the three steps still spread across rows.
     expect(ys.size).toBeGreaterThanOrEqual(2);
+  });
+
+  it('wraps a long node label inside its box instead of overflowing into siblings', () => {
+    const longModel = parseModel({
+      version: '0.1.0',
+      diagram: 'decision-nav',
+      meta: { disclaimer: 'Supports, not replaces, care.' },
+      nodes: [
+        decNode('root'),
+        {
+          id: 'act',
+          kind: 'resource',
+          stereotype: 'action',
+          label: {
+            clinician: { en: 'TIPP: cold water on the face, paced breathing, intense exercise' },
+          },
+        },
+      ],
+      edges: [decEdge('r-act', 'root', 'act', 'do this')],
+    });
+    const { svg } = renderDecisionChart(longModel);
+    // the long label is wrapped into multiple <tspan> rows (not a single overflowing <text>)
+    expect((svg.match(/<tspan/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 });
 
