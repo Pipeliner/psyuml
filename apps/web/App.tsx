@@ -484,6 +484,11 @@ export function App() {
         >
           Snapshot
         </button>
+        {versions.length > 0 && (
+          <span aria-live="polite" style={{ fontSize: 13, color: '#009e73' }}>
+            ✓ {versions.length} snapshot{versions.length > 1 ? 's' : ''} saved
+          </span>
+        )}
         <label title="Load an earlier saved .psyuml version to see what changed">
           Compare with…{' '}
           <input
@@ -674,8 +679,8 @@ export function App() {
         >
           +
         </button>
-        <button type="button" onClick={() => setZoom(1)} title="Fit the diagram to the width">
-          Fit
+        <button type="button" onClick={() => setZoom(1)} title="Reset zoom to 100% (full size)">
+          Reset
         </button>
         <span style={{ color: '#777' }}>
           {draggable
@@ -1043,7 +1048,7 @@ export function App() {
               checked={linkIsTrigger}
               onChange={(e) => setLinkIsTrigger(e.target.checked)}
             />{' '}
-            ⚑ trigger
+            label is a ⚑ trigger
           </label>
           <button
             type="button"

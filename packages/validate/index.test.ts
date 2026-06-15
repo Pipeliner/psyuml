@@ -235,16 +235,16 @@ describe('validate', () => {
 
   it('surfaces an edge a Parts Map will not draw, instead of dropping it silently (info)', () => {
     const m = read('parts-map.psyuml');
-    // a conflict tie between two parts is valid + saved, but the Parts Map only draws
-    // containment + the barrier — so it must be flagged, not silently omitted.
-    const withConflict = parseModel({
+    // an invocation link is valid + saved, but the Parts Map draws only containment, the
+    // barrier, and conflict — so an invocation must be flagged, not silently omitted.
+    const withInvocation = parseModel({
       ...m,
-      edges: [...m.edges, { id: 'cf', kind: 'conflict', source: 'controller', target: 'pleaser' }],
+      edges: [...m.edges, { id: 'iv', kind: 'invocation', source: 'self', target: 'exile' }],
     });
-    const r = validate(withConflict);
+    const r = validate(withInvocation);
     const issue = r.issues.find((i) => i.rule === 'render.edge-not-shown');
     expect(issue?.severity).toBe('info');
-    expect(issue?.message).toContain('conflict');
+    expect(issue?.message).toContain('invocation');
     expect(r.ok).toBe(true); // info only
     // the unmodified example (only containment + barrier) raises no such notice
     expect(validate(m).issues.some((i) => i.rule === 'render.edge-not-shown')).toBe(false);

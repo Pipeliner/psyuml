@@ -180,8 +180,8 @@ test.describe('new user: diagramming a partially understood situation', () => {
     await expect(controls).toContainText('125%');
     // the diagram still renders while zoomed
     await expect(diagram(page).locator('svg')).toBeVisible();
-    // Fit resets to 100%
-    await controls.getByRole('button', { name: 'Fit' }).click();
+    // Reset returns to 100%
+    await controls.getByRole('button', { name: 'Reset' }).click();
     await expect(controls).toContainText('100%');
   });
 

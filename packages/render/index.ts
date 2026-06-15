@@ -346,8 +346,11 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
 
+  // A title pushes the whole map down so the top protectors don't collide with it (eval finding).
+  const titleH = model.meta.title ? 28 : 0;
+  const partsH = PARTS_H + titleH;
   const cx = PARTS_W / 2;
-  const cy = 175;
+  const cy = 175 + titleH;
   const orbitR = 140;
   const nodeR = 34;
 
@@ -395,6 +398,35 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     if (lbl) {
       parts.push(
         `<text x="${mx}" y="${r1((my + b.y) / 2)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
+      );
+    }
+  }
+
+  // Conflict ties (zigzag) between two parts — drawn (not silently dropped, eval finding), using
+  // the genogram conflict convention so a manager↔firefighter clash is visible on the map.
+  for (const e of model.edges) {
+    if (e.kind !== 'conflict') continue;
+    const a = pos.get(e.source);
+    const b = pos.get(e.target);
+    if (!a || !b) continue;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const px = -dy / len;
+    const py = dx / len;
+    const segs = 6;
+    let d = `M ${r1(a.x)},${r1(a.y)}`;
+    for (let i = 1; i < segs; i += 1) {
+      const f = i / segs;
+      const sign = i % 2 ? 1 : -1;
+      d += ` L ${r1(a.x + dx * f + px * 5 * sign)},${r1(a.y + dy * f + py * 5 * sign)}`;
+    }
+    d += ` L ${r1(b.x)},${r1(b.y)}`;
+    parts.push(`<path d="${d}" fill="none" stroke="#000" stroke-width="1.5" />`);
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      parts.push(
+        `<text x="${r1((a.x + b.x) / 2)}" y="${r1((a.y + b.y) / 2 - 4)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
@@ -457,11 +489,11 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
 
   // Legend
   parts.push(
-    `<text x="20" y="${PARTS_H - 16}" font-family="sans-serif" font-size="11">◎ Self · ○ part · ( ) containment orbit · ═ dissociative barrier · dotted = protects</text>`,
+    `<text x="20" y="${partsH - 16}" font-family="sans-serif" font-size="11">◎ Self · ○ part · ( ) containment orbit · ═ dissociative barrier · dotted = protects · zigzag = conflict</text>`,
   );
   if (model.meta.disclaimer) {
     parts.push(
-      `<text x="20" y="${PARTS_H - 2}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+      `<text x="20" y="${partsH - 2}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
     );
   }
 
@@ -487,9 +519,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     : '';
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PARTS_W} ${PARTS_H}" role="img" aria-label="${esc(altText)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PARTS_W} ${partsH}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Parts map')}</title><desc>${esc(altText)}</desc>` +
-    `<rect x="0" y="0" width="${PARTS_W}" height="${PARTS_H}" fill="#fff" />` +
+    `<rect x="0" y="0" width="${PARTS_W}" height="${partsH}" fill="#fff" />` +
     titleText +
     parts.join('') +
     '</svg>';

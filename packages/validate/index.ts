@@ -288,7 +288,7 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
   // The Parts Map draws containment orbits + the dissociative barrier; other link kinds are saved
   // but not pictured — surface that instead of letting an authored relationship vanish silently.
   if (model.diagram === 'parts-map') {
-    const drawn = new Set(['containment', 'barrier']);
+    const drawn = new Set(['containment', 'barrier', 'conflict']);
     const nm = new Map(model.nodes.map((n) => [n.id, getText(n.label, layer)]));
     for (const e of model.edges) {
       if (!drawn.has(e.kind)) {

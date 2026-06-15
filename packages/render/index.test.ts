@@ -189,6 +189,36 @@ describe('renderPartsMap', () => {
     expect(svg).not.toContain('Little one, age 6');
   });
 
+  it('draws a conflict tie (zigzag) between two parts instead of dropping it', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'parts-map',
+      meta: { disclaimer: 'x' },
+      nodes: [
+        { id: 'self', kind: 'self', stereotype: 'Self', label: { clinician: { en: 'Self' } } },
+        { id: 'a', kind: 'agent', stereotype: 'manager', label: { clinician: { en: 'Driver' } } },
+        {
+          id: 'b',
+          kind: 'agent',
+          stereotype: 'firefighter',
+          label: { clinician: { en: 'Staller' } },
+        },
+      ],
+      edges: [
+        {
+          id: 'cf',
+          kind: 'conflict',
+          source: 'a',
+          target: 'b',
+          label: { clinician: { en: 'push vs stall' } },
+        },
+      ],
+    });
+    const { svg } = renderPartsMap(m);
+    expect(svg).toContain('stroke-width="1.5"'); // the conflict zigzag (unique weight on this map)
+    expect(svg).toContain('push vs stall');
+  });
+
   it('renders the containment relationship label on the dotted line', () => {
     // the "protects" word on each containment curve — so "soothes" vs "numbs" vs "protects"
     // aren't all indistinguishable dotted lines (eval finding).
