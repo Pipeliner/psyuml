@@ -171,4 +171,17 @@ test.describe('new user: diagramming a partially understood situation', () => {
       .click();
     await expect(links.getByRole('listitem')).toHaveCount(before);
   });
+
+  test('view controls zoom and fit a dense diagram', async ({ page }) => {
+    await page.goto('/');
+    const controls = page.getByRole('group', { name: 'View controls' });
+    await expect(controls).toContainText('100%');
+    await controls.getByRole('button', { name: 'Zoom in' }).click();
+    await expect(controls).toContainText('125%');
+    // the diagram still renders while zoomed
+    await expect(diagram(page).locator('svg')).toBeVisible();
+    // Fit resets to 100%
+    await controls.getByRole('button', { name: 'Fit' }).click();
+    await expect(controls).toContainText('100%');
+  });
 });

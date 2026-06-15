@@ -178,6 +178,7 @@ export function App() {
   const [example, setExample] = useState('state-map');
   const [layer, setLayer] = useState<'clinician' | 'client'>('clinician');
   const [monochrome, setMonochrome] = useState(true);
+  const [zoom, setZoom] = useState(1);
   const [school, setSchool] = useState('');
   const [compareWith, setCompareWith] = useState<PsyumlModel | null>(null);
   const [compareError, setCompareError] = useState<string | null>(null);
@@ -599,11 +600,53 @@ export function App() {
         )}
       </section>
 
+      <div
+        role="group"
+        aria-label="View controls"
+        style={{ display: 'flex', gap: 6, alignItems: 'center', margin: '4px 0', fontSize: 13 }}
+      >
+        <span style={{ color: '#555' }}>View:</span>
+        <button
+          type="button"
+          aria-label="Zoom out"
+          title="Zoom out"
+          onClick={() => setZoom((z) => Math.max(0.5, Math.round((z - 0.25) * 100) / 100))}
+        >
+          −
+        </button>
+        <span aria-live="polite" style={{ minWidth: 44, textAlign: 'center' }}>
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          aria-label="Zoom in"
+          title="Zoom in"
+          onClick={() => setZoom((z) => Math.min(4, Math.round((z + 0.25) * 100) / 100))}
+        >
+          +
+        </button>
+        <button type="button" onClick={() => setZoom(1)} title="Fit the diagram to the width">
+          Fit
+        </button>
+        <span style={{ color: '#777' }}>
+          {zoom > 1 ? 'scroll the panel to pan' : 'zoom in to enlarge a dense diagram'}
+        </span>
+      </div>
       <section
         aria-label={`${model.diagram} diagram`}
-        style={{ border: '1px solid #ddd', borderRadius: 12, padding: '1rem', overflowX: 'auto' }}
-        dangerouslySetInnerHTML={{ __html: svg }}
-      />
+        style={{
+          border: '1px solid #ddd',
+          borderRadius: 12,
+          padding: '1rem',
+          overflow: 'auto',
+          maxHeight: '75vh',
+        }}
+      >
+        <div
+          style={{ width: `${zoom * 100}%`, minWidth: '100%' }}
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+      </section>
 
       <details style={{ marginTop: 12 }}>
         <summary>Text description (screen-reader friendly)</summary>
