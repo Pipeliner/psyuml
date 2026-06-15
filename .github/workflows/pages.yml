@@ -1,0 +1,57 @@
+name: Deploy editor to GitHub Pages
+
+# Builds apps/web and publishes dist/web to GitHub Pages. The web editor is a static,
+# local-first SPA (no backend, no data egress), so a static host is all it needs.
+on:
+  push:
+    branches: [claude/tender-brown-z0zfh9]
+  workflow_dispatch:
+
+# Least-privilege token + the Pages/OIDC scopes the deploy needs.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages deploy at a time; let a newer push supersede an in-flight one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build static editor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm version comes from package.json "packageManager"; do not also set it here
+      # (pnpm/action-setup errors on the duplicate — see ci.yml).
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # PAGES_BASE makes the project-site asset URLs resolve under …github.io/psyuml/.
+      - name: Build
+        run: pnpm run build
+        env:
+          PAGES_BASE: /psyuml/
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/web
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
