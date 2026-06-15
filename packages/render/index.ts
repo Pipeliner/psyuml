@@ -37,6 +37,8 @@ const PAD_TOP = 10;
 const LEGEND_H = 70;
 const RIGHT_LANE = WIDTH - 40;
 const LEFT_LANE = 40;
+/** Lane + label spread for parallel edges between the same state pair (ADR-0010 fan-out). */
+const STATE_FAN = 22;
 /** Okabe–Ito hues (redundant with pattern + label): safe, mobilized, shutdown. */
 const BAND_HUE = ['#009E73', '#E69F00', '#D55E00'];
 
@@ -204,28 +206,55 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     );
   });
 
-  // Edges (orthogonal lanes: transitions route right, exits route left + dashed)
+  // Edges (orthogonal lanes: transitions route right, exits route left + dashed).
+  // Parallel-edge fan-out (ADR-0010): ≥2 edges sharing a state pair on the same side used to
+  // share one vertical lane and stack their labels at the same point, smearing them into an
+  // unreadable blur. Group by side + unordered pair, then give each edge its own lane offset
+  // and stagger its label vertically so every edge and label stays legible.
+  type MEdge = (typeof model.edges)[number];
+  const fanKey = (e: MEdge): string => {
+    const side = e.kind === 'exit' ? 'L' : 'R';
+    const [a, b] = [e.source, e.target].sort();
+    return `${side}:${a}:${b}`;
+  };
+  const fanGroups = new Map<string, number>();
+  const fanIndex = new Map<MEdge, number>();
+  for (const e of model.edges) {
+    const k = fanKey(e);
+    const i = fanGroups.get(k) ?? 0;
+    fanIndex.set(e, i);
+    fanGroups.set(k, i + 1);
+  }
+
   for (const e of model.edges) {
     const s = center.get(e.source);
     const t = center.get(e.target);
     if (!s || !t) continue;
     const isExit = e.kind === 'exit';
-    const lane = isExit ? LEFT_LANE : RIGHT_LANE;
+    const count = fanGroups.get(fanKey(e)) ?? 1;
+    const idx = fanIndex.get(e) ?? 0;
+    // Centre the fan on the base lane: a single edge gets offset 0 (byte-identical to before);
+    // siblings spread evenly. Transitions route right (lane shifts left/inward as idx grows);
+    // exits route left (lane shifts right/inward) — `dir` keeps the spread between node + lane.
+    const spread = (idx - (count - 1) / 2) * STATE_FAN;
+    const dir = isExit ? 1 : -1;
+    const lane = (isExit ? LEFT_LANE : RIGHT_LANE) + spread * dir;
     const sx = isExit ? s.cx - NODE_W / 2 : s.cx + NODE_W / 2;
     const ex = isExit ? t.cx - NODE_W / 2 : t.cx + NODE_W / 2;
     const dash = isExit ? ' stroke-dasharray="6 5"' : '';
     parts.push(
-      `<path d="M ${sx},${s.cy} H ${lane} V ${t.cy} H ${ex}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
+      `<path d="M ${sx},${s.cy} H ${r1(lane)} V ${t.cy} H ${ex}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
     );
     const labelSource = e.trigger ?? e.label;
     let txt = labelSource ? getText(labelSource, layer, lang) : '';
     if (isExit) txt = txt ? `${txt} (EXIT)` : 'EXIT';
     if (txt) {
-      const midY = (s.cy + t.cy) / 2;
-      const lx = isExit ? LEFT_LANE + 8 : RIGHT_LANE - 8;
+      // Stagger labels by fan index so two labels on a pair never land on the same baseline.
+      const midY = (s.cy + t.cy) / 2 - 4 + (idx - (count - 1) / 2) * 14;
+      const lx = isExit ? lane + 8 : lane - 8;
       const anchor = isExit ? 'start' : 'end';
       parts.push(
-        `<text x="${lx}" y="${midY - 4}" font-family="sans-serif" font-size="11" text-anchor="${anchor}">${esc(txt)}</text>`,
+        `<text x="${r1(lx)}" y="${r1(midY)}" font-family="sans-serif" font-size="11" text-anchor="${anchor}">${esc(txt)}</text>`,
       );
     }
   }
@@ -463,6 +492,90 @@ const DNODE_H = 50;
 const DLAYER_GAP = 96;
 const DEC_TOP = 64;
 const DBANNER_H = 48;
+/** Horizontal room between sibling nodes in a layer (so wide layers don't crowd). */
+const DNODE_GAP = 36;
+/** Side margin around the laid-out content (content-fit frame, ADR-0010). */
+const DEC_PAD = 16;
+
+/**
+ * Break cycles by a DFS from the roots, then longest-path layer the FORWARD edges only.
+ * A realistic crisis plan loops back ("still not safe → go back to the crisis step"); that
+ * cycle leaves every node on it (and downstream of it) with in-degree>0 forever, so a plain
+ * Kahn pass never dequeues them and they all collapse onto depth 0 (one overlapping row).
+ * Classifying back-edges (those reaching a node currently on the DFS stack) and layering the
+ * rest gives every node a sensible rank. Standard layered-graph cycle handling.
+ *
+ * Returns `{ depth, forward }`: each node's longest-path depth and the set of non-back edges.
+ */
+function layerWithCycleBreak(
+  nodeIds: string[],
+  edges: { source: string; target: string }[],
+): { depth: Map<string, number>; forward: Set<{ source: string; target: string }> } {
+  const adj = new Map<string, { source: string; target: string }[]>(nodeIds.map((id) => [id, []]));
+  const indeg = new Map<string, number>(nodeIds.map((id) => [id, 0]));
+  for (const e of edges) {
+    if (!adj.has(e.source) || !adj.has(e.target)) continue;
+    adj.get(e.source)?.push(e);
+    indeg.set(e.target, (indeg.get(e.target) ?? 0) + 1);
+  }
+
+  // DFS to find back-edges (target currently on the recursion stack).
+  const back = new Set<{ source: string; target: string }>();
+  const state = new Map<string, 0 | 1 | 2>(); // 0 unseen, 1 on-stack, 2 done
+  const visit = (start: string): void => {
+    // Iterative DFS (avoids deep recursion on long crisis chains).
+    const stack: { id: string; i: number }[] = [{ id: start, i: 0 }];
+    state.set(start, 1);
+    while (stack.length) {
+      const frame = stack[stack.length - 1];
+      const out = adj.get(frame.id) ?? [];
+      if (frame.i < out.length) {
+        const e = out[frame.i];
+        frame.i += 1;
+        const s = state.get(e.target) ?? 0;
+        if (s === 1) {
+          back.add(e); // reaches a node still on the stack → cycle edge
+        } else if (s === 0) {
+          state.set(e.target, 1);
+          stack.push({ id: e.target, i: 0 });
+        }
+      } else {
+        state.set(frame.id, 2);
+        stack.pop();
+      }
+    }
+  };
+  // Start from in-degree-0 roots; if there are none (all in a cycle), start anywhere.
+  const roots = nodeIds.filter((id) => (indeg.get(id) ?? 0) === 0);
+  for (const id of roots.length ? roots : nodeIds.slice(0, 1)) {
+    if ((state.get(id) ?? 0) === 0) visit(id);
+  }
+  // Any node not reached from a root (a separate component) still needs a depth.
+  for (const id of nodeIds) if ((state.get(id) ?? 0) === 0) visit(id);
+
+  // Longest-path layering on the forward edges only (now a DAG).
+  const forward = new Set(
+    edges.filter((e) => !back.has(e) && adj.has(e.source) && adj.has(e.target)),
+  );
+  const fAdj = new Map<string, string[]>(nodeIds.map((id) => [id, []]));
+  const fIndeg = new Map<string, number>(nodeIds.map((id) => [id, 0]));
+  for (const e of forward) {
+    fAdj.get(e.source)?.push(e.target);
+    fIndeg.set(e.target, (fIndeg.get(e.target) ?? 0) + 1);
+  }
+  const depth = new Map<string, number>(nodeIds.map((id) => [id, 0]));
+  const work = new Map(fIndeg);
+  const queue = nodeIds.filter((id) => (fIndeg.get(id) ?? 0) === 0);
+  while (queue.length) {
+    const id = queue.shift() as string;
+    for (const t of fAdj.get(id) ?? []) {
+      depth.set(t, Math.max(depth.get(t) ?? 0, (depth.get(id) ?? 0) + 1));
+      work.set(t, (work.get(t) ?? 0) - 1);
+      if ((work.get(t) ?? 0) === 0) queue.push(t);
+    }
+  }
+  return { depth, forward };
+}
 
 /** Shape by decision-chart stereotype: question = diamond, crisis = thick box, else rounded box. */
 function decShape(stereotype: string | undefined, cx: number, cy: number): string {
@@ -485,25 +598,12 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   const nodes = model.nodes;
   const edges = model.edges;
 
-  // Longest-path layering (Sugiyama-lite) via a Kahn topological pass.
-  const indeg = new Map<string, number>(nodes.map((n) => [n.id, 0]));
-  const adj = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
-  for (const e of edges) {
-    if (!indeg.has(e.target) || !adj.has(e.source)) continue;
-    indeg.set(e.target, (indeg.get(e.target) ?? 0) + 1);
-    adj.get(e.source)?.push(e.target);
-  }
-  const depth = new Map<string, number>(nodes.map((n) => [n.id, 0]));
-  const work = new Map(indeg);
-  const queue = nodes.filter((n) => (indeg.get(n.id) ?? 0) === 0).map((n) => n.id);
-  while (queue.length) {
-    const id = queue.shift() as string;
-    for (const t of adj.get(id) ?? []) {
-      depth.set(t, Math.max(depth.get(t) ?? 0, (depth.get(id) ?? 0) + 1));
-      work.set(t, (work.get(t) ?? 0) - 1);
-      if ((work.get(t) ?? 0) === 0) queue.push(t);
-    }
-  }
+  // Cycle-aware longest-path layering (ADR-0010): break back-edges first so a plan that
+  // loops back doesn't collapse the cycle (and everything below it) onto one overlapping row.
+  const { depth } = layerWithCycleBreak(
+    nodes.map((n) => n.id),
+    edges,
+  );
   const layers = new Map<number, string[]>();
   for (const n of nodes) {
     const d = depth.get(n.id) ?? 0;
@@ -511,15 +611,22 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     if (arr) arr.push(n.id);
     else layers.set(d, [n.id]);
   }
-  const pos = new Map<string, { x: number; y: number }>();
   let maxDepth = 0;
+  for (const d of layers.keys()) maxDepth = Math.max(maxDepth, d);
+
+  // Grow the drawing width to fit the widest layer: each node gets DNODE_W + a gap, so wide
+  // layers spread out instead of crowding. The frame never shrinks below DEC_W (small charts
+  // keep their familiar look). The content is laid out from x=0 and the viewBox is fit below.
+  let widestLayer = 0;
+  for (const ids of layers.values()) widestLayer = Math.max(widestLayer, ids.length);
+  const contentW = Math.max(DEC_W, widestLayer * DNODE_W + (widestLayer + 1) * DNODE_GAP);
+
+  const pos = new Map<string, { x: number; y: number }>();
   for (const [d, ids] of layers) {
-    maxDepth = Math.max(maxDepth, d);
-    ids.forEach((id, i) =>
-      pos.set(id, { x: r1((DEC_W * (i + 1)) / (ids.length + 1)), y: DEC_TOP + d * DLAYER_GAP }),
-    );
+    // Centre the layer's row within contentW; even slot widths keep siblings apart.
+    const slot = contentW / (ids.length + 1);
+    ids.forEach((id, i) => pos.set(id, { x: r1(slot * (i + 1)), y: DEC_TOP + d * DLAYER_GAP }));
   }
-  const height = DEC_TOP + maxDepth * DLAYER_GAP + DNODE_H + DBANNER_H + 24;
 
   const nodeName = (id: string): string => {
     const n = nodes.find((x) => x.id === id);
@@ -534,20 +641,34 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     model.meta.crisisResources ??
     'If you are in danger now, call your local emergency number or a crisis line.';
 
-  // Edges (downward, with branch labels)
+  // Edges (with branch labels). A back-edge (loop-back) points UP, so route from the source's
+  // top to the target's bottom; forward edges go top→bottom as before. Place the branch label
+  // partway DOWN the edge (closer to the fork) and wrap long ones, so sibling labels don't
+  // overprint each other or the boxes (ADR-0010).
   for (const e of edges) {
     const s = pos.get(e.source);
     const t = pos.get(e.target);
     if (!s || !t) continue;
-    const sy = s.y + DNODE_H / 2;
-    const ty = t.y - DNODE_H / 2;
+    const up = t.y <= s.y; // back-edge / same-row link
+    const sy = up ? s.y - DNODE_H / 2 : s.y + DNODE_H / 2;
+    const ty = up ? t.y + DNODE_H / 2 : t.y - DNODE_H / 2;
     parts.push(
       `<path d="M ${s.x},${sy} L ${t.x},${ty}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
     );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
+      // 0.35 of the way from source to target keeps the label near the deciding fork and away
+      // from the next box; the two sibling labels of a yes/no split then sit at different x/y.
+      const lx = r1(s.x + (t.x - s.x) * 0.35);
+      const ly = r1(sy + (ty - sy) * 0.35);
       parts.push(
-        `<text x="${r1((s.x + t.x) / 2 + 5)}" y="${r1((sy + ty) / 2)}" font-family="sans-serif" font-size="11" font-weight="700">${esc(lbl)}</text>`,
+        wrapLabel(lbl, lx, ly, {
+          size: 11,
+          weight: 700,
+          anchor: 'middle',
+          maxWidth: Math.max(56, DNODE_W - 40),
+          maxLines: 2,
+        }),
       );
     }
   }
@@ -576,15 +697,50 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     }
   }
 
-  // Crisis-resources banner — ALWAYS visible (UX-M4)
-  const by = height - DBANNER_H;
+  // Content-fit frame (ADR-0010): measure the actual laid-out content so a wide layer or a
+  // crisis node's wrapped contact line never clips, then size the banner/disclaimer/viewBox to
+  // it (mirrors renderLoopMap). The drawing starts at x=0, so minX is 0 unless a leftmost box
+  // pokes negative; we measure both bounds to be safe.
+  let minX = 0;
+  let maxX = contentW;
+  let maxNodeBottom = DEC_TOP + maxDepth * DLAYER_GAP + DNODE_H / 2;
+  for (const n of nodes) {
+    const p = pos.get(n.id);
+    if (!p) continue;
+    minX = Math.min(minX, p.x - DNODE_W / 2);
+    maxX = Math.max(maxX, p.x + DNODE_W / 2);
+    // The crisis node carries up to 3 wrapped contact lines below it (size 9, lh 12).
+    const below = n.stereotype === 'crisis' ? DNODE_H / 2 + 13 + 3 * 12 : DNODE_H / 2;
+    maxNodeBottom = Math.max(maxNodeBottom, p.y + below);
+  }
+  const drawW = maxX - minX;
+
+  // Crisis-resources banner — ALWAYS visible (UX-M4) — spans the (content-fit) frame width.
+  const by = maxNodeBottom + 16;
   parts.push(
-    `<rect x="0" y="${by}" width="${DEC_W}" height="${DBANNER_H}" fill="#fff" stroke="#000" stroke-width="2" />`,
-    `<text x="14" y="${by + 19}" font-family="sans-serif" font-size="12" font-weight="700">Crisis resources (always available):</text>`,
-    `<text x="14" y="${by + 37}" font-family="sans-serif" font-size="11">${esc(crisis)}</text>`,
+    `<rect x="${r1(minX)}" y="${r1(by)}" width="${r1(drawW)}" height="${DBANNER_H}" fill="#fff" stroke="#000" stroke-width="2" />`,
+    `<text x="${r1(minX + 14)}" y="${r1(by + 19)}" font-family="sans-serif" font-size="12" font-weight="700">Crisis resources (always available):</text>`,
+    `<text x="${r1(minX + 14)}" y="${r1(by + 37)}" font-family="sans-serif" font-size="11">${esc(crisis)}</text>`,
   );
 
-  const start = nodes.find((n) => (indeg.get(n.id) ?? 0) === 0);
+  // Disclaimer (ADR-0010): the JSON/on-screen disclaimer was omitted from the exported SVG;
+  // show it under the banner like renderStateMap/renderPartsMap so the export is self-complete.
+  let footerBottom = by + DBANNER_H;
+  if (model.meta.disclaimer) {
+    const dy = footerBottom + 14;
+    parts.push(
+      fitText(model.meta.disclaimer, minX + 14, dy, {
+        size: 10,
+        fill: '#333',
+        maxWidth: drawW - 28,
+      }),
+    );
+    footerBottom = dy;
+  }
+
+  const height = footerBottom + DEC_PAD;
+
+  const start = nodes.find((n) => !edges.some((e) => e.target === n.id));
   const steps = edges.map(
     (e) =>
       `from "${nodeName(e.source)}", ${e.label ? `if ${getText(e.label, layer, lang)} ` : ''}go to "${nodeName(e.target)}"`,
@@ -595,16 +751,20 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     `Crisis resources are always shown: ${crisis}`;
 
   const titleText = model.meta.title
-    ? `<text x="20" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? `<text x="${r1(minX + 20)}" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
     : '';
   const defs =
     '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
 
+  // Content-fit viewBox (ADR-0010): width grows with the widest layer, height with depth.
+  const fx = r1(minX - DEC_PAD);
+  const fw = r1(drawW + DEC_PAD * 2);
+  const fh = r1(height);
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${DEC_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fx} 0 ${fw} ${fh}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Crisis chart')}</title><desc>${esc(altText)}</desc>` +
     defs +
-    `<rect x="0" y="0" width="${DEC_W}" height="${height}" fill="#fff" />` +
+    `<rect x="${fx}" y="0" width="${fw}" height="${fh}" fill="#fff" />` +
     titleText +
     parts.join('') +
     '</svg>';

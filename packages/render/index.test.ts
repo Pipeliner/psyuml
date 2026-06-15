@@ -79,6 +79,64 @@ describe('renderStateMap', () => {
   });
 });
 
+describe('renderStateMap — parallel-edge fan-out (ADR-0010)', () => {
+  // Two edges between the SAME pair used to share one lane and stack both labels at the same
+  // point — an unreadable smear. They must fan out into distinct lanes + staggered labels.
+  const twoEdgeModel = parseModel({
+    version: '0.1.0',
+    diagram: 'state-map',
+    meta: { disclaimer: 'x' },
+    bands: [
+      { id: 'top', label: { clinician: { en: 'Top' } }, order: 0 },
+      { id: 'bot', label: { clinician: { en: 'Bot' } }, order: 1 },
+    ],
+    nodes: [
+      { id: 'p', kind: 'state', bandId: 'top', label: { clinician: { en: 'P' } } },
+      { id: 'q', kind: 'state', bandId: 'bot', label: { clinician: { en: 'Q' } } },
+    ],
+    edges: [
+      {
+        id: 'e1',
+        kind: 'sequential',
+        source: 'p',
+        target: 'q',
+        trigger: { clinician: { en: 'harsh criticism' } },
+      },
+      {
+        id: 'e2',
+        kind: 'sequential',
+        source: 'p',
+        target: 'q',
+        trigger: { clinician: { en: 'fight with partner' } },
+      },
+    ],
+  });
+
+  it('keeps BOTH labels verbatim (not merged into one smear)', () => {
+    const { svg } = renderStateMap(twoEdgeModel);
+    expect(svg).toContain('harsh criticism');
+    expect(svg).toContain('fight with partner');
+  });
+
+  it('routes the two edges on different paths (distinct lanes)', () => {
+    const { svg } = renderStateMap(twoEdgeModel);
+    const paths = [...svg.matchAll(/<path d="(M [^"]+H [^"]+V [^"]+H [^"]+)"/g)].map((m) => m[1]);
+    expect(paths.length).toBeGreaterThanOrEqual(2);
+    // the two transition edges between p,q must differ (different vertical lane x)
+    expect(new Set(paths).size).toBe(paths.length);
+  });
+
+  it('staggers the two labels on different baselines', () => {
+    const { svg } = renderStateMap(twoEdgeModel);
+    const labelY = (txt: string): number => {
+      const m = svg.match(new RegExp(`<text x="[-\\d.]+" y="([-\\d.]+)"[^>]*>${txt}<`));
+      if (!m) throw new Error(`label not found: ${txt}`);
+      return Number(m[1]);
+    };
+    expect(labelY('harsh criticism')).not.toBe(labelY('fight with partner'));
+  });
+});
+
 describe('label wrapping (fit-to-box)', () => {
   const make = (label: string) =>
     parseModel({
@@ -183,6 +241,116 @@ describe('renderDecisionChart', () => {
 
   it('matches the committed golden SVG', () => {
     expectGolden('decision-nav.svg', renderDecisionChart(decisionModel).svg);
+  });
+});
+
+/** Parse a `viewBox="x y w h"` into numbers. */
+function viewBox(svg: string): { x: number; y: number; w: number; h: number } {
+  const m = svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+)"/);
+  if (!m) throw new Error('no viewBox');
+  return { x: Number(m[1]), y: Number(m[2]), w: Number(m[3]), h: Number(m[4]) };
+}
+
+describe('renderDecisionChart — scalable, cycle-aware layout (ADR-0010)', () => {
+  // A realistic crisis plan that BRANCHES wide and LOOPS BACK (≥12 nodes). The back-edge
+  // k -> root is the bug case: a plain Kahn pass leaves the cycle (and everything below it)
+  // at in-degree>0 forever, collapsing them onto one overlapping top row.
+  const decNode = (id: string) => ({
+    id,
+    kind: 'state' as const,
+    label: { clinician: { en: `Step ${id}` } },
+  });
+  const decEdge = (id: string, source: string, target: string, label?: string) => ({
+    id,
+    kind: 'sequential' as const,
+    source,
+    target,
+    ...(label ? { label: { clinician: { en: label } } } : {}),
+  });
+  const loopingModel = parseModel({
+    version: '0.1.0',
+    diagram: 'decision-nav',
+    meta: {
+      title: 'Branching plan with a loop',
+      disclaimer: 'This plan supports, and does not replace, professional care.',
+      crisisResources: 'If you are in danger now, call your local emergency number.',
+    },
+    nodes: ['root', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'].map(
+      decNode,
+    ),
+    edges: [
+      decEdge('r-a', 'root', 'a', 'option A'),
+      decEdge('r-b', 'root', 'b', 'option B'),
+      decEdge('r-c', 'root', 'c', 'option C'),
+      decEdge('r-d', 'root', 'd', 'option D'),
+      decEdge('a-e', 'a', 'e'),
+      decEdge('b-f', 'b', 'f'),
+      decEdge('c-g', 'c', 'g'),
+      decEdge('d-h', 'd', 'h'),
+      decEdge('e-i', 'e', 'i'),
+      decEdge('f-j', 'f', 'j'),
+      decEdge('i-k', 'i', 'k'),
+      decEdge('k-m', 'k', 'm'),
+      decEdge('m-n', 'm', 'n'),
+      decEdge('j-l', 'j', 'l'),
+      // The cycle: "still not safe → go back to the start".
+      decEdge('n-root', 'n', 'root', 'still not safe — start over'),
+    ],
+  });
+
+  it('grows the viewBox HEIGHT with depth and WIDTH to fit the widest layer', () => {
+    const small = viewBox(renderDecisionChart(decisionModel).svg);
+    const big = viewBox(renderDecisionChart(loopingModel).svg);
+    // Deeper chain → taller; wider (4-node) layer → wider than the small 2-wide example.
+    expect(big.h).toBeGreaterThan(small.h);
+    expect(big.w).toBeGreaterThan(small.w);
+  });
+
+  it('breaks the cycle and lays out ≥3 distinct rows (no collapse onto depth 0)', () => {
+    const { svg } = renderDecisionChart(loopingModel);
+    // Every node draws a centered <text> at its row y; collect the distinct y-rows. A naive
+    // Kahn pass would pile the cycle + downstream nodes onto a single y (one row).
+    const ys = new Set(
+      [
+        ...svg.matchAll(
+          /<text x="[-\d.]+" y="([-\d.]+)" font-family="sans-serif" font-size="11" text-anchor="middle"/g,
+        ),
+      ].map((m) => Number(m[1])),
+    );
+    expect(ys.size).toBeGreaterThanOrEqual(3);
+    // No node sits outside the (content-fit) frame horizontally.
+    const vb = viewBox(svg);
+    for (const m of svg.matchAll(/<rect x="([-\d.]+)" y="[-\d.]+" width="([\d.]+)"/g)) {
+      const x = Number(m[1]);
+      const w = Number(m[2]);
+      expect(x).toBeGreaterThanOrEqual(vb.x);
+      expect(x + w).toBeLessThanOrEqual(vb.x + vb.w + 0.5);
+    }
+  });
+
+  it('renders the disclaimer in the exported SVG (was omitted before)', () => {
+    const { svg } = renderDecisionChart(loopingModel);
+    expect(svg).toContain('This plan supports, and does not replace, professional care.');
+  });
+
+  it('tolerates an all-in-cycle model (no in-degree-0 root) without piling up', () => {
+    const ring = parseModel({
+      version: '0.1.0',
+      diagram: 'decision-nav',
+      meta: {},
+      nodes: ['x', 'y', 'z'].map(decNode),
+      edges: [decEdge('xy', 'x', 'y'), decEdge('yz', 'y', 'z'), decEdge('zx', 'z', 'x')],
+    });
+    const { svg } = renderDecisionChart(ring);
+    const ys = new Set(
+      [
+        ...svg.matchAll(
+          /<text x="[-\d.]+" y="([-\d.]+)" font-family="sans-serif" font-size="11" text-anchor="middle"/g,
+        ),
+      ].map((m) => Number(m[1])),
+    );
+    // The cycle is broken at one back-edge, so the three steps still spread across rows.
+    expect(ys.size).toBeGreaterThanOrEqual(2);
   });
 });
 
