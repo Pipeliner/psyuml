@@ -2,7 +2,7 @@
 
 **Purpose:** the reusable, UI-agnostic libraries that make up PsyUML's core
 (`@psyuml/*`). Each subdirectory is its own package and impact unit.
-**Status:** active (M0 skeletons)
+**Status:** active (the `@psyuml/*` libraries are implemented)
 **Spec anchor / REQ:** REQ-CORE-ONTOLOGY, REQ-NOTATION, REQ-WELLFORMEDNESS, REQ-CROSS-SCHOOL
 
 ## Upstream (this depends on)

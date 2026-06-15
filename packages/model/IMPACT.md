@@ -2,7 +2,7 @@
 
 **Purpose:** the school-agnostic canonical model — the source of truth every view
 projects from. (M0: skeleton; M1: full metamodel.)
-**Status:** active (M0 skeleton)
+**Status:** implemented (M1 — full canonical metamodel + schoolClaims + meta.consent)
 **Spec anchor / REQ:** REQ-CORE-ONTOLOGY, REQ-EPISTEMIC-STATUS, REQ-I18N
 
 ## Upstream (this depends on)

@@ -2,7 +2,7 @@
 
 **Purpose:** project entry point, monorepo configuration, and top-level docs for the
 PsyUML spec + tooling repo.
-**Status:** active (M0 scaffold landed)
+**Status:** active (M1–M10 implemented; v0.x pending clinical evidence — see REQ-EVAL-SUITE)
 **Spec anchor / REQ:** project-wide
 
 ## Upstream (this depends on)

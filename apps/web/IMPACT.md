@@ -2,7 +2,7 @@
 
 **Purpose:** the browser-based PsyUML editor. (M0: empty-canvas shell; M2: the drag-and-drop
 editor over the 8-symbol Tier-1 core.)
-**Status:** active (M0 shell)
+**Status:** active (M2 — the editor is implemented: structured authoring, layers, links, snapshots/diff)
 **Spec anchor / REQ:** REQ-EDITOR-MVP, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR
 
 ## Upstream (this depends on)

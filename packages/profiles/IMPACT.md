@@ -2,7 +2,7 @@
 
 **Purpose:** school profiles (glyph/palette + layout + vocabulary + extra validators) and the
 translation table — the "many views over one model" layer. (M0: seed list; M4–M5: definitions.)
-**Status:** active (M0 skeleton)
+**Status:** implemented (M4–M5 — translation table + the §K extension mechanism)
 **Spec anchor / REQ:** REQ-CROSS-SCHOOL, REQ-RESEARCH-PROFILES, REQ-BODY-MAP, REQ-EXTENSION-MECH
 
 ## Upstream (this depends on)

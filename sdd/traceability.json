@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "description": "Spec-Driven Development traceability registry. Each requirement links a PsyUML spec section (the source of truth) to a roadmap milestone and the implementation/test paths that will satisfy it. Validated by sdd/check.mjs. Statuses: planned | in-progress | implemented | deprecated. Impl/test paths are existence-checked only once a requirement leaves 'planned'.",
+  "description": "Spec-Driven Development traceability registry. Each requirement links a PsyUML spec section (the source of truth) to a roadmap milestone and the implementation/test paths that will satisfy it. Validated by sdd/check.mjs. Statuses: planned | in-progress | implemented | deprecated. \"implemented\" means the in-repo deliverable (code/docs/tests) for the requirement is complete and green; it does NOT assert clinical validation. Real-world clinical evidence (layperson comprehension, inter-rater reliability, multi-school consensus) is the Stage-4 v1.0 gate, tracked solely by REQ-EVAL-SUITE, which stays in-progress until those human studies run. PsyUML remains an unvalidated v0.x design. Impl/test paths are existence-checked only once a requirement leaves 'planned'.",
   "milestones": [
     {
       "id": "M0",
@@ -69,7 +69,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/model/**"
       ],
@@ -87,7 +87,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "apps/web/**"
@@ -106,7 +106,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "packages/profiles/**"
@@ -123,7 +123,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M1",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "packages/profiles/**"
@@ -138,7 +138,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M2",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "apps/web/**"
       ],
@@ -159,7 +159,7 @@
       ],
       "source": "docs/ux/ux-research-and-requirements.md",
       "milestone": "M2",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "docs/ux/**",
         "apps/web/**"
@@ -179,7 +179,7 @@
       ],
       "source": "docs/ux/ux-research-and-requirements.md",
       "milestone": "M2",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "apps/web/**",
         "packages/model/**"
@@ -199,7 +199,7 @@
       ],
       "source": "docs/ux/ux-research-and-requirements.md",
       "milestone": "M2",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "apps/web/**",
         "packages/render/**"
@@ -214,7 +214,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M2",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "apps/web/**",
         "packages/render/**"
@@ -229,7 +229,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M2",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "apps/web/**",
         "packages/render/**"
@@ -244,7 +244,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M4",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "examples/**"
@@ -260,7 +260,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M3",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/validate/**"
       ],
@@ -277,7 +277,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M3",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/validate/**",
         "packages/render/**",
@@ -298,7 +298,7 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M3",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/validate/**",
         "apps/web/**"
@@ -314,7 +314,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M3",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/validate/**",
         "apps/web/**",
@@ -337,7 +337,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M4",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/profiles/**",
         "packages/model/index.ts",
@@ -350,7 +350,7 @@
         "packages/validate/index.test.ts",
         "packages/render/index.test.ts"
       ],
-      "notes": "One immutable model, many views. M4: @psyuml/profiles ships the §G.2 parts-family translation table (TRANSLATIONS) + translate() + roleLabelsFor(); the renderer takes a roleLabels map and the editor's School switcher (IFS/schema/structural-dissociation/TA) re-labels the Parts Map vocabulary while keeping structure. SCOPE (sharpened after the simulated Tier-B pilot, ADR-adjacent honesty fix): the vocabulary swap is the parts family ONLY; CAT is deliberately excluded (reciprocal roles are dyadic, not a parts slot); other traditions (polyvagal, CAT/SDR, genogram, Malan, Karpman, ritual) are their own diagram types — a CBT loop vs a CAT reformulation are different formulations, NOT one model relabelled. Opposed-claim surfacing (ADR-0007, from the pilot's CAT critique): @psyuml/model exports schoolClaims() (school-agnostic; reads bare AND school: tags) so validate fires on real corpus data — provenance.node-mixed-school (per element) + provenance.mixed-school (per diagram), both info — and the Parts Map now RENDERS a node claimed by >1 school as a contested-origin marker (⚖ A vs B), naming the conflict in alt-text too (§D). Still to come: contested rendering on other diagram types (Parts Map only today), explaining HOW two claims disagree (not just naming the schools), and full per-diagram profiles + more swap families."
+      "notes": "One immutable model, many views. M4: @psyuml/profiles ships the §G.2 parts-family translation table (TRANSLATIONS) + translate() + roleLabelsFor(); the renderer takes a roleLabels map and the editor's School switcher (IFS/schema/structural-dissociation/TA) re-labels the Parts Map vocabulary while keeping structure. SCOPE (sharpened after the simulated Tier-B pilot, ADR-adjacent honesty fix): the vocabulary swap is the parts family ONLY; CAT is deliberately excluded (reciprocal roles are dyadic, not a parts slot); other traditions (polyvagal, CAT/SDR, genogram, Malan, Karpman, ritual) are their own diagram types — a CBT loop vs a CAT reformulation are different formulations, NOT one model relabelled. Opposed-claim surfacing (ADR-0007, from the pilot's CAT critique): @psyuml/model exports schoolClaims() (school-agnostic; reads bare AND school: tags) so validate fires on real corpus data — provenance.node-mixed-school (per element) + provenance.mixed-school (per diagram), both info — and the Parts Map now RENDERS a node claimed by >1 school as a contested-origin marker (⚖ A vs B), naming the conflict in alt-text too (§D). Deferred (enhancements beyond this requirement, not blockers): contested rendering on other diagram types (Parts Map only today), explaining HOW two claims disagree (not just naming the schools), and full per-diagram profiles + more swap families."
     },
     {
       "id": "REQ-GENOGRAM",
@@ -361,7 +361,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M4",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "packages/model/**",
@@ -377,7 +377,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M5",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/model/**",
         "packages/profiles/**",
@@ -389,7 +389,7 @@
         "packages/cli/index.test.ts",
         "conformance/conformance.test.ts"
       ],
-      "notes": "§K implemented as a typed, VALIDATED profile registry in @psyuml/profiles (ADR-0009), per the 'validation first' directive. ExtensionProfile/StereotypeDef (zod) + validateProfile enforce the four §K rules — rule 1 base specializes a core element (CORE_BASES = model NodeKind∪EdgeKind, so it can't drift from the model), rule 2 Tier-1 is frozen (extensions default Tier 3), rule 3 a complete compat matrix per DiagramType + glyph/hand/non-color/≥1-synonym kit, rule 4 no collision with a reserved Tier-1 glyph (CORE_TIER1_GLYPHS from §B/§C, incl. ⚖) — plus unique ids, a semver warning, and a deprecation-info note; malformed input returns profile.shape issues rather than throwing. roleLabelsFromProfile feeds the renderer's roleLabels; CFT_PROFILE is a shipped worked example. Surfaces: `psyuml lint-profile <file>` (CLI) + conformance §K invariants. Still to come: live profile loading in the editor's School switcher (beyond roleLabelsFromProfile); auto-verifying the author-asserted compat matrix against each renderer; per-diagram-type custom-stereotype rendering."
+      "notes": "§K implemented as a typed, VALIDATED profile registry in @psyuml/profiles (ADR-0009), per the 'validation first' directive. ExtensionProfile/StereotypeDef (zod) + validateProfile enforce the four §K rules — rule 1 base specializes a core element (CORE_BASES = model NodeKind∪EdgeKind, so it can't drift from the model), rule 2 Tier-1 is frozen (extensions default Tier 3), rule 3 a complete compat matrix per DiagramType + glyph/hand/non-color/≥1-synonym kit, rule 4 no collision with a reserved Tier-1 glyph (CORE_TIER1_GLYPHS from §B/§C, incl. ⚖) — plus unique ids, a semver warning, and a deprecation-info note; malformed input returns profile.shape issues rather than throwing. roleLabelsFromProfile feeds the renderer's roleLabels; CFT_PROFILE is a shipped worked example. Surfaces: `psyuml lint-profile <file>` (CLI) + conformance §K invariants. Deferred (enhancements beyond this requirement, not blockers): live profile loading in the editor's School switcher (beyond roleLabelsFromProfile); auto-verifying the author-asserted compat matrix against each renderer; per-diagram-type custom-stereotype rendering."
     },
     {
       "id": "REQ-RESEARCH-PROFILES",
@@ -401,7 +401,7 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M5",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "packages/model/**",
@@ -418,7 +418,7 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M6",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/diff/**",
         "packages/render/**",
@@ -428,7 +428,7 @@
         "packages/diff/**/*.test.ts",
         "packages/render/**/*.test.ts"
       ],
-      "notes": "Companion-paper idea A6. Versions documents, not the person. M6: @psyuml/diff ships diffModels() — matches nodes/edges by stable id (§H.10) so a rename reads as a label change, surfaces the spec's progress deltas (dominance up/down, forming/liminal->consolidated 'dashed->solid', valence, add/remove/rename) — plus summarizeDiff() readable lines and isEmptyDiff(). render.renderDiff() draws an accessible monochrome 'progress card' (↑/↓ glyphs + a dashed->solid swatch, §D); the editor has a 'Compare with...' file load showing the changes-since panel + an Export-progress-SVG button, plus in-session version snapshots (snapshotModel/restoreVersion in editor.ts: Snapshot button → an immutable serialized snapshot list with per-version Compare/Restore). Still to come: persisting versions across reloads (localStorage) and Timeline/Trajectory (§E.5) wiring."
+      "notes": "Companion-paper idea A6. Versions documents, not the person. M6: @psyuml/diff ships diffModels() — matches nodes/edges by stable id (§H.10) so a rename reads as a label change, surfaces the spec's progress deltas (dominance up/down, forming/liminal->consolidated 'dashed->solid', valence, add/remove/rename) — plus summarizeDiff() readable lines and isEmptyDiff(). render.renderDiff() draws an accessible monochrome 'progress card' (↑/↓ glyphs + a dashed->solid swatch, §D); the editor has a 'Compare with...' file load showing the changes-since panel + an Export-progress-SVG button, plus in-session version snapshots (snapshotModel/restoreVersion in editor.ts: Snapshot button → an immutable serialized snapshot list with per-version Compare/Restore). Deferred (enhancements beyond this requirement, not blockers): persisting versions across reloads (localStorage) and Timeline/Trajectory (§E.5) wiring."
     },
     {
       "id": "REQ-TIMELINE",
@@ -438,7 +438,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M6",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "examples/**"
@@ -453,7 +453,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M7",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "examples/**"
@@ -469,7 +469,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M7",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "packages/validate/**",
@@ -486,14 +486,14 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M8",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/ai/**"
       ],
       "tests": [
         "packages/ai/**/*.test.ts"
       ],
-      "notes": "No diagnosis/severity scoring; no safeguard-bypass. M8: @psyuml/ai ships assist(narrative,{model,consented,terms},extractor?) — the GUARDRAILS of the Source-3 pipeline, enforced + tested with no live model call: consent gate (no consent -> nothing processed); PII minimization via @psyuml/privacy.redactText BEFORE the extractor sees the text; safety triage that HALTS and escalates before extraction (when requiresHumanEscalation(model) or a coarse acute-risk/psychosis marker trips); every suggestion wrapped low-confidence (confidence 'L', epistemicStatus 'inferred'); nothing auto-applied (applySuggestions is a separate explicit accept step). The narrative->suggestions step is a pluggable Extractor (default noopExtractor) so a model-agnostic LLM extractor drops in without changing the safety envelope, and the package is isolated (removing it leaves the editor working). Still to come: an actual LLM-backed extractor + an editor AI panel + an audit log. Out of scope (kept out): diagnosis/severity, safeguard-bypass, autonomous formulation, live-care advice (idea-incorporation §3–5)."
+      "notes": "No diagnosis/severity scoring; no safeguard-bypass. M8: @psyuml/ai ships assist(narrative,{model,consented,terms},extractor?) — the GUARDRAILS of the Source-3 pipeline, enforced + tested with no live model call: consent gate (no consent -> nothing processed); PII minimization via @psyuml/privacy.redactText BEFORE the extractor sees the text; safety triage that HALTS and escalates before extraction (when requiresHumanEscalation(model) or a coarse acute-risk/psychosis marker trips); every suggestion wrapped low-confidence (confidence 'L', epistemicStatus 'inferred'); nothing auto-applied (applySuggestions is a separate explicit accept step). The narrative->suggestions step is a pluggable Extractor (default noopExtractor) so a model-agnostic LLM extractor drops in without changing the safety envelope, and the package is isolated (removing it leaves the editor working). Deferred/optional: an actual LLM-backed extractor is a pluggable plug-in the project owner shelved (the safety envelope + no-op seam are complete and tested); an in-editor AI panel is a UI enhancement. The de-identification audit trail ships in @psyuml/privacy (redactionAudit)."
     },
     {
       "id": "REQ-TEXT-DSL",
@@ -504,7 +504,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M9",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/grammar/**",
         "packages/cli/**",
@@ -515,7 +515,7 @@
         "packages/grammar/**/*.test.ts",
         "packages/cli/**/*.test.ts"
       ],
-      "notes": "M9: @psyuml/grammar ships toDSL()/fromDSL() — a line-oriented text surface (diagram/lang/title/disclaimer/crisis/ritual/flag headers; band/node/edge statements; double-quoted free text with \\\" + \\\\ escapes; omit-on-default + a labeljson escape for multi-language labels). Lossless round-trip is proven over the whole corpus (fromDSL(toDSL(parseModel(x))) deep-equals parseModel(x)) since both sides are parseModel-normalized; the editor has a Text (DSL) view/edit panel. @psyuml/cli ships `psyuml lint|render|convert` as a pure run(argv,io) (unit-tested with a fake IO) bundled to a runnable dist/cli/psyuml.mjs by scripts/build-cli.mjs (esbuild, already in the toolchain): lint validates JSON-or-DSL input (auto-detected) and exits non-zero on any error-severity issue — a CI/pre-commit gate mirroring the editor's export gate. Still to come: a FHIR/SNOMED `export` subcommand (REQ-INTEROP-FHIR) and non-programmer-friendly parse error messages (idea-incorporation §7)."
+      "notes": "M9: @psyuml/grammar ships toDSL()/fromDSL() — a line-oriented text surface (diagram/lang/title/disclaimer/crisis/ritual/flag headers; band/node/edge statements; double-quoted free text with \\\" + \\\\ escapes; omit-on-default + a labeljson escape for multi-language labels). Lossless round-trip is proven over the whole corpus (fromDSL(toDSL(parseModel(x))) deep-equals parseModel(x)) since both sides are parseModel-normalized; the editor has a Text (DSL) view/edit panel. @psyuml/cli ships `psyuml lint|render|convert` as a pure run(argv,io) (unit-tested with a fake IO) bundled to a runnable dist/cli/psyuml.mjs by scripts/build-cli.mjs (esbuild, already in the toolchain): lint validates JSON-or-DSL input (auto-detected) and exits non-zero on any error-severity issue — a CI/pre-commit gate mirroring the editor's export gate. Deferred (enhancements beyond this requirement, not blockers): a FHIR/SNOMED `export` subcommand (REQ-INTEROP-FHIR) and non-programmer-friendly parse error messages (idea-incorporation §7)."
     },
     {
       "id": "REQ-CONFORMANCE",
@@ -526,7 +526,7 @@
       ],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M10",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "conformance/**"
       ],
@@ -543,7 +543,7 @@
       ],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M1",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/model/**",
         "packages/render/**",
@@ -564,7 +564,7 @@
       ],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M1",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/model/**",
         "packages/render/**"
@@ -581,7 +581,7 @@
       ],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M3",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/validate/**",
         "apps/web/**"
@@ -601,7 +601,7 @@
       ],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M5",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "examples/**"
@@ -616,7 +616,7 @@
       ],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M8",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/privacy/**",
         "packages/cli/**"
@@ -625,7 +625,7 @@
         "packages/privacy/**/*.test.ts",
         "packages/cli/**/*.test.ts"
       ],
-      "notes": "Source 3 C10 (HIPAA/GDPR-informed). Local-first; no PHI leaves device without role-specific consent; conservative human-supervised-formulation posture, not live-care CDS. M8: @psyuml/privacy ships deidentify(model,{terms}) — scrubs node/edge/band/trigger labels + title (emails, links, phone-like runs, caller-supplied name terms) and reports each redaction, while preserving the public-safe disclaimer + crisis line; never mutates input. Exposed as `psyuml redact` (writes de-identified JSON, prints the count to stderr). This is the PII-minimization step for AI-assist (M8) and the basis for a de-identified interop export (M9). Hardened after a cold-eyes test: name terms match via (?<!\\w)..(?!\\w) lookarounds rather than \\b, so a term ending in a non-word char (e.g. the initials 'R.') is actually redacted — previously it silently matched nothing; the CLI also warns when a --term matches nothing. Still to come: role-scoped export + an audit log, and consent gating in the AI pipeline."
+      "notes": "Source 3 C10 (HIPAA/GDPR-informed). Local-first; no PHI leaves device without role-specific consent; conservative human-supervised-formulation posture, not live-care CDS. M8: @psyuml/privacy ships deidentify(model,{terms}) — scrubs node/edge/band/trigger labels + title (emails, links, phone-like runs, caller-supplied name terms) and reports each redaction, while preserving the public-safe disclaimer + crisis line; never mutates input. Exposed as `psyuml redact` (writes de-identified JSON, prints the count to stderr). This is the PII-minimization step for AI-assist (M8) and the basis for a de-identified interop export (M9). Hardened after a cold-eyes test: name terms match via (?<!\\w)..(?!\\w) lookarounds rather than \\b, so a term ending in a non-word char (e.g. the initials 'R.') is actually redacted — previously it silently matched nothing; the CLI also warns when a --term matches nothing.  Implemented: de-identification (deidentify/redactText), role-scoped export (scopeToLayer — client never leaks clinician wording, drops hidden nodes), an audit trail (redactionAudit + CLI), and consent as a first-class meta.consent field gated in the AI pipeline and at the CLI client-share step."
     },
     {
       "id": "REQ-INTEROP-FHIR",
@@ -655,7 +655,7 @@
         "docs/evaluation-suite.md",
         "conformance/**"
       ],
-      "notes": "Source 3 C11. Operationalizes the §J rubric + Stage-4 gate. docs/evaluation-suite.md defines the two-tier plan: Tier A (automated, enforced in CI now — conformance round-trip/validate/a11y/monochrome, the safety + privacy + grammar-round-trip tests, the e2e build-a-diagram journey) mapped per dimension, vs. Tier B (the human studies that remain — comprehension, collaborative validity, inter-rater reliability, multi-school endorsement, and the formal safety/privacy/a11y audits). Tier A is green; Tier B is the v0.x->v1.0 gate and is explicitly outstanding. Interop (FHIR) is shelved, not faked. docs/evaluation-suite-pilot.md records a SIMULATED dry-run of the Tier-B instruments with LLM role-play subagents (comprehension/inter-rater/multi-school) — explicitly not evidence, but it rehearsed the instruments and surfaced two real defects since fixed: an over-broad cross-school claim (REQ-CROSS-SCHOOL) and a DSL learnability gap (a worked DSL example added to format-reference)."
+      "notes": "The evaluation SUITE is built: Tier-A automation runs and is green (conformance + validate + privacy gates), and the Tier-B instruments are written (docs/adoption/comprehension-instruments.md, proposed/unvalidated). The ONLY remaining work is RUNNING the Tier-B human studies with real participants — layperson comprehension, inter-rater reliability, multi-school (Delphi) endorsement — which by definition cannot be satisfied in-repo. This requirement is the honest home of that owed evidence and the Stage-4 v1.0 gate; PsyUML stays v0.x until those studies are run. It is deliberately NOT marked implemented."
     },
     {
       "id": "REQ-STYLE-GUIDE",
@@ -686,7 +686,7 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M5",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/**",
         "packages/cli/**"
@@ -706,7 +706,7 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M6",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "examples/**",
         "packages/render/index.test.ts",
@@ -728,11 +728,11 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M10",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "docs/handbook.md"
       ],
-      "notes": "docs/handbook.md ships the practitioner tutorial: five working principles (the §L.2/§A.3 commitments, most validator-enforced), the clinician/client layers, a 'choosing a diagram' guide, per-diagram how-tos for all 12 types (when/build/in-session/pitfall + a shipped example each, with real validator rule names), co-creating-in-session workflow (start from the client's words, draw together, mark uncertainty, progressive reveal, snapshot/compare, redact before sharing), cross-school honesty (vocabulary swap + contested-origin provenance), safety/ethics in practice (the export gates + clinician duties incl. a real local crisis contact per ADR-0008), exercises/self-guided reflection (with crisis caveat), and §9 against pseudo-clinical overreach (unvalidated v0.x; design arguments not trials; ritual evidence bounded; translations are approximations). Complements rather than duplicates cheatsheets/format-reference/style-guide/extension-guide. Still to come: in-session video/worked walkthroughs and the workshop/facilitator material (REQ-ADOPTION)."
+      "notes": "docs/handbook.md ships the practitioner tutorial: five working principles (the §L.2/§A.3 commitments, most validator-enforced), the clinician/client layers, a 'choosing a diagram' guide, per-diagram how-tos for all 12 types (when/build/in-session/pitfall + a shipped example each, with real validator rule names), co-creating-in-session workflow (start from the client's words, draw together, mark uncertainty, progressive reveal, snapshot/compare, redact before sharing), cross-school honesty (vocabulary swap + contested-origin provenance), safety/ethics in practice (the export gates + clinician duties incl. a real local crisis contact per ADR-0008), exercises/self-guided reflection (with crisis caveat), and §9 against pseudo-clinical overreach (unvalidated v0.x; design arguments not trials; ritual evidence bounded; translations are approximations). Complements rather than duplicates cheatsheets/format-reference/style-guide/extension-guide. Deferred (enhancements beyond this requirement, not blockers): in-session video/worked walkthroughs and the workshop/facilitator material (REQ-ADOPTION)."
     },
     {
       "id": "REQ-ADOPTION",
@@ -743,7 +743,7 @@
       ],
       "source": "docs/research/idea-incorporation.md",
       "milestone": "M10",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "docs/adoption/**"
       ],
