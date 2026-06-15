@@ -20,6 +20,7 @@ the language. Everything else implements or references it.
 | File | Purpose | Upstream | Downstream | Spec / REQ | Change risk |
 |---|---|---|---|---|---|
 | `psyuml-v0.1.0.md` | The v0.1.0 spec: core ontology, notation, 9 diagram types, ritual, cross-school, worked case, ethics | — | everything | §A–§L | **high** — version-bump and update citing REQs on any normative change |
+| `psyuml-v0.2.0.md` | The **v0.2.0** spec — a backward-compatible **evolution** of v0.1 (ADR-0014): collaborative-formulation centre + binding honesty clause; 8 diagram **families** × 3 audience **profiles**; provenance+confidence formalized (`contested` added); CAT **Pattern** semantics (trap/dilemma/snag + exits, ontology-neutral); comprehension-testing release gate (ISO 9186); lossy **FHIR export** mapping; sharpened ethics; system/doc architecture + phased roadmap (M11–M16) + v0.1 migration | `psyuml-v0.1.0.md` (normative core), `../research/v0.2-research-synthesis.md` | `@psyuml/profiles` (families/profiles), roadmap M11–M16, REQ-DIAGRAM-FAMILIES/REQ-AUDIENCE-PROFILES/REQ-NOTATION-TESTING/REQ-INTEROP-FHIR | §0–§10 (extends §A–§L) | medium — additive/MINOR; keeps v0.1 in force |
 
 ## Change checklist
 - [ ] Classify the change (PATCH / MINOR / MAJOR) per §K; Tier-1 core is frozen within a MAJOR.

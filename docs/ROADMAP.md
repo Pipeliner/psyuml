@@ -107,6 +107,50 @@ demands before any 1.0.
 - **Acceptance:** conformance suite green (incl. round-trip); a11y audit passes; **v0.x → v1.0 stays gated** on the spec's Stage-4 evidence (layperson comprehension, inter-rater reliability, multi-school endorsement) — software-ready ≠ clinically-validated.
 - **Spec refs:** §J, §K, Recommendations Stage 4, Caveats. **REQ:** REQ-CONFORMANCE, REQ-EVAL-SUITE.
 
+## Phase 6 — The v0.2 evolution (collaborative-formulation centre)
+
+> A **backward-compatible** (MINOR) evolution, not a rewrite — see
+> [`specification/psyuml-v0.2.0.md`](./specification/psyuml-v0.2.0.md) and ADR-0014.
+> v0.1 stays in force; everything here is additive (metadata/views over the same model).
+> Ordering follows the research — **semantics → tested symbols → assets → studies**:
+> we don't freeze new symbols before testing their comprehension (M14 gates leaving v0.x).
+
+### M11 · Diagram families + audience profiles foundation *(implementing now)*
+- **Goal:** give v0.2 its structural backbone — group the existing 12 diagram types into 8 **families** and define the 3 **audience profiles** — as metadata over the model (no schema break).
+- **Deliverables:** `@psyuml/profiles` registry + API — `FAMILIES`/`FAMILY_OF`/`familyOf`/`diagramsInFamily` (Field·Cycle·Parts·Pattern·Journey·Change·Ritual·Composite, every `DiagramType` mapped, no gaps) and `AUDIENCE_PROFILES`/`audienceProfile` (clinician / client / picture, each with its plain-language + interpretive-visibility + symbol-budget posture); unit tests for total coverage and profile posture.
+- **Acceptance:** every `DiagramType` resolves to exactly one family; `diagramsInFamily` round-trips the map; the three profiles expose the documented posture (clinician shows interpretive layers; client is plain-language, no interpretive; picture caps symbol kinds); `node sdd/check.mjs` + the profiles tests green.
+- **Spec refs:** v0.2 §2, §8. **REQ:** REQ-DIAGRAM-FAMILIES, REQ-AUDIENCE-PROFILES.
+
+### M12 · Pattern family + provenance/confidence surfacing
+- **Goal:** make the CAT-derived **Pattern** semantics and the provenance/confidence model first-class and *visible*.
+- **Deliverables:** loop-topology tags (**trap / dilemma / snag**) + **exits** as first-class Pattern constructs; the `contested` provenance value + L/M/H **confidence** rendered on a redundant (non-colour) channel with alt-text; ontology-neutral **`as-if`** framing for Parts so no school's claims are asserted as fact.
+- **Acceptance:** a Pattern diagram renders trap/dilemma/snag + exits distinguishably in monochrome; `contested` origins and confidence survive into alt-text; gated by the overlap invariant (ADR-0012) and monochrome-redundancy checks.
+- **Spec refs:** v0.2 §3, §4. **REQ:** REQ-DIAGRAM-FAMILIES, REQ-CROSS-SCHOOL, REQ-ACCESSIBILITY.
+
+### M13 · Audience-profile rendering + editor
+- **Goal:** turn the profile *registry* (M11) into real rendered output and an editor surface.
+- **Deliverables:** client/picture profiles wired through the renderers; the editor's **family-grouped** diagram picker + a profile switch (clinician ⇄ client ⇄ picture); picture-profile symbols enter the M14 comprehension-testing pipeline.
+- **Acceptance:** switching audience profile never mutates core data (parallels the school switcher); the client/picture profiles honour their plain-language + symbol-budget posture; exports respect the active profile.
+- **Spec refs:** v0.2 §2, §6, §8. **REQ:** REQ-AUDIENCE-PROFILES, REQ-EDITOR-MVP, REQ-ACCESSIBILITY.
+
+### M14 · Notation comprehension testing (Tier-B) — the v0.x gate
+- **Goal:** stop guessing whether symbols are understood — measure it.
+- **Deliverables:** run the **ISO 9186** comprehension/recognition protocol + a participatory round with clients/trainees/laypeople (instruments already drafted in `docs/adoption/`); iterate symbols on the findings; record results in `docs/evaluation-suite.md`. Tier-A automatable checks stay in CI; Tier-B human studies are the release evidence.
+- **Acceptance:** every picture-profile symbol has a recorded comprehension result against the spec's thresholds (≥67% general / ≥85% safety-critical); failures drive a documented symbol revision. **Leaving v0.x stays gated on this evidence.**
+- **Spec refs:** v0.2 §5. **REQ:** REQ-NOTATION-TESTING, REQ-EVAL-SUITE.
+
+### M15 · Lossy FHIR export + audience-scoped exports
+- **Goal:** interoperate honestly — a clearly **lossy**, export-only standards bridge.
+- **Deliverables:** `@psyuml/interop` mapping to Composition / ClinicalImpression / Observation / FamilyMemberHistory+List / CarePlan+Goal, each with **documented loss** (round-trip is explicitly *not* claimed); audience/consent-scoped redaction so an export carries only what its profile permits.
+- **Acceptance:** an export validates against its FHIR resource schemas; the loss is documented per resource; de-identification + audience scoping are on by default (extends M9's posture).
+- **Spec refs:** v0.2 §7. **REQ:** REQ-INTEROP-FHIR, REQ-PRIVACY.
+
+### M16 · Composite board + cultural-extension packs
+- **Goal:** the multi-view **Composite** family and culturally-situated symbol sets — as governed extensions, not core changes.
+- **Deliverables:** a Composite board that arranges several family views over one model with shared IDs; cultural-extension packs shipped as **§K profiles** with **cultural-permission flags**, validated by `psyuml lint-profile`.
+- **Acceptance:** a Composite board cross-navigates its member diagrams via shared IDs; every cultural pack passes the §K collision check and carries its permission/provenance flags; no Tier-1 core change.
+- **Spec refs:** v0.2 §2, §6, §K. **REQ:** REQ-EXTENSION-MECH, REQ-DIAGRAM-FAMILIES.
+
 ---
 
 ## Cross-cutting workstreams (run continuously)

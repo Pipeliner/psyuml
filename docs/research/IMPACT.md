@@ -22,6 +22,7 @@ adopt/adapt/reject analysis that feeds the plan.
 | `upml-fable-agent-architecture.ru.md` | Companion research paper 1 (RU), saved verbatim | — | `idea-incorporation.md` | — | low (archival) |
 | `psyml-fable-agent-spec.md` | Companion research paper 2 (PsyML), saved verbatim | — | `idea-incorporation.md` | — | low (archival) |
 | `idea-incorporation.md` | What ideas are adopted / adapted / **rejected** from both papers, and why | both papers, spec §L.2 | roadmap M1/M3/M5/M6/M8/M9/M10, many REQs | §G, §K, §L.2 | medium |
+| `v0.2-research-synthesis.md` | Deep-research synthesis (5 angles, cited + adversarially verified) for the **v0.2** evolution: collaborative-formulation centre, CAT SDR, modality archetypes, notation science + ISO-9186 comprehension testing, ethics/FHIR, honest evidence base; incl. an evidence-and-notation matrix + verdicts on the prior synthesis | external syntheses, web sources | `specification/psyuml-v0.2.0.md`, ADR-0014 | §A/§E/§J/§L | low (archival) |
 
 ## Change checklist
 - [ ] Keep the adopt/reject decisions consistent with the spec's Ethical-Use Statement (§L.2).

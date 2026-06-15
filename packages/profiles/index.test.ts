@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { DiagramType } from '@psyuml/model';
 import {
+  AUDIENCE_PROFILES,
+  audienceProfile,
   CFT_PROFILE,
+  diagramsInFamily,
+  familyOf,
+  FAMILIES,
+  FAMILY_OF,
+  listFamilies,
   listProfiles,
   roleLabelsFor,
   roleLabelsFromProfile,
@@ -134,5 +141,40 @@ describe('extension mechanism (§K)', () => {
     const r = validateProfile({ id: '', stereotypes: 'nope' });
     expect(r.ok).toBe(false);
     expect(r.issues.every((i) => i.rule === 'profile.shape')).toBe(true);
+  });
+});
+
+describe('diagram families + audience profiles (v0.2 §2)', () => {
+  it('lists all eight families', () => {
+    expect(FAMILIES).toHaveLength(8);
+    expect(listFamilies().map((f) => f.id)).toContain('pattern');
+  });
+
+  it('maps every DiagramType to exactly one family (no gaps)', () => {
+    for (const d of DiagramType.options) {
+      expect(typeof FAMILY_OF[d]).toBe('string');
+      expect(FAMILIES.some((f) => f.id === familyOf(d))).toBe(true);
+    }
+  });
+
+  it('groups types into the right family', () => {
+    expect(familyOf('parts-map')).toBe('parts');
+    expect(familyOf('process-loop')).toBe('cycle');
+    expect(familyOf('relational-field')).toBe('field');
+    expect(familyOf('timeline')).toBe('journey');
+    expect(familyOf('decision-nav')).toBe('change');
+    expect(diagramsInFamily('parts').sort()).toEqual(['mode-map', 'parts-map']);
+    // pattern + composite have no dedicated type yet (Pattern is realized via process-loop today)
+    expect(diagramsInFamily('pattern')).toEqual([]);
+    expect(diagramsInFamily('composite')).toEqual([]);
+  });
+
+  it('exposes three audience profiles with the expected posture', () => {
+    expect(AUDIENCE_PROFILES.map((p) => p.id)).toEqual(['clinician', 'client', 'picture']);
+    expect(audienceProfile('clinician').showInterpretive).toBe(true);
+    expect(audienceProfile('client').plainLanguage).toBe(true);
+    expect(audienceProfile('client').showInterpretive).toBe(false);
+    expect(audienceProfile('picture').maxSymbolKinds).toBe(5);
+    expect(() => audienceProfile('nope' as 'client')).toThrow();
   });
 });

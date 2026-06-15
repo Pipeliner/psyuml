@@ -56,6 +56,36 @@
       "id": "M10",
       "phase": 5,
       "title": "Conformance, usability, release readiness"
+    },
+    {
+      "id": "M11",
+      "phase": 6,
+      "title": "v0.2: diagram families + audience profiles foundation"
+    },
+    {
+      "id": "M12",
+      "phase": 6,
+      "title": "v0.2: Pattern family + provenance/confidence surfacing"
+    },
+    {
+      "id": "M13",
+      "phase": 6,
+      "title": "v0.2: audience-profile rendering + editor"
+    },
+    {
+      "id": "M14",
+      "phase": 6,
+      "title": "v0.2: notation comprehension testing (Tier-B)"
+    },
+    {
+      "id": "M15",
+      "phase": 6,
+      "title": "v0.2: lossy FHIR export + audience-scoped exports"
+    },
+    {
+      "id": "M16",
+      "phase": 6,
+      "title": "v0.2: composite board + cultural-extension packs"
     }
   ],
   "requirements": [
@@ -748,6 +778,55 @@
         "docs/adoption/**"
       ],
       "notes": "Adoption pack under docs/adoption/, three parts: (1) workshop.md — a runnable ~3h introductory clinician workshop + facilitator script (learning objectives, timed agenda, hands-on State-Map/loop-with-exit/Resource-map exercises, talking points, a safety/ethics segment, deck outline, feedback form) that teaches FROM the handbook + cheatsheets + examples; (2) extension-contributor-guide.md — the clinician PROCESS for proposing a new symbol/stereotype/profile (satisfy the four §K rules, draft an ExtensionProfile, validate with `psyuml lint-profile`, attach rationale/evidence, submit, review, semver), wrapping the §K mechanics in docs/extension-guide.md (REQ-EXTENSION-MECH); (3) comprehension-instruments.md — PROPOSED, UNVALIDATED Tier-B instruments (layperson crisis-chart/State-Map comprehension test with sample items + scoring, inter-rater formulation-reliability task, multi-school Delphi consensus sketch) + a pilot-study design with go/no-go thresholds tied to the Stage-4 gate. The instruments are proposed/unvalidated and administering them does NOT constitute evidence; the pack EXTENDS REQ-EVAL-SUITE (operationalizes its Tier B). Honest framing throughout: unvalidated v0.x, supervised pilot use, §L.2 (support-not-replace, non-pathologising, consent + secular default, no overreach)."
+    },
+    {
+      "id": "REQ-DIAGRAM-FAMILIES",
+      "title": "v0.2: diagram families taxonomy (group the diagram types by the question they answer)",
+      "spec": [
+        "§2"
+      ],
+      "source": "docs/specification/psyuml-v0.2.0.md",
+      "milestone": "M11",
+      "status": "in-progress",
+      "impl": [
+        "packages/profiles/index.ts"
+      ],
+      "tests": [
+        "packages/profiles/index.test.ts"
+      ],
+      "notes": "v0.2 (ADR-0014) groups the 12 v0.1 diagram TYPES into 8 cognitive FAMILIES (the question each answers): Field / Cycle / Parts / Pattern / Journey / Change / Ritual / Composite. @psyuml/profiles ships FAMILIES (descriptors) + FAMILY_OF (every DiagramType → exactly one family) + familyOf()/listFamilies()/diagramsInFamily(); metadata over the existing model (no schema break). Pattern is realized today via the process-loop renderer (the cat-sdr example) and Composite (multi-view board) is future — both are defined in the taxonomy but have no dedicated type yet. Still to come: the editor groups its diagram picker by family (M13)."
+    },
+    {
+      "id": "REQ-AUDIENCE-PROFILES",
+      "title": "v0.2: audience profiles (clinician / client / picture) — same semantics, different visual compression",
+      "spec": [
+        "§2"
+      ],
+      "source": "docs/specification/psyuml-v0.2.0.md",
+      "milestone": "M11",
+      "status": "in-progress",
+      "impl": [
+        "packages/profiles/index.ts"
+      ],
+      "tests": [
+        "packages/profiles/index.test.ts"
+      ],
+      "notes": "v0.2 (ADR-0014, spec §2) defines three audience profiles sharing identical semantics but different visual compression: clinician (full relations + interpretation + provenance/confidence), client (plain language, capped symbols, actionable foreground), and picture (low-literacy/child; pictographic; picture symbols MUST pass the §5 comprehension gate before they are frozen). @psyuml/profiles ships AUDIENCE_PROFILES + audienceProfile(); profiles MUST NOT change the model, only its rendering (single source of truth, round-trip-safe). Still to come: the renderers + editor honor the selected profile (M13)."
+    },
+    {
+      "id": "REQ-NOTATION-TESTING",
+      "title": "v0.2: notation comprehension testing as a release gate (participatory design + ISO 9186)",
+      "spec": [
+        "§5"
+      ],
+      "source": "docs/specification/psyuml-v0.2.0.md",
+      "milestone": "M14",
+      "status": "planned",
+      "impl": [
+        "docs/evaluation-suite.md",
+        "docs/adoption/comprehension-instruments.md"
+      ],
+      "notes": "Deep research (v0.2-research-synthesis §4) strongly supports comprehension-testing symbols with laypeople BEFORE freezing the asset library, and a validated method exists. v0.2 spec §5 adopts a two-tier gate: Tier-A (automatable, CI — the existing conformance + accessibility + overlap invariant + monochrome-redundancy) and Tier-B (human studies; ISO 9186 comprehension test ≥67% general / ≥85% risk markers, report wrong/opposite-meaning rate, + matching/time/recall/dual-coding, ≥30/audience, with participatory symbol generation first). Tier-B gates leaving v0.x and needs real participants; the instruments live in the adoption pack."
     }
   ]
 }

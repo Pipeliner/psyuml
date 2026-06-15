@@ -36,6 +36,8 @@ node dist/cli/psyuml.mjs lint examples/*.psyuml
 | Document | What it is |
 |---|---|
 | [`docs/specification/psyuml-v0.1.0.md`](docs/specification/psyuml-v0.1.0.md) | **The language spec** (v0.1.0) — core ontology, notation, the diagram types, ritual modality, cross-school compatibility, worked case, ethics. The source of truth. |
+| [`docs/specification/psyuml-v0.2.0.md`](docs/specification/psyuml-v0.2.0.md) | **The v0.2 evolution** (backward-compatible, MINOR) — collaborative-formulation centre + honesty clause; 8 diagram **families** × 3 audience **profiles**; provenance+confidence (adds `contested`); CAT **Pattern** semantics (trap/dilemma/snag + exits, ontology-neutral); a comprehension-testing release gate (ISO 9186); lossy **FHIR export**; sharpened ethics; phased roadmap M11–M16 + v0.1 migration. |
+| [`docs/research/v0.2-research-synthesis.md`](docs/research/v0.2-research-synthesis.md) | **v0.2 deep-research synthesis** — five cited, adversarially-verified angles (collaborative formulation, CAT/SDR, modality archetypes, notation science, ethics/FHIR) + an evidence-and-notation matrix; the honest evidence base the v0.2 spec is built on. |
 | [`docs/format-reference.md`](docs/format-reference.md) | **Authoring quickstart** — field-level `.psyuml` reference (every field, range, default), a per-diagram quick-guide, and the validation rules to satisfy. |
 | [`docs/cheatsheets.md`](docs/cheatsheets.md) | **Quick references** — one page for clinicians (glyphs, connectors, which diagram, safety gates) and one plain-language page for clients. |
 | [`docs/style-guide.md`](docs/style-guide.md) | **Visual notation style guide** — glyph forms, colour/line semantics (colour stays redundant), encoding conventions, ritual cultural-sensitivity. |
@@ -44,7 +46,7 @@ node dist/cli/psyuml.mjs lint examples/*.psyuml
 | [`docs/adoption/`](docs/adoption/) | **Adoption pack** — a runnable clinician **workshop + facilitator script**, the notation-extension **contributor guide** (clinicians proposing symbols), and **proposed, unvalidated** comprehension/reliability/consensus **instruments + pilot-study design** (extends the evaluation suite; not evidence). |
 | [`docs/evaluation-suite.md`](docs/evaluation-suite.md) | **Evaluation suite** — what's automated-and-green vs. the human studies still owed before a clinical v1.0 (the Stage-4 gate). |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the tooling is built: the one-model/many-school-views design, metamodel, rendering pipeline, validation, tech stack, repo layout. |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | The milestone plan (M0–M10) and what's implemented vs. still planned. |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | The milestone plan (M0–M10 for v0.1; M11–M16 for the v0.2 evolution) and what's implemented vs. still planned. |
 | [`sdd/README.md`](sdd/README.md) | The Spec-Driven Development harness: traceability registry + per-directory `IMPACT.md` impact analysis, enforced by `sdd/check.mjs` in CI. |
 | [`docs/research/`](docs/research/) | Two companion research papers (saved verbatim) + [`idea-incorporation.md`](docs/research/idea-incorporation.md): which of their ideas were **adopted, adapted, or rejected** — and why. |
 

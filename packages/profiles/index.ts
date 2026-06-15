@@ -327,3 +327,159 @@ export const CFT_PROFILE: ExtensionProfile = ExtensionProfile.parse({
   ],
   translations: [{ concept: 'Self', terms: { cft: 'compassionate self' } }],
 });
+
+// ---------------------------------------------------------------------------
+// v0.2 — diagram FAMILIES + audience PROFILES (spec psyuml-v0.2.0 §2)
+// ---------------------------------------------------------------------------
+
+/** The eight cognitive families a diagram type can belong to (the *question it answers*). */
+export type DiagramFamily =
+  | 'field'
+  | 'cycle'
+  | 'parts'
+  | 'pattern'
+  | 'journey'
+  | 'change'
+  | 'ritual'
+  | 'composite';
+
+export interface FamilyInfo {
+  id: DiagramFamily;
+  title: string;
+  /** The clinical question this family answers (for grouping the picker + teaching). */
+  question: string;
+  /** The graph archetype, per the v0.2 research synthesis. */
+  archetype: string;
+}
+
+/** All eight families. Pattern is realized today via the process-loop renderer (the cat-sdr
+ *  example); Composite (a multi-view board) is future — both are defined for the taxonomy. */
+export const FAMILIES: readonly FamilyInfo[] = [
+  {
+    id: 'field',
+    title: 'Field',
+    question: "Who and what is in the person's world?",
+    archetype: 'typed-edge network / sorter',
+  },
+  {
+    id: 'cycle',
+    title: 'Cycle',
+    question: 'What maintaining loop keeps this going?',
+    archetype: 'feedback loop',
+  },
+  {
+    id: 'parts',
+    title: 'Parts',
+    question: 'What internal multiplicity is in play?',
+    archetype: 'parts / process-field',
+  },
+  {
+    id: 'pattern',
+    title: 'Pattern',
+    question: "What recurring procedure repeats — and where's the exit?",
+    archetype: 'node+transition graph (CAT SDR)',
+  },
+  {
+    id: 'journey',
+    title: 'Journey',
+    question: 'What is the trajectory / story over time?',
+    archetype: 'linear path',
+  },
+  {
+    id: 'change',
+    title: 'Change',
+    question: 'What is the treatment direction / what to do?',
+    archetype: 'path with intervention vectors',
+  },
+  {
+    id: 'ritual',
+    title: 'Ritual',
+    question: 'What symbolic or ceremonial process?',
+    archetype: 'phased sequence',
+  },
+  {
+    id: 'composite',
+    title: 'Composite',
+    question: 'One case across several views.',
+    archetype: 'synchronized sub-maps',
+  },
+];
+
+/** Which family each v0.1 diagram type belongs to (every DiagramType maps to exactly one). */
+export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
+  'state-map': 'cycle',
+  'process-loop': 'cycle',
+  'parts-map': 'parts',
+  'mode-map': 'parts',
+  'relational-field': 'field',
+  'resource-anchor': 'field',
+  'body-map': 'field',
+  timeline: 'journey',
+  'intervention-sequence': 'change',
+  'two-triangles': 'change',
+  'decision-nav': 'change',
+  ritual: 'ritual',
+};
+
+/** The family a diagram type belongs to. */
+export function familyOf(diagram: DiagramType): DiagramFamily {
+  return FAMILY_OF[diagram];
+}
+
+export function listFamilies(): readonly FamilyInfo[] {
+  return FAMILIES;
+}
+
+/** The diagram types currently in a family (some families — pattern, composite — have none yet). */
+export function diagramsInFamily(family: DiagramFamily): DiagramType[] {
+  return DiagramType.options.filter((d) => FAMILY_OF[d] === family);
+}
+
+/** Same semantics, different visual compression for a given reader (spec §2). */
+export type AudienceProfile = 'clinician' | 'client' | 'picture';
+
+export interface AudienceProfileInfo {
+  id: AudienceProfile;
+  title: string;
+  description: string;
+  /** Prefer the client's own everyday words over clinical terms. */
+  plainLanguage: boolean;
+  /** Show interpretive (dashed) nodes + provenance/confidence, vs foreground actionable content. */
+  showInterpretive: boolean;
+  /** Rough cap on distinct symbol kinds for cognitive load (graphic economy); undefined = no cap. */
+  maxSymbolKinds?: number;
+}
+
+export const AUDIENCE_PROFILES: readonly AudienceProfileInfo[] = [
+  {
+    id: 'clinician',
+    title: 'Clinician',
+    description: 'Full relation types, layered interpretation, provenance + confidence visible.',
+    plainLanguage: false,
+    showInterpretive: true,
+  },
+  {
+    id: 'client',
+    title: 'Client (plain language)',
+    description:
+      "Everyday / the client's own words; actionable content foregrounded; capped symbols.",
+    plainLanguage: true,
+    showInterpretive: false,
+    maxSymbolKinds: 6,
+  },
+  {
+    id: 'picture',
+    title: 'Picture (low-literacy / child)',
+    description:
+      'Pictographic, manipulable, minimal text. Picture symbols must pass the §5 comprehension gate before they are frozen.',
+    plainLanguage: true,
+    showInterpretive: false,
+    maxSymbolKinds: 5,
+  },
+];
+
+export function audienceProfile(id: AudienceProfile): AudienceProfileInfo {
+  const p = AUDIENCE_PROFILES.find((x) => x.id === id);
+  if (!p) throw new Error(`unknown audience profile: ${id}`);
+  return p;
+}
