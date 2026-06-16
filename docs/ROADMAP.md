@@ -139,11 +139,11 @@ demands before any 1.0.
 - **Acceptance:** every symbol has a **recorded status** — Tier-A `pass` (automated) + Tier-B `pending` in the ledger. **Tier-B is NOT done:** the human studies (clients/trainees/laypeople, N≥30/audience) require real participants and **remain the v0.x→v1.0 gate**; an LLM dry-run is not a sample and results are never fabricated. Failures (when run) drive a documented symbol revision, not a shipped symbol.
 - **Spec refs:** v0.2 §5. **REQ:** REQ-NOTATION-TESTING, REQ-EVAL-SUITE.
 
-### M15 · Lossy FHIR export + audience-scoped exports
+### M15 · Lossy FHIR export + audience-scoped exports *(implementing now)*
 - **Goal:** interoperate honestly — a clearly **lossy**, export-only standards bridge.
-- **Deliverables:** `@psyuml/interop` mapping to Composition / ClinicalImpression / Observation / FamilyMemberHistory+List / CarePlan+Goal, each with **documented loss** (round-trip is explicitly *not* claimed); audience/consent-scoped redaction so an export carries only what its profile permits.
-- **Acceptance:** an export validates against its FHIR resource schemas; the loss is documented per resource; de-identification + audience scoping are on by default (extends M9's posture).
-- **Spec refs:** v0.2 §7. **REQ:** REQ-INTEROP-FHIR, REQ-PRIVACY.
+- **Deliverables (landed, ADR-0018):** new **`@psyuml/interop`** (isolated leaf) `toFhir(model, options)` → a FHIR R4 **document Bundle** per the §7 table — Composition + ClinicalImpression (the formulation; **non-diagnostic** — Observation, never Condition), CarePlan + Goal (treatment direction), FamilyMemberHistory + List (relational) — with a **structured `loss` report** (the §7 "limits MUST be documented" made executable) and `validateFhirBundle` (a zod **subset** check + reference integrity, *not* a full FHIR validator); **de-identified + audience-scoped by default** (reuses `@psyuml/privacy`); surfaced as **`psyuml export`** (`--scope`, `--no-deidentify`).
+- **Acceptance (met):** the export **validates against the emitted FHIR subset** + reference integrity; **loss is documented** per construct; de-identification + audience scoping are **on by default**; there is **no importer / round-trip** (the diagram stays source-of-truth). *Still to come:* SNOMED/LOINC terminology binding (text CodeableConcepts only today).
+- **Spec refs:** v0.2 §7, §6. **REQ:** REQ-INTEROP-FHIR, REQ-PRIVACY.
 
 ### M16 · Composite board + cultural-extension packs
 - **Goal:** the multi-view **Composite** family and culturally-situated symbol sets — as governed extensions, not core changes.

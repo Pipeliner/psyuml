@@ -665,12 +665,17 @@
         "§K"
       ],
       "source": "docs/research/psyml-fable-agent-spec.md",
-      "milestone": "M9",
-      "status": "planned",
+      "milestone": "M15",
+      "status": "in-progress",
       "impl": [
-        "packages/interop/**"
+        "packages/interop/index.ts",
+        "packages/cli/index.ts"
       ],
-      "notes": "Source 3 C6. Observation, QuestionnaireResponse, CarePlan, Goal, Patient/RelatedPerson; SNOMED where apt; de-identified by default; export-only, regulation-sensitive (late + optional)."
+      "tests": [
+        "packages/interop/index.test.ts",
+        "packages/cli/index.test.ts"
+      ],
+      "notes": "Source 3 C6, re-opened by the v0.2 research synthesis and specced concretely in v0.2 §7 (ADR-0018). M15 ships @psyuml/interop `toFhir`: a LOSSY, EXPORT-ONLY FHIR R4 document Bundle (Composition + ClinicalImpression + Observation, + CarePlan/Goal, + FamilyMemberHistory/List for relational diagrams) with a structured `loss` report (the §7 'limits MUST be documented' made executable) + `validateFhirBundle` (a zod SUBSET check + reference integrity, NOT a full FHIR validator). Non-diagnostic (Observation, never Condition — §A.3); de-identified + audience-scoped by default (reuses @psyuml/privacy, REQ-PRIVACY). NO importer / round-trip — the diagram stays source-of-truth. Surfaced as `psyuml export`. Still to come: SNOMED/LOINC terminology binding (text CodeableConcepts only today)."
     },
     {
       "id": "REQ-EVAL-SUITE",

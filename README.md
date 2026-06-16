@@ -51,7 +51,7 @@ node dist/cli/psyuml.mjs lint examples/*.psyuml
 | [`docs/research/`](docs/research/) | Two companion research papers (saved verbatim) + [`idea-incorporation.md`](docs/research/idea-incorporation.md): which of their ideas were **adopted, adapted, or rejected** — and why. |
 
 Code lives in `packages/` (`@psyuml/model · validate · render · profiles · diff · grammar ·
-privacy · ai · cli`), `apps/web` (the editor), `conformance/` (the executable spec suite),
+privacy · interop · ai · cli`), `apps/web` (the editor), `conformance/` (the executable spec suite),
 and `assets/` (color tokens + the 8 core glyphs). For the precise state of each requirement,
 see `sdd/traceability.json` (statuses) and the per-directory `IMPACT.md` files.
 

@@ -19,6 +19,7 @@ import { validate } from '@psyuml/validate';
 import { validateProfile } from '@psyuml/profiles';
 import { fromDSL, toDSL } from '@psyuml/grammar';
 import { deidentify, redactionAudit, scopeToLayer } from '@psyuml/privacy';
+import { toFhir, validateFhirBundle, type ExportScope } from '@psyuml/interop';
 import {
   blankTemplate,
   renderBodyMap,
@@ -70,6 +71,7 @@ usage:
   psyuml render <file> [--layer clinician|client] [--color] [-o out.svg]
   psyuml convert <file> [-o out]      # JSON .psyuml <-> text DSL (auto-detected)
   psyuml redact <file> [--term NAME ...] [--for clinician|client] [-o out]   # de-identify (+ role-scope) before export
+  psyuml export <file> [--fhir] [--scope record|client|research|teaching] [--no-deidentify] [--term NAME ...] [-o out.json]   # lossy, export-only FHIR R4
   psyuml template <file> [--layer L] [--color] [-o out.svg]   # blank printable scaffold
   psyuml lint-profile <files...>      # validate a §K extension profile (JSON)
   psyuml help | version
@@ -312,6 +314,63 @@ function cmdLintProfile(args: string[], io: CliIO): number {
   return bad ? 1 : 0;
 }
 
+function cmdExport(args: string[], io: CliIO): number {
+  const VALID: ExportScope[] = ['record', 'client', 'research', 'teaching'];
+  let scope: ExportScope = 'record';
+  let deid = true;
+  const terms: string[] = [];
+  const files: string[] = [];
+  let out: string | undefined;
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === '--scope') scope = args[(i += 1)] as ExportScope;
+    else if (a === '--no-deidentify') deid = false;
+    else if (a === '--term') terms.push(args[(i += 1)] ?? '');
+    else if (a === '-o' || a === '--out') out = args[(i += 1)];
+    else if (a === '--fhir')
+      continue; // FHIR is the only format; accepted for clarity
+    else if (!a.startsWith('-')) files.push(a);
+  }
+  if (files.length !== 1) {
+    io.err(
+      'usage: psyuml export <file> [--fhir] [--scope record|client|research|teaching] [--no-deidentify] [--term NAME ...] [-o out.json]',
+    );
+    return 2;
+  }
+  if (!VALID.includes(scope)) {
+    io.err(`unknown --scope "${scope}" (expected: ${VALID.join(', ')})`);
+    return 2;
+  }
+  let model: PsyumlModel;
+  try {
+    model = loadModel(io, files[0]);
+  } catch (e) {
+    io.err(`${files[0]}: ${msg(e)}`);
+    return 1;
+  }
+  const res = toFhir(model, { scope, deidentify: deid, redactTerms: terms });
+  const check = validateFhirBundle(res.bundle); // sanity-check our own output before emitting
+  const json = JSON.stringify(res.bundle, null, 2);
+  if (out) {
+    io.writeFile(out, json);
+    io.out(`wrote ${out}`);
+  } else {
+    io.out(json);
+  }
+  // The honest companion to the bundle: this is lossy + export-only (§7).
+  io.err(`FHIR R4 export (lossy, export-only) · scope=${scope}${deid ? ' · de-identified' : ''}`);
+  io.err(`round-trip not supported; ${res.loss.items.length} documented limitation(s):`);
+  for (const item of res.loss.items) io.err(`  - ${item.what}: ${item.detail}`);
+  for (const i of check.issues) io.err(`  ! ${i.rule}: ${i.message}`);
+  // Consent is a share-time concern (§L.2-r5): warn before a shareable/research artifact.
+  if ((scope === 'research' || scope === 'client') && model.meta.consent?.obtained !== true) {
+    io.err(
+      'note: no client consent recorded (meta.consent.obtained) — confirm consent before sharing.',
+    );
+  }
+  return check.ok ? 0 : 1;
+}
+
 /** Dispatch a `psyuml` invocation. Returns the process exit code. */
 export function run(argv: string[], io: CliIO): number {
   const [cmd, ...rest] = argv;
@@ -326,6 +385,8 @@ export function run(argv: string[], io: CliIO): number {
       return cmdConvert(rest, io);
     case 'redact':
       return cmdRedact(rest, io);
+    case 'export':
+      return cmdExport(rest, io);
     case 'template':
       return cmdTemplate(rest, io);
     case 'version':

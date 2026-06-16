@@ -1,5 +1,5 @@
 {
-  "name": "@psyuml/cli",
+  "name": "@psyuml/interop",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,12 +9,8 @@
     ".": "./index.ts"
   },
   "dependencies": {
-    "@psyuml/grammar": "workspace:*",
-    "@psyuml/interop": "workspace:*",
     "@psyuml/model": "workspace:*",
     "@psyuml/privacy": "workspace:*",
-    "@psyuml/profiles": "workspace:*",
-    "@psyuml/render": "workspace:*",
-    "@psyuml/validate": "workspace:*"
+    "zod": "^3.23.8"
   }
 }

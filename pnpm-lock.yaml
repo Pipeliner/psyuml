@@ -107,6 +107,9 @@ importers:
       '@psyuml/grammar':
         specifier: workspace:*
         version: link:../grammar
+      '@psyuml/interop':
+        specifier: workspace:*
+        version: link:../interop
       '@psyuml/model':
         specifier: workspace:*
         version: link:../model
@@ -134,6 +137,18 @@ importers:
       '@psyuml/model':
         specifier: workspace:*
         version: link:../model
+
+  packages/interop:
+    dependencies:
+      '@psyuml/model':
+        specifier: workspace:*
+        version: link:../model
+      '@psyuml/privacy':
+        specifier: workspace:*
+        version: link:../privacy
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
 
   packages/model:
     dependencies:

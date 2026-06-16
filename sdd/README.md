@@ -75,14 +75,16 @@ flowchart RL
     cli --> render
     cli --> grammar
     cli --> privacy
+    cli --> interop
     cli --> model
-    interop["packages/interop (PLANNED — not yet in repo)"] -.-> model
+    interop["packages/interop"] --> model
+    interop --> privacy
     model["packages/model (core)"]
 ```
 
-> **Planned, not present:** `packages/interop` (FHIR/research export, REQ-INTEROP-FHIR, M9)
-> is shown dashed because it is a *future* package — the directory does not exist yet. Every
-> other node above is real and on disk.
+> **`packages/interop`** (lossy, export-only FHIR R4, REQ-INTEROP-FHIR, M15) is now in the repo —
+> an **isolated leaf**: nothing depends on it but the optional `psyuml export` CLI subcommand, so
+> removing it leaves everything else working. It reuses `@psyuml/privacy` for de-identification.
 
 **Reverse-dependency (blast radius) quick reference:**
 
@@ -96,7 +98,7 @@ flowchart RL
 | `packages/grammar` | CLI, round-trip tests (model only) |
 | `packages/privacy` | CLI `redact`, AI-assist (M8), interop export (model only) |
 | `packages/cli` | the `psyuml` binary (bundled); no in-repo importers |
-| `packages/interop` *(planned — not yet in repo)* | FHIR/research export; will be model-only + de-identified by default |
+| `packages/interop` | `psyuml export` (CLI) only — an isolated leaf; lossy, export-only FHIR R4, de-identified by default |
 | `packages/ai` | isolated guardrail lib; no in-repo importer yet (safe to remove) |
 | `docs/specification/psyuml-v0.1.0.md` | `traceability.json`, any REQ citing the changed section, dependent IMPACT docs |
 

@@ -219,3 +219,35 @@ describe('psyuml cli', () => {
     expect(run(['lint'], fakeIO())).toBe(2);
   });
 });
+
+describe('psyuml export (lossy FHIR, v0.2 §7)', () => {
+  it('emits a FHIR document Bundle, de-identified by default, with a documented loss note', () => {
+    const io = fakeIO();
+    const code = run(['export', 'examples/state-map.psyuml'], io);
+    expect(code).toBe(0);
+    const bundle = JSON.parse(io.stdout.join('\n'));
+    expect(bundle.resourceType).toBe('Bundle');
+    expect(bundle.entry[0].resource.resourceType).toBe('Composition');
+    expect(io.stdout.join('\n')).toContain('Patient/anonymous'); // de-identified subject
+    const err = io.stderr.join('\n');
+    expect(err).toContain('lossy, export-only');
+    expect(err).toContain('round-trip not supported');
+  });
+
+  it('writes to -o and warns about consent for a research-scoped export', () => {
+    const io = fakeIO();
+    const code = run(
+      ['export', 'examples/state-map.psyuml', '--scope', 'research', '-o', 'out.json'],
+      io,
+    );
+    expect(code).toBe(0);
+    expect(io.written['out.json']).toContain('"resourceType": "Bundle"');
+    expect(io.stderr.join('\n')).toContain('no client consent recorded');
+  });
+
+  it('rejects an unknown scope', () => {
+    const io = fakeIO();
+    expect(run(['export', 'examples/state-map.psyuml', '--scope', 'public'], io)).toBe(2);
+    expect(io.stderr.join('\n')).toContain('unknown --scope');
+  });
+});
