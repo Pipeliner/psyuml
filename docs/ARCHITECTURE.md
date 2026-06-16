@@ -192,7 +192,7 @@ psyuml/
 │  ├─ render/       # @psyuml/render    model → SVG, layers, monochrome, legend, exports
 │  ├─ profiles/     # @psyuml/profiles  school profiles + translation table
 │  ├─ grammar/      # @psyuml/grammar   text DSL ⇄ model (M9)
-│  ├─ interop/      # @psyuml/interop   FHIR/SNOMED + de-identified research export (M9)
+│  ├─ interop/      # @psyuml/interop   lossy, export-only FHIR R4, de-identified (M15, §15)
 │  └─ ai/           # @psyuml/ai        bounded narrative→draft assist (M8, optional)
 ├─ apps/
 │  └─ web/          # the deployable GUI editor (React + Vite)
@@ -201,7 +201,8 @@ psyuml/
 ```
 
 **Dependency direction:** `model` ← `validate` ← `profiles` ← `render` ← `apps/web`;
-`grammar`, `interop`, and `ai` depend on `model` only. The core (`model`/`validate`) carries
+`grammar` and `ai` depend on `model` only; `interop` depends on `model` + `privacy` (it reuses
+de-identification for its export — §15). The core (`model`/`validate`) carries
 no UI or vendor dependency, so the language stays reusable (CLI, server, other front-ends).
 
 ## 11. Accessibility, privacy & ethics as architectural constraints
@@ -316,3 +317,37 @@ as a flow designed for **brief, episodic use** with safety nets (deterioration �
 APA 2025). The editor (`apps/web`) is specified against the UX MoSCoW list; the usability open
 questions (can a distressed client use the crisis chart unaided? do clients read causal arrows
 given ~1/3 low graph literacy?) are the Stage-4 gate feeding REQ-EVAL-SUITE.
+
+## 15. v0.2 evolution — additive architecture (spec `psyuml-v0.2.0.md`; ADRs 0014–0019)
+
+v0.2 is a **backward-compatible (MINOR) evolution**, not a rewrite (ADR-0014). It is **additive over
+this same architecture** — the one-immutable-model / many-views design and the dependency DAG hold;
+every v0.1 golden renders byte-identically. The deltas, by module:
+
+- **`@psyuml/model`** — additive optional fields only: `EpistemicStatus` gains the §3 provenance
+  values (`jointly-agreed` / `clinician-inferred` / `contested`) with the shared `isInterpretive()`
+  predicate; `Properties.asIf` (ontology-neutral "as-if" qualifier, §4/§6); `Edge.loopTopology`
+  (`trap`/`dilemma`/`snag`, §4). No Tier-1 / schema break (ADR-0015).
+- **`@psyuml/profiles`** — the metadata layer for §2: the **families** registry (`FAMILIES`,
+  `familyOf`, `diagramsInFamily`) and **audience profiles** (`AUDIENCE_PROFILES`, `audienceProfile`,
+  `withinSymbolBudget`); the **notation comprehension** harness (`NOTATION_SYMBOLS` + the Tier-A
+  `auditNotation()`, §5); and the §6 **cultural-permission** flag on `StereotypeDef` enforced by
+  `validateProfile` (ADR-0017/0019).
+- **`@psyuml/render`** — a single **`render(model, options)` dispatcher** that resolves the §2
+  **audience profile** → label `layer` + `showInterpretive` (explicit values still win, so
+  `layer`-only callers are byte-unchanged); the Pattern/Cycle renderer surfaces loop topology +
+  provenance/confidence (§3/§4); and **`renderComposite(models)` + `sharedNodeIds()`** give the
+  **Composite** family (§2) real output — several views over one case, cross-navigated by shared ids
+  (ADR-0015/0016/0019).
+- **`@psyuml/interop`** *(new isolated leaf — nothing depends on it but the optional `psyuml export`)*
+  — a **lossy, export-only** FHIR R4 bridge (`toFhir` + a documented `loss` report +
+  `validateFhirBundle`), **non-diagnostic** (Observation, never Condition) and de-identified +
+  audience-scoped by default; **no importer / round-trip** (§7, ADR-0018). It depends on
+  `model` + `privacy`.
+- **`apps/web`** — the editor groups its diagram picker **by family** and offers the **audience
+  profile** switch, rendering through the dispatcher (ADR-0016).
+
+**Honesty, unchanged.** v0.2 sharpens — it does not relax — the unvalidated-v0.x stance: leaving
+v0.x stays gated on the human studies (REQ-EVAL-SUITE, REQ-NOTATION-TESTING are the only `in-progress`
+requirements; the comprehension **Tier-B** evidence is required and never fabricated). FHIR export is
+documentation infrastructure, not live-care CDS.

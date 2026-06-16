@@ -666,7 +666,7 @@
       ],
       "source": "docs/research/psyml-fable-agent-spec.md",
       "milestone": "M15",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/interop/index.ts",
         "packages/cli/index.ts"
@@ -792,7 +792,7 @@
       ],
       "source": "docs/specification/psyuml-v0.2.0.md",
       "milestone": "M11",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/profiles/index.ts"
       ],
@@ -809,7 +809,7 @@
       ],
       "source": "docs/specification/psyuml-v0.2.0.md",
       "milestone": "M11",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/profiles/index.ts",
         "packages/render/index.ts",
@@ -848,7 +848,7 @@
       ],
       "source": "docs/specification/psyuml-v0.2.0.md",
       "milestone": "M12",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/model/index.ts",
         "packages/render/index.ts",
@@ -870,7 +870,7 @@
       ],
       "source": "docs/specification/psyuml-v0.2.0.md",
       "milestone": "M12",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/model/index.ts",
         "packages/render/index.ts",
@@ -890,7 +890,7 @@
       ],
       "source": "docs/specification/psyuml-v0.2.0.md",
       "milestone": "M16",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/render/index.ts"
       ],
@@ -908,7 +908,7 @@
       ],
       "source": "docs/specification/psyuml-v0.2.0.md",
       "milestone": "M16",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "packages/profiles/index.ts"
       ],
