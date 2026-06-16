@@ -2513,3 +2513,121 @@ export function blankTemplate(model: PsyumlModel): PsyumlModel {
     }),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Composite board (v0.2 §2 — the "one case across several views" family)
+// ---------------------------------------------------------------------------
+
+/** A node id that appears in ≥2 member views — a cross-diagram thread (spec §H.10). */
+export interface SharedThread {
+  id: string;
+  label: string;
+  views: string[];
+}
+
+const compositeLayer = (o: RenderOptions): 'clinician' | 'client' =>
+  o.layer ?? (o.audience && o.audience !== 'clinician' ? 'client' : 'clinician');
+const viewName = (m: PsyumlModel, i: number): string => m.meta.title ?? `${m.diagram} #${i + 1}`;
+
+/**
+ * The node ids shared across two or more of the given models — the threads a Composite board uses
+ * to cross-navigate one case across several views (spec §H.10). Shared IDs are how v0.1 already
+ * links diagrams; this just surfaces them.
+ */
+export function sharedNodeIds(models: PsyumlModel[], options: RenderOptions = {}): SharedThread[] {
+  const layer = compositeLayer(options);
+  const lang = options.lang ?? 'en';
+  const byId = new Map<string, { label: string; idx: Set<number> }>();
+  models.forEach((m, i) => {
+    for (const n of m.nodes) {
+      const e = byId.get(n.id) ?? {
+        label: getText(n.label, layer, lang) || n.id,
+        idx: new Set<number>(),
+      };
+      e.idx.add(i);
+      byId.set(n.id, e);
+    }
+  });
+  return [...byId.entries()]
+    .filter(([, e]) => e.idx.size >= 2)
+    .map(([id, e]) => ({
+      id,
+      label: e.label,
+      views: [...e.idx].map((i) => viewName(models[i], i)),
+    }));
+}
+
+const COMPOSITE_W = 720;
+
+/**
+ * Render a **Composite board** (v0.2 §2): several family views of one case, arranged as titled
+ * panels over a shared-threads index. Each member is rendered through the `render()` dispatcher
+ * (so the audience profile applies) and nested as a scaled sub-`<svg>`; shared node ids (those in
+ * ≥2 views) are listed at the top and tagged for cross-navigation. The model is never mutated.
+ */
+export function renderComposite(models: PsyumlModel[], options: RenderOptions = {}): RenderResult {
+  const pad = 16;
+  const gap = 16;
+  const titleH = 24;
+  const panelW = COMPOSITE_W - 2 * pad;
+  const parts: string[] = [];
+  let y = pad;
+
+  const frame = (h: number): string =>
+    `<rect x="${pad}" y="${r1(y)}" width="${panelW}" height="${r1(h)}" fill="#fff" stroke="#000" stroke-width="1.5" rx="8" ry="8" />`;
+
+  // Shared-threads index (the cross-navigation key).
+  const threads = sharedNodeIds(models, options);
+  const idxLines = threads.length
+    ? threads.map((t) => `• ${t.label} (${t.id}) — in ${t.views.join(', ')}`)
+    : ['(no shared threads across these views)'];
+  const idxH = titleH + 6 + idxLines.length * 14 + 8;
+  parts.push(frame(idxH));
+  parts.push(
+    `<text x="${pad + 8}" y="${r1(y + 16)}" font-family="sans-serif" font-size="13" font-weight="700">Shared threads (cross-navigation)</text>`,
+  );
+  idxLines.forEach((ln, i) =>
+    parts.push(
+      `<text data-shared-id="${esc(threads[i]?.id ?? '')}" x="${pad + 10}" y="${r1(y + titleH + 6 + i * 14)}" font-family="sans-serif" font-size="11">${esc(ln)}</text>`,
+    ),
+  );
+  y += idxH + gap;
+
+  // Member panels: each rendered view nested as a scaled sub-svg.
+  const memberAlts: string[] = [];
+  models.forEach((m, i) => {
+    const { svg, altText } = render(m, options);
+    memberAlts.push(`(${i + 1}) ${viewName(m, i)}: ${altText}`);
+    const vbStr = svg.match(/viewBox="([^"]+)"/)?.[1] ?? `0 0 ${panelW} 300`;
+    const nums = vbStr.split(/\s+/).map(Number);
+    const w = nums[2] || panelW;
+    const h = nums[3] || 300;
+    const ph = Math.min(560, r1(panelW * (h / w)));
+    const inner = svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+    parts.push(frame(titleH + ph));
+    parts.push(
+      `<text x="${pad + 8}" y="${r1(y + 16)}" font-family="sans-serif" font-size="13" font-weight="700">${i + 1}. ${esc(viewName(m, i))}</text>`,
+    );
+    parts.push(
+      `<svg data-composite-panel="${i}" x="${pad}" y="${r1(y + titleH)}" width="${panelW}" height="${ph}" viewBox="${esc(vbStr)}" preserveAspectRatio="xMidYMid meet">${inner}</svg>`,
+    );
+    y += titleH + ph + gap;
+  });
+
+  const totalH = r1(y - gap + pad);
+  const names = models.map((m, i) => viewName(m, i)).join('; ');
+  const altText =
+    `Composite board of ${models.length} view${models.length === 1 ? '' : 's'}: ${names || 'none'}. ` +
+    (threads.length
+      ? `Shared threads: ${threads.map((t) => `${t.label} in ${t.views.join(' & ')}`).join('; ')}. `
+      : 'No shared threads across these views. ') +
+    memberAlts.join(' ');
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${COMPOSITE_W} ${totalH}" role="img" aria-label="${esc(altText)}">` +
+    `<title>Composite board</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${COMPOSITE_W}" height="${totalH}" fill="#fff" />` +
+    parts.join('') +
+    '</svg>';
+  return { svg, altText };
+}

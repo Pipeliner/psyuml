@@ -145,11 +145,11 @@ demands before any 1.0.
 - **Acceptance (met):** the export **validates against the emitted FHIR subset** + reference integrity; **loss is documented** per construct; de-identification + audience scoping are **on by default**; there is **no importer / round-trip** (the diagram stays source-of-truth). *Still to come:* SNOMED/LOINC terminology binding (text CodeableConcepts only today).
 - **Spec refs:** v0.2 §7, §6. **REQ:** REQ-INTEROP-FHIR, REQ-PRIVACY.
 
-### M16 · Composite board + cultural-extension packs
+### M16 · Composite board + cultural-extension packs *(implementing now — closes the v0.2 roadmap)*
 - **Goal:** the multi-view **Composite** family and culturally-situated symbol sets — as governed extensions, not core changes.
-- **Deliverables:** a Composite board that arranges several family views over one model with shared IDs; cultural-extension packs shipped as **§K profiles** with **cultural-permission flags**, validated by `psyuml lint-profile`.
-- **Acceptance:** a Composite board cross-navigates its member diagrams via shared IDs; every cultural pack passes the §K collision check and carries its permission/provenance flags; no Tier-1 core change.
-- **Spec refs:** v0.2 §2, §6, §K. **REQ:** REQ-EXTENSION-MECH, REQ-DIAGRAM-FAMILIES.
+- **Deliverables (landed, ADR-0019):** `@psyuml/render` **`renderComposite(models)`** + **`sharedNodeIds()`** — a board that arranges several member views of one case as titled panels (each via the `render()` dispatcher, nested as a scaled sub-`<svg>`) over a **shared-id cross-navigation index** (ids in ≥2 views, tagged `data-shared-id`); it takes an **array of models** (a case file), so no Tier-1 / schema change. Cultural-extension packs are **§K profiles** with a new **`StereotypeDef.cultural`** flag + the `profile.cultural-permission` rule (a closed/initiatory/restricted symbol **MUST** declare permission and **MUST NOT** be a generic icon, §6), validated by `psyuml lint-profile`; a worked `CULTURAL_PACK_EXAMPLE` ships as the template.
+- **Acceptance (met):** a Composite board cross-navigates its member diagrams via shared IDs (proven by `sharedNodeIds` + the tagged index); a cultural pack passes the §K collision check **and** is rejected if a restricted symbol lacks its permission declaration; **no Tier-1 core change** and the board never mutates a member. *Still to come:* an editor composite UI (render-only today); namespacing the duplicated `arrow` marker across nested panels (harmless nit).
+- **Spec refs:** v0.2 §2, §6, §K. **REQ:** REQ-COMPOSITE-BOARD, REQ-CULTURAL-PERMISSION (+ REQ-DIAGRAM-FAMILIES, REQ-EXTENSION-MECH).
 
 ---
 

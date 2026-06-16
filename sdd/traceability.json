@@ -881,6 +881,41 @@
         "packages/render/index.test.ts"
       ],
       "notes": "v0.2 (ADR-0014/0015, spec §3) makes the two orthogonal axes explicit: provenance (where content came from) extends `EpistemicStatus` with `jointly-agreed` / `clinician-inferred` / `contested` (the lived-experience critique that 'jointly-agreed' can mask clinician dominance), and confidence (L/M/H) already exists. `INTERPRETIVE_STATUSES` + `isInterpretive()` are the single shared predicate so renderers and lints agree on descriptive-vs-interpretive; renderLoopMap draws interpretive content DASHED (descriptive solid — the v0.1 convention), surfaces a `contested` ⚖ marker + as-if qualifier on the node label, and echoes contested/interpretive standing AND confidence into alt-text (never on border/colour alone). Subsumes/aligns with v0.1 epistemicStatus; additive + round-trip-safe. The exact 5-value scheme is a design-inference (see synthesis §3)."
+    },
+    {
+      "id": "REQ-COMPOSITE-BOARD",
+      "title": "v0.2: the Composite family — one case across several views, cross-navigated by shared ids",
+      "spec": [
+        "§2"
+      ],
+      "source": "docs/specification/psyuml-v0.2.0.md",
+      "milestone": "M16",
+      "status": "in-progress",
+      "impl": [
+        "packages/render/index.ts"
+      ],
+      "tests": [
+        "packages/render/index.test.ts"
+      ],
+      "notes": "v0.2 (ADR-0019, spec §2) gives the Composite family — previously taxonomy-only — real output. `renderComposite(models, options)` arranges several member views of ONE case as titled panels (each rendered through the `render()` dispatcher, so the audience profile applies, and nested as a scaled sub-svg) over a `sharedNodeIds()` index — the node ids present in >=2 views (spec §H.10 cross-diagram threads), tagged `data-shared-id`/`data-composite-panel` for cross-navigation. Takes an ARRAY of existing models (a case file), NOT a new model-schema type — additive, no Tier-1 / schema change, never mutates a member. Known nit: nested member svgs duplicate the `arrow` marker def (harmless; ADR-0019). Editor composite UI is future."
+    },
+    {
+      "id": "REQ-CULTURAL-PERMISSION",
+      "title": "v0.2: cultural-permission flag on §K symbols (closed/restricted traditions MUST declare permission)",
+      "spec": [
+        "§6",
+        "§K"
+      ],
+      "source": "docs/specification/psyuml-v0.2.0.md",
+      "milestone": "M16",
+      "status": "in-progress",
+      "impl": [
+        "packages/profiles/index.ts"
+      ],
+      "tests": [
+        "packages/profiles/index.test.ts"
+      ],
+      "notes": "v0.2 (ADR-0019, spec §6) adds a `cultural` block to `StereotypeDef` (tradition / restricted / permission / attribution) and a `validateProfile` rule: a `restricted` symbol with no `permission` is a `profile.cultural-permission` ERROR; with permission it surfaces a `profile.cultural-restricted` INFO ('not a generic reusable icon'). Enforced by `psyuml lint-profile` (no CLI change). A worked `CULTURAL_PACK_EXAMPLE` ships as the template (the tradition is an illustrative placeholder; a real pack names its source + authorization). This is a DECLARATION check (permission stated), not verification that permission was granted — it makes the §6 obligation explicit + auditable. Extends REQ-EXTENSION-MECH; additive (the field is optional)."
     }
   ]
 }

@@ -4,6 +4,7 @@ import {
   AUDIENCE_PROFILES,
   audienceProfile,
   CFT_PROFILE,
+  CULTURAL_PACK_EXAMPLE,
   diagramsInFamily,
   familyOf,
   FAMILIES,
@@ -127,6 +128,34 @@ describe('extension mechanism (§K)', () => {
     expect(r.issues.some((i) => i.rule === 'profile.deprecated' && i.severity === 'info')).toBe(
       true,
     );
+  });
+
+  it('v0.2 §6: accepts a culturally-restricted symbol that carries a permission declaration', () => {
+    const r = validateProfile(CULTURAL_PACK_EXAMPLE);
+    expect(r.ok).toBe(true);
+    expect(
+      r.issues.some((i) => i.rule === 'profile.cultural-restricted' && i.severity === 'info'),
+    ).toBe(true);
+  });
+
+  it('v0.2 §6: rejects a culturally-restricted symbol with no permission/attribution declaration', () => {
+    const r = validateProfile(
+      profileWith(
+        goodStereotype({ cultural: { tradition: 'a closed lineage', restricted: true } }),
+      ),
+    );
+    expect(r.ok).toBe(false);
+    expect(r.issues.some((i) => i.rule === 'profile.cultural-permission')).toBe(true);
+  });
+
+  it('v0.2 §6: a non-restricted cultural attribution is fine without permission', () => {
+    const r = validateProfile(
+      profileWith(
+        goodStereotype({ cultural: { tradition: 'a widely-taught practice', restricted: false } }),
+      ),
+    );
+    expect(r.ok).toBe(true);
+    expect(r.issues.some((i) => i.rule.startsWith('profile.cultural'))).toBe(false);
   });
 
   it('flags duplicate stereotype ids', () => {

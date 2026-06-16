@@ -4,6 +4,8 @@ import { parseModel } from '@psyuml/model';
 import {
   blankTemplate,
   render,
+  renderComposite,
+  sharedNodeIds,
   renderBodyMap,
   renderDecisionChart,
   renderDiff,
@@ -858,5 +860,93 @@ describe('render() dispatcher + audience profiles (v0.2 §2/§3)', () => {
     render(catSdrModel, { audience: 'picture' });
     render(perfectionismModel, { audience: 'client' });
     expect(JSON.stringify(catSdrModel)).toBe(before);
+  });
+});
+
+describe('renderComposite — the Composite board (v0.2 §2)', () => {
+  const partsView = parseModel({
+    version: '0.1.0',
+    diagram: 'parts-map',
+    meta: { title: 'Parts view', disclaimer: 'x' },
+    nodes: [
+      { id: 'self', kind: 'self', label: { clinician: { en: 'Self' } } },
+      { id: 'critic', kind: 'agent', label: { clinician: { en: 'Inner critic' } } },
+      {
+        id: 'anchor',
+        kind: 'resource',
+        label: { clinician: { en: 'Walking outdoors' }, client: { en: 'A walk' } },
+      },
+    ],
+    edges: [{ id: 'e', kind: 'containment', source: 'self', target: 'critic' }],
+  });
+  const loopView = parseModel({
+    version: '0.1.0',
+    diagram: 'process-loop',
+    meta: { title: 'Loop view', disclaimer: 'x' },
+    nodes: [
+      { id: 'worry', kind: 'state', label: { clinician: { en: 'Worry spikes' } } },
+      {
+        id: 'anchor',
+        kind: 'resource',
+        label: { clinician: { en: 'Walking outdoors' }, client: { en: 'A walk' } },
+      },
+    ],
+    edges: [
+      { id: 'l', kind: 'sequential', source: 'worry', target: 'worry', loop: 'R' },
+      { id: 'x', kind: 'exit', source: 'worry', target: 'anchor' },
+    ],
+  });
+
+  it('finds node ids shared across views (the cross-navigation threads)', () => {
+    const threads = sharedNodeIds([partsView, loopView]);
+    expect(threads).toHaveLength(1);
+    expect(threads[0]?.id).toBe('anchor');
+    expect(threads[0]?.label).toBe('Walking outdoors');
+    expect(threads[0]?.views.sort()).toEqual(['Loop view', 'Parts view']);
+  });
+
+  it('arranges the views as titled panels over a shared-threads index', () => {
+    const { svg, altText } = renderComposite([partsView, loopView]);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Shared threads (cross-navigation)');
+    expect(svg).toContain('1. Parts view');
+    expect(svg).toContain('2. Loop view');
+    // each member is nested as a panel, and the shared id is tagged for cross-nav
+    expect(svg).toContain('data-composite-panel="0"');
+    expect(svg).toContain('data-composite-panel="1"');
+    expect(svg).toContain('data-shared-id="anchor"');
+    // the member content is embedded (a label from each view)
+    expect(svg).toContain('Inner critic');
+    expect(svg).toContain('Worry spikes');
+    expect(altText).toContain('Composite board of 2 views');
+    expect(altText).toContain('Walking outdoors in');
+  });
+
+  it('passes the audience profile through to each member view', () => {
+    const svg = renderComposite([partsView, loopView], { audience: 'client' }).svg;
+    expect(svg).toContain('A walk'); // client label for the shared resource
+  });
+
+  it('never mutates the member models', () => {
+    const before = JSON.stringify([partsView, loopView]);
+    renderComposite([partsView, loopView], { audience: 'client' });
+    expect(JSON.stringify([partsView, loopView])).toBe(before);
+  });
+
+  it('handles a board with no shared threads', () => {
+    const a = parseModel({
+      version: '0.1.0',
+      diagram: 'state-map',
+      meta: { title: 'A', disclaimer: 'x' },
+      nodes: [{ id: 'p', kind: 'state', label: { clinician: { en: 'P' } } }],
+    });
+    const b = parseModel({
+      version: '0.1.0',
+      diagram: 'state-map',
+      meta: { title: 'B', disclaimer: 'x' },
+      nodes: [{ id: 'q', kind: 'state', label: { clinician: { en: 'Q' } } }],
+    });
+    expect(sharedNodeIds([a, b])).toEqual([]);
+    expect(renderComposite([a, b]).altText).toContain('No shared threads');
   });
 });

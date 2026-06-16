@@ -145,6 +145,20 @@ export const StereotypeDef = z.object({
   compat: z.record(CompatVerdict).default({}),
   /** §K deprecation: keep rendering with a migration note for one MINOR cycle before removal. */
   deprecated: z.object({ since: z.string().min(1), note: z.string().min(1) }).optional(),
+  /**
+   * v0.2 §6 cultural-permission. A symbol/rite drawn from a specific tradition declares its
+   * `tradition`; if it is from a **closed / initiatory / culturally-restricted** one
+   * (`restricted: true`) it `MUST` carry a `permission`/attribution declaration and `MUST NOT`
+   * be offered as a generic reusable icon (enforced in `validateProfile`).
+   */
+  cultural: z
+    .object({
+      tradition: z.string().min(1),
+      restricted: z.boolean().default(false),
+      permission: z.string().optional(),
+      attribution: z.string().optional(),
+    })
+    .optional(),
 });
 export type StereotypeDef = z.infer<typeof StereotypeDef>;
 
@@ -265,6 +279,22 @@ export function validateProfile(input: unknown): ProfileValidation {
         `«${s.id}» is deprecated since ${s.deprecated.since}: ${s.deprecated.note}`,
         s.id,
       );
+    // v0.2 §6: a culturally-restricted symbol MUST carry a permission/attribution declaration
+    // and MUST NOT be offered as a generic reusable icon.
+    if (s.cultural?.restricted && !s.cultural.permission?.trim())
+      add(
+        'profile.cultural-permission',
+        'error',
+        `«${s.id}» is from a culturally-restricted tradition (${s.cultural.tradition}) but carries no permission/attribution declaration — required, and it MUST NOT be offered as a generic reusable icon (v0.2 §6).`,
+        s.id,
+      );
+    else if (s.cultural?.restricted)
+      add(
+        'profile.cultural-restricted',
+        'info',
+        `«${s.id}» (${s.cultural.tradition}) is culturally-restricted — used with permission: ${s.cultural.permission}. Not a generic reusable icon (§6).`,
+        s.id,
+      );
   }
 
   return { ok: !issues.some((i) => i.severity === 'error'), issues, profile };
@@ -326,6 +356,40 @@ export const CFT_PROFILE: ExtensionProfile = ExtensionProfile.parse({
     },
   ],
   translations: [{ concept: 'Self', terms: { cft: 'compassionate self' } }],
+});
+
+/**
+ * A worked **cultural-extension pack** (v0.2 §6) showing the cultural-permission flag in use: a rite
+ * from a closed / initiatory tradition is declared `restricted` and carries an explicit
+ * permission/attribution declaration, so `validateProfile` accepts it (and would **error** if the
+ * permission were missing — `profile.cultural-permission`). The tradition here is an *illustrative
+ * placeholder*: a real pack names its actual source and authorization. Restricted symbols are **not**
+ * generic reusable icons (§6) — that is the whole point of the flag.
+ */
+export const CULTURAL_PACK_EXAMPLE: ExtensionProfile = ExtensionProfile.parse({
+  id: 'cultural-rite-pack',
+  title: 'Cultural rite pack (worked example)',
+  version: '0.1.0',
+  school: 'ritual',
+  stereotypes: [
+    {
+      id: 'initiatory-rite',
+      base: 'intervention',
+      tier: 3,
+      glyph: '⟁',
+      hand: 'hexagon with a small triangle inside',
+      nonColor: 'hexagon + triangle outline + label',
+      synonyms: ['initiatory rite'],
+      compat: compatAll({ 'two-triangles': 'n/a' }),
+      cultural: {
+        tradition: 'a closed initiatory lineage (illustrative placeholder)',
+        restricted: true,
+        permission:
+          'Used only with the documented authorization of the tradition-holder; not a generic icon.',
+        attribution: "Attributed to its tradition-holder; see the pack's provenance note.",
+      },
+    },
+  ],
 });
 
 // ---------------------------------------------------------------------------
