@@ -4,7 +4,8 @@ Concrete, **proposed** instruments that operationalize the [evaluation suite](..
 **Tier B** — the human studies that gate PsyUML leaving v0.x. They cover three of the Tier-B
 dimensions:
 
-- **Comprehension (dim. 1)** — a layperson crisis-chart + State-Map comprehension test.
+- **Comprehension (dim. 1)** — a layperson crisis-chart + State-Map comprehension test (Instrument A),
+  and a **per-symbol** comprehension test (Instrument D, ISO 9186) gating the asset library (v0.2 §5).
 - **Inter-rater reliability (dim. 2/gate-2)** — an independent-formulation reliability task.
 - **Multi-school endorsement (dim. 4/gate-3)** — a Delphi consensus-round sketch.
 
@@ -27,6 +28,7 @@ thresholds tied to the Stage-4 gate**.
 | A. Layperson comprehension test | 1. Comprehension (layperson) | Gate 1: comprehension non-inferior to prose |
 | B. Inter-rater formulation task | 2. Collaborative validity / reliability | Gate 2: acceptable inter-rater reliability |
 | C. Multi-school Delphi round | 4. Cross-school fidelity | Gate 3: multi-school endorsement |
+| D. Per-symbol comprehension (ISO 9186) | 1. Comprehension (symbol-level) | Gate 1: symbols ≥67% / safety ≥85% before the asset library is frozen |
 
 Tier **A** (automated) already guarantees the *artifacts* exist — every view renders with a
 plain-language client layer and a narrated alt-text, round-trips losslessly, and passes the safety /
@@ -197,6 +199,73 @@ disagreement.
 **Proposed success criterion.** Pre-registered consensus (e.g. ≥X% endorse-or-endorse-with-caveats)
 across ≥3 schools that the renderings are faithful **and** that no item is judged to silently flatten
 a construct.
+
+---
+
+## Instrument D — Per-symbol comprehension (ISO 9186; v0.2 §5)
+
+**Maps to:** evaluation-suite dimension 1; **gate item 1 (symbol-level half)**. Where Instrument A
+asks whether someone reads a whole *diagram*, Instrument D asks whether each individual **symbol** is
+understood — the spec §5 requirement that PsyUML **comprehension-test its symbols before freezing the
+asset library**, using a validated method (ISO 9186), and design them *with* novices first.
+
+**Symbols under test.** The set is enumerated in code as `NOTATION_SYMBOLS` (`@psyuml/profiles`) — the
+core element glyphs, the connectors (incl. the safety-critical **exit / way-out**), the parts markers,
+and the CAT loop-topology marks (trap/dilemma/snag). The same list drives the **Tier-A harness** and
+the **ledger** below, so "every picture-profile symbol" is a closed, checkable set.
+
+**Tier A first (automated, runs in CI — `auditNotation()`).** Before any human sees a symbol, the
+harness enforces the *necessary conditions*: each symbol is **discriminable** (no two share a glyph),
+each **safety-critical** symbol is **dual-coded** (a redundant word — never glyph- or colour-alone),
+and each has a plain-language **gloss** + unique id. Tier-A green is a prerequisite, **not** evidence
+of comprehension.
+
+**Tier B (human study — the real gate; ISO 9186).** Run with **clients, trainees, and laypeople**
+(≥30 per audience for the quantitative gate), after a **participatory generation** round (novices
+draft candidate symbols first — they tend to design more transparent ones than experts):
+
+1. **Comprehension/recognition (ISO 9186-1).** Show each symbol *in a minimal context*; "What do you
+   think this means?" Code each response as **correct / wrong / opposite / don't-know** against the
+   `concept` gloss, two raters (report κ).
+2. **Matching (discriminability).** Match symbols to meanings from a set — catches confusable pairs.
+3. **Also record:** time-to-correct, **5-second recall**, and the **dual-coding lift** (glyph alone vs
+   glyph + word).
+
+**Thresholds (per symbol).**
+
+| Class | Correct-comprehension bar | Hard constraint |
+|---|---|---|
+| General symbols | **≥ 67%** | — |
+| Safety-critical (e.g. exit / way-out) | **≥ 85%** | the **wrong/opposite-meaning rate is reported**; a *confidently-misread* symbol is **disqualifying**, not just low-scoring |
+
+A symbol that misses its bar is **iterated and re-tested, not shipped** (and never silently kept).
+
+### Symbol comprehension ledger (status: PENDING — no study has been run)
+
+> Honest status. **Every entry is `pending`.** Tier-A is automated and green; the Tier-B column needs
+> real participants and **must not** be filled with numbers until a study runs (an LLM dry-run is not a
+> sample — see the banner up top). This table is the record that will hold the evidence, not the
+> evidence.
+
+| Symbol (`id`) | Meaning to convey | Bar | Tier-A (auto) | Tier-B comprehension (humans) |
+|---|---|---|---|---|
+| `self` ◎ | steady, non-pathological centre | ≥67% | ✅ pass | ⏳ pending |
+| `part` ○ | a part / sub-personality | ≥67% | ✅ pass | ⏳ pending |
+| `state` (box) | a state one can be in | ≥67% | ✅ pass | ⏳ pending |
+| `resource` ◇ | a steadying support / anchor | ≥67% | ✅ pass | ⏳ pending |
+| `intervention` ⬡ | a deliberate change act | ≥67% | ✅ pass | ⏳ pending |
+| `context` ▭ | who/what owns an action | ≥67% | ✅ pass | ⏳ pending |
+| `band` ▮▮▮ | an ordered zone / phase | ≥67% | ✅ pass | ⏳ pending |
+| `observing-eye` 👁 | a step-back, self-watching stance | ≥67% | ✅ pass | ⏳ pending |
+| `sequential` → | leads to / then | ≥67% | ✅ pass | ⏳ pending |
+| `reciprocal` ↔ | feeds both ways | ≥67% | ✅ pass | ⏳ pending |
+| **`exit`** (dashed + "EXIT") | **the way out / way to get help** | **≥85%** | ✅ pass | ⏳ pending |
+| `barrier` ⤬ | a dissociative barrier | ≥67% | ✅ pass | ⏳ pending |
+| `containment` ( ) | a protector holding/guarding | ≥67% | ✅ pass | ⏳ pending |
+| `contested` ⚖ | origins disagree (shown, not merged) | ≥67% | ✅ pass | ⏳ pending |
+| `trap` (+ "TRAP") | a self-confirming loop | ≥67% | ✅ pass | ⏳ pending |
+| `dilemma` (+ "DILEMMA") | a false-binary either/or | ≥67% | ✅ pass | ⏳ pending |
+| `snag` (+ "SNAG") | self-sabotage of success | ≥67% | ✅ pass | ⏳ pending |
 
 ---
 

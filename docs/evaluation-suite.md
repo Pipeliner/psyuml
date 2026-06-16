@@ -20,13 +20,21 @@ Each maps to an evaluation **question**, a **method/instrument**, a **success cr
 its **current coverage**.
 
 ### 1. Comprehension (layperson) — Tier B
-- **Q:** Can a non-clinician read a client-layer diagram and state what it says about the person?
-- **Method:** comprehension test — show the §H crisis chart + a State Map to N≥20 laypeople;
-  free-recall + targeted questions; compare to a text-only formulation.
-- **Success:** ≥80% correctly identify states, at least one "way out", and the crisis action;
-  non-inferior to (ideally better than) prose.
-- **Now:** *pending* (Tier B). Tier A guarantees the *artifact* exists: every view renders with a
-  plain-language client layer + a narrated alt-text (`conformance` asserts role/aria/alt both layers).
+- **Q:** Can a non-clinician read a client-layer diagram and state what it says about the person —
+  and is each individual **symbol** understood?
+- **Method:** two complementary tests. **(a) Formulation-level** — show the §H crisis chart + a State
+  Map to N≥20 laypeople; free-recall + targeted questions; compare to a text-only formulation
+  (Instrument A). **(b) Symbol-level (v0.2 §5)** — **ISO 9186** per-symbol comprehension over the
+  enumerated `NOTATION_SYMBOLS` set, N≥30/audience, after a participatory symbol-generation round
+  (Instrument D).
+- **Success:** (a) ≥80% correctly identify states, at least one "way out", and the crisis action,
+  non-inferior to prose; (b) **≥67%** correct per symbol, **≥85%** for safety-critical symbols (e.g.
+  the way-out/exit), with the **wrong/opposite-meaning rate reported** — a confidently-misread symbol
+  is disqualifying and is iterated, not shipped.
+- **Now:** *pending* (Tier B — real participants required). **Tier A is automated and green:** every
+  view renders with a plain-language client layer + a narrated alt-text (`conformance` asserts
+  role/aria/alt both layers), **and the notation `auditNotation()` harness** enforces symbol
+  discriminability + dual-coding (safety symbols never glyph/colour-alone) + a gloss per symbol in CI.
 
 ### 2. Collaborative validity — Tier B
 - **Q:** Does co-drawing improve the client's sense of the formulation being *theirs* and accurate?
@@ -90,7 +98,8 @@ its **current coverage**.
 ## The v1.0 go / no-go gate
 
 Leave v0.x **only** when all hold (Stage 4):
-1. **Layperson comprehension** non-inferior to prose (dimension 1).
+1. **Layperson comprehension** non-inferior to prose (dimension 1), **and** every symbol meets its
+   ISO 9186 bar — ≥67% general / ≥85% safety-critical — before the asset library is frozen (v0.2 §5).
 2. **Inter-rater reliability** — independent clinicians produce concordant formulations of the
    same case (a reliability study, not yet designed here).
 3. **Multi-school endorsement** — practitioners across ≥3 traditions agree the cross-school
@@ -104,7 +113,7 @@ instrument" framing.
 
 | Dimension | Tier A (automated, now) | Tier B (human, outstanding) |
 |---|---|---|
-| Comprehension | artifact + alt-text exist | comprehension study |
+| Comprehension | artifact + alt-text exist; **notation audit (discriminability / dual-coding / gloss) green** | formulation **+ per-symbol ISO 9186** study (ledger all `pending`) |
 | Collaborative validity | co-authorship e2e | dyad study |
 | Editability | build-a-diagram e2e + CLI | timed task-test |
 | Cross-school fidelity | lossless round-trip + provenance | expert review |

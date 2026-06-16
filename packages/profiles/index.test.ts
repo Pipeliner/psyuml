@@ -15,6 +15,8 @@ import {
   translate,
   validateProfile,
   withinSymbolBudget,
+  NOTATION_SYMBOLS,
+  auditNotation,
 } from './index';
 
 /** Build a complete compat matrix (every diagram type ok) for terse fixtures. */
@@ -187,5 +189,51 @@ describe('diagram families + audience profiles (v0.2 §2)', () => {
     expect(withinSymbolBudget(7, 'client')).toBe(false);
     expect(withinSymbolBudget(5, 'picture')).toBe(true);
     expect(withinSymbolBudget(6, 'picture')).toBe(false);
+  });
+});
+
+describe('notation comprehension testing (v0.2 §5)', () => {
+  it('registers the symbols under test with unique ids and a gloss each', () => {
+    expect(NOTATION_SYMBOLS.length).toBeGreaterThan(0);
+    expect(new Set(NOTATION_SYMBOLS.map((s) => s.id)).size).toBe(NOTATION_SYMBOLS.length);
+    expect(NOTATION_SYMBOLS.every((s) => s.concept.trim().length > 0)).toBe(true);
+    // the way-out is the safety-critical symbol and it is dual-coded (carries "EXIT")
+    const exit = NOTATION_SYMBOLS.find((s) => s.id === 'exit');
+    expect(exit?.safetyCritical).toBe(true);
+    expect(exit?.redundantWord).toBe('EXIT');
+  });
+
+  it('the canonical registry passes the Tier-A audit (discriminable + dual-coded + glossed)', () => {
+    const audit = auditNotation();
+    expect(audit.ok).toBe(true);
+    expect(audit.issues).toEqual([]);
+  });
+
+  it('Tier-A audit flags a glyph collision, a glyph-only safety symbol, and a missing gloss', () => {
+    const collide = auditNotation([
+      { id: 'a', concept: 'thing a', glyph: '◇', safetyCritical: false, tier: 1, role: 'core' },
+      { id: 'b', concept: 'thing b', glyph: '◇', safetyCritical: false, tier: 1, role: 'core' },
+    ]);
+    expect(collide.ok).toBe(false);
+    expect(collide.issues.some((i) => i.rule === 'notation.discriminability')).toBe(true);
+
+    const glyphOnlySafety = auditNotation([
+      {
+        id: 'danger',
+        concept: 'a way out',
+        glyph: '★',
+        safetyCritical: true,
+        tier: 1,
+        role: 'connector',
+      },
+    ]);
+    expect(glyphOnlySafety.ok).toBe(false);
+    expect(glyphOnlySafety.issues.some((i) => i.rule === 'notation.dual-coding')).toBe(true);
+
+    const noGloss = auditNotation([
+      { id: 'blank', concept: '   ', glyph: '★', safetyCritical: false, tier: 1, role: 'core' },
+    ]);
+    expect(noGloss.ok).toBe(false);
+    expect(noGloss.issues.some((i) => i.rule === 'notation.gloss')).toBe(true);
   });
 });

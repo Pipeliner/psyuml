@@ -497,3 +497,243 @@ export function withinSymbolBudget(
   const cap = audienceProfile(audience).maxSymbolKinds;
   return cap === undefined || distinctSymbolKinds <= cap;
 }
+
+// ---------------------------------------------------------------------------
+// Notation comprehension testing (v0.2 §5) — the symbol registry + Tier-A harness
+// ---------------------------------------------------------------------------
+
+/** Where a symbol sits in the visual language (for grouping a comprehension study). */
+export type SymbolRole = 'core' | 'connector' | 'marker' | 'pattern';
+
+/**
+ * A symbol in PsyUML's visual vocabulary, enumerated so a comprehension study (v0.2 §5; ISO 9186)
+ * can target each one and record a per-symbol result. `safetyCritical` symbols — those a misread
+ * could *harm* (e.g. the way-out / exit) — carry the higher ≥85% bar (vs ≥67% general). `glyph`
+ * is the canonical mark (a unicode glyph, or a short descriptor for an SVG-drawn form);
+ * `redundantWord` is the dual-coding text drawn alongside it (a safety symbol is never glyph-alone).
+ */
+export interface NotationSymbol {
+  id: string;
+  /** Plain-language meaning — the answer key for a "what does this mean?" study item. */
+  concept: string;
+  glyph: string;
+  redundantWord?: string;
+  safetyCritical: boolean;
+  tier: Tier;
+  role: SymbolRole;
+}
+
+/**
+ * The symbols a client / picture-profile reader must understand. Glyphs follow the canonical table
+ * (docs/cheatsheets.md, spec §B/§C). The CAT loop-topology marks (M12) are SVG-drawn and carry a
+ * redundant word; like every symbol here they are **untested** until the §5 study runs — this
+ * registry is the *set under test*, not a claim that they are understood (see the ledger in
+ * docs/adoption/comprehension-instruments.md, all entries `pending`).
+ */
+export const NOTATION_SYMBOLS: readonly NotationSymbol[] = [
+  {
+    id: 'self',
+    concept: 'the steady, non-pathological centre (Self)',
+    glyph: '◎',
+    safetyCritical: false,
+    tier: 1,
+    role: 'core',
+  },
+  {
+    id: 'part',
+    concept: 'a part / sub-personality / actor',
+    glyph: '○',
+    safetyCritical: false,
+    tier: 1,
+    role: 'core',
+  },
+  {
+    id: 'state',
+    concept: 'a state the person can be in',
+    glyph: 'rounded box',
+    safetyCritical: false,
+    tier: 1,
+    role: 'core',
+  },
+  {
+    id: 'resource',
+    concept: 'a steadying support, strength, or anchor',
+    glyph: '◇',
+    safetyCritical: false,
+    tier: 1,
+    role: 'core',
+  },
+  {
+    id: 'intervention',
+    concept: 'a deliberate change act / skill / technique',
+    glyph: '⬡',
+    safetyCritical: false,
+    tier: 1,
+    role: 'core',
+  },
+  {
+    id: 'context',
+    concept: 'who or what owns an action (context / role)',
+    glyph: '▭',
+    safetyCritical: false,
+    tier: 1,
+    role: 'core',
+  },
+  {
+    id: 'band',
+    concept: 'an ordered zone — an arousal band or phase',
+    glyph: '▮▮▮',
+    safetyCritical: false,
+    tier: 1,
+    role: 'core',
+  },
+  {
+    id: 'observing-eye',
+    concept: 'a step-back, self-watching stance',
+    glyph: '👁',
+    redundantWord: 'observing-I',
+    safetyCritical: false,
+    tier: 2,
+    role: 'core',
+  },
+  {
+    id: 'sequential',
+    concept: 'leads to / then',
+    glyph: '→',
+    safetyCritical: false,
+    tier: 1,
+    role: 'connector',
+  },
+  {
+    id: 'reciprocal',
+    concept: 'feeds both ways (mutual)',
+    glyph: '↔',
+    safetyCritical: false,
+    tier: 1,
+    role: 'connector',
+  },
+  {
+    id: 'exit',
+    concept: 'the way out of a loop — a way to get help',
+    glyph: 'dashed arrow',
+    redundantWord: 'EXIT',
+    safetyCritical: true,
+    tier: 1,
+    role: 'connector',
+  },
+  {
+    id: 'barrier',
+    concept: 'a dissociative barrier between parts',
+    glyph: '⤬',
+    redundantWord: 'barrier',
+    safetyCritical: false,
+    tier: 2,
+    role: 'marker',
+  },
+  {
+    id: 'containment',
+    concept: 'a protector holding or guarding',
+    glyph: 'orbit ( )',
+    safetyCritical: false,
+    tier: 2,
+    role: 'marker',
+  },
+  {
+    id: 'contested',
+    concept: 'origins disagree — both shown, not merged',
+    glyph: '⚖',
+    redundantWord: 'contested',
+    safetyCritical: false,
+    tier: 3,
+    role: 'marker',
+  },
+  {
+    id: 'trap',
+    concept: 'a self-confirming loop',
+    glyph: 'svg: return-loop',
+    redundantWord: 'TRAP',
+    safetyCritical: false,
+    tier: 2,
+    role: 'pattern',
+  },
+  {
+    id: 'dilemma',
+    concept: 'a false-binary, either/or fork',
+    glyph: 'svg: fork',
+    redundantWord: 'DILEMMA',
+    safetyCritical: false,
+    tier: 2,
+    role: 'pattern',
+  },
+  {
+    id: 'snag',
+    concept: 'self-sabotage of legitimate success',
+    glyph: 'svg: blocked-arrow',
+    redundantWord: 'SNAG',
+    safetyCritical: false,
+    tier: 2,
+    role: 'pattern',
+  },
+];
+
+export interface NotationAuditIssue {
+  rule: string;
+  severity: ProfileSeverity;
+  message: string;
+  symbol?: string;
+}
+export interface NotationAudit {
+  ok: boolean;
+  issues: NotationAuditIssue[];
+}
+
+/**
+ * Tier-A notation audit (v0.2 §5) — the automatable pre-study gate that runs in CI **before** any
+ * human comprehension test. It does **not** measure comprehension (that needs real participants —
+ * §5 Tier B, the v1.0 gate); it enforces the *necessary conditions* a symbol set must meet to be
+ * worth testing: every symbol is **discriminable** (no two share a glyph), every **safety-critical**
+ * symbol is **dual-coded** (a redundant word — never glyph- or colour-alone, §D), and every symbol
+ * has a plain-language **gloss** + a unique id (so a study item can be written for it). `ok` is
+ * false iff any error-severity issue is present, mirroring `validateProfile` / `@psyuml/validate`.
+ */
+export function auditNotation(
+  symbols: readonly NotationSymbol[] = NOTATION_SYMBOLS,
+): NotationAudit {
+  const issues: NotationAuditIssue[] = [];
+  const ids = new Set<string>();
+  const glyphOwner = new Map<string, string>();
+  for (const s of symbols) {
+    if (ids.has(s.id))
+      issues.push({
+        rule: 'notation.unique-id',
+        severity: 'error',
+        message: `Duplicate symbol id "${s.id}".`,
+        symbol: s.id,
+      });
+    ids.add(s.id);
+    if (!s.concept.trim())
+      issues.push({
+        rule: 'notation.gloss',
+        severity: 'error',
+        message: `Symbol "${s.id}" has no plain-language gloss to test against.`,
+        symbol: s.id,
+      });
+    const owner = glyphOwner.get(s.glyph);
+    if (owner)
+      issues.push({
+        rule: 'notation.discriminability',
+        severity: 'error',
+        message: `Symbols "${owner}" and "${s.id}" share the glyph "${s.glyph}" — not discriminable.`,
+        symbol: s.id,
+      });
+    else glyphOwner.set(s.glyph, s.id);
+    if (s.safetyCritical && !s.redundantWord?.trim())
+      issues.push({
+        rule: 'notation.dual-coding',
+        severity: 'error',
+        message: `Safety-critical symbol "${s.id}" must carry a redundant word — never glyph- or colour-alone (§5/§D).`,
+        symbol: s.id,
+      });
+  }
+  return { ok: !issues.some((i) => i.severity === 'error'), issues };
+}

@@ -133,10 +133,10 @@ demands before any 1.0.
 - **Acceptance (met):** switching audience profile **never mutates core data** (proven by a render-does-not-mutate test, parallels the school switcher); the client/picture profiles honour their plain-language (client labels) + symbol-budget posture; exports respect the active profile (the SVG/alt-text carry it). **Back-compatible:** explicit `layer`/`showInterpretive` win, so goldens + the CLI are byte-unchanged. *Still to come:* picture-profile **pictographic** symbols via the M14 comprehension gate (picture is "client + a flag" for now).
 - **Spec refs:** v0.2 §2, §6, §8. **REQ:** REQ-AUDIENCE-PROFILES, REQ-EDITOR-MVP, REQ-ACCESSIBILITY.
 
-### M14 · Notation comprehension testing (Tier-B) — the v0.x gate
-- **Goal:** stop guessing whether symbols are understood — measure it.
-- **Deliverables:** run the **ISO 9186** comprehension/recognition protocol + a participatory round with clients/trainees/laypeople (instruments already drafted in `docs/adoption/`); iterate symbols on the findings; record results in `docs/evaluation-suite.md`. Tier-A automatable checks stay in CI; Tier-B human studies are the release evidence.
-- **Acceptance:** every picture-profile symbol has a recorded comprehension result against the spec's thresholds (≥67% general / ≥85% safety-critical); failures drive a documented symbol revision. **Leaving v0.x stays gated on this evidence.**
+### M14 · Notation comprehension testing — Tier-A harness shipped; Tier-B is the v0.x gate *(in progress)*
+- **Goal:** stop guessing whether symbols are understood — and build the gate honestly (a comprehension result needs real people; we never fabricate one).
+- **Deliverables (landed, ADR-0017):** the **buildable half** — `@psyuml/profiles` `NOTATION_SYMBOLS` (the enumerated symbol set under test) + the **Tier-A `auditNotation()` harness** (discriminability / dual-coding of safety-critical symbols / gloss, **enforced in CI**); the **ISO 9186 protocol** as `comprehension-instruments.md` **Instrument D** (≥67% general / ≥85% safety-critical, wrong/opposite-meaning reported, participatory generation first) + a **per-symbol ledger**; `evaluation-suite.md` dimension 1, gate, and status updated.
+- **Acceptance:** every symbol has a **recorded status** — Tier-A `pass` (automated) + Tier-B `pending` in the ledger. **Tier-B is NOT done:** the human studies (clients/trainees/laypeople, N≥30/audience) require real participants and **remain the v0.x→v1.0 gate**; an LLM dry-run is not a sample and results are never fabricated. Failures (when run) drive a documented symbol revision, not a shipped symbol.
 - **Spec refs:** v0.2 §5. **REQ:** REQ-NOTATION-TESTING, REQ-EVAL-SUITE.
 
 ### M15 · Lossy FHIR export + audience-scoped exports
