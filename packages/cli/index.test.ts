@@ -250,4 +250,38 @@ describe('psyuml export (lossy FHIR, v0.2 §7)', () => {
     expect(run(['export', 'examples/state-map.psyuml', '--scope', 'public'], io)).toBe(2);
     expect(io.stderr.join('\n')).toContain('unknown --scope');
   });
+
+  it('binds a caller-supplied --code to a node Observation', () => {
+    const io = fakeIO({
+      'm.psyuml': JSON.stringify({
+        version: '0.1.0',
+        diagram: 'state-map',
+        meta: { disclaimer: 'x' },
+        nodes: [{ id: 'numb', kind: 'state', label: { clinician: { en: 'Numb' } } }],
+      }),
+    });
+    const code = run(
+      [
+        'export',
+        'm.psyuml',
+        '--no-deidentify',
+        '--code',
+        'numb=http://snomed.info/sct|247750002|Numb',
+      ],
+      io,
+    );
+    expect(code).toBe(0);
+    const bundle = JSON.parse(io.stdout.join('\n'));
+    const obs = bundle.entry.find(
+      (e: { resource: { resourceType: string } }) => e.resource.resourceType === 'Observation',
+    );
+    expect(obs.resource.code.coding[0].system).toBe('http://snomed.info/sct');
+    expect(obs.resource.code.coding[0].code).toBe('247750002');
+  });
+
+  it('rejects a malformed --code', () => {
+    const io = fakeIO();
+    expect(run(['export', 'examples/state-map.psyuml', '--code', 'oops'], io)).toBe(2);
+    expect(io.stderr.join('\n')).toContain('--code');
+  });
 });

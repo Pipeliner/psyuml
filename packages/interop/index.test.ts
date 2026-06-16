@@ -180,4 +180,29 @@ describe('@psyuml/interop — lossy FHIR export (v0.2 §7)', () => {
     expect(res.consent.scope).toBe('share with GP');
     expect(res.loss.roundTrip).toBe(false);
   });
+
+  it('binds caller-supplied SNOMED/LOINC codings to a node CodeableConcept (never fabricated)', () => {
+    // by default, concepts are text-only — no codes invented
+    const plain = toFhir(partsModel());
+    const obs0 = plain.bundle.entry.find((e) => e.resource.resourceType === 'Observation')!
+      .resource as { code: { coding?: unknown[] } };
+    expect(obs0.code.coding).toBeUndefined();
+    expect(plain.loss.items.some((i) => i.what === 'terminology-text-only')).toBe(true);
+
+    // a caller supplies a coding for the 'shame' node → it lands on that Observation's code
+    const coded = toFhir(partsModel(), {
+      coding: { shame: { system: 'http://snomed.info/sct', code: '00000', display: 'Shame' } },
+    });
+    const shame = coded.bundle.entry
+      .map((e) => e.resource)
+      .find(
+        (r) =>
+          r.resourceType === 'Observation' &&
+          (r as { code: { text?: string } }).code.text === 'Shame',
+      ) as { code: { coding?: { system?: string; code?: string }[] } } | undefined;
+    expect(shame?.code.coding?.[0]?.system).toBe('http://snomed.info/sct');
+    expect(shame?.code.coding?.[0]?.code).toBe('00000');
+    expect(validateFhirBundle(coded.bundle).ok).toBe(true);
+    expect(coded.loss.items.some((i) => i.what === 'terminology-partial')).toBe(true);
+  });
 });

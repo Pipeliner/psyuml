@@ -19,7 +19,7 @@ import { validate } from '@psyuml/validate';
 import { validateProfile } from '@psyuml/profiles';
 import { fromDSL, toDSL } from '@psyuml/grammar';
 import { deidentify, redactionAudit, scopeToLayer } from '@psyuml/privacy';
-import { toFhir, validateFhirBundle, type ExportScope } from '@psyuml/interop';
+import { toFhir, validateFhirBundle, type ExportScope, type FhirCoding } from '@psyuml/interop';
 import {
   blankTemplate,
   renderBodyMap,
@@ -71,7 +71,7 @@ usage:
   psyuml render <file> [--layer clinician|client] [--color] [-o out.svg]
   psyuml convert <file> [-o out]      # JSON .psyuml <-> text DSL (auto-detected)
   psyuml redact <file> [--term NAME ...] [--for clinician|client] [-o out]   # de-identify (+ role-scope) before export
-  psyuml export <file> [--fhir] [--scope record|client|research|teaching] [--no-deidentify] [--term NAME ...] [-o out.json]   # lossy, export-only FHIR R4
+  psyuml export <file> [--fhir] [--scope record|client|research|teaching] [--no-deidentify] [--term NAME ...] [--code id=system|code|display ...] [-o out.json]   # lossy, export-only FHIR R4
   psyuml template <file> [--layer L] [--color] [-o out.svg]   # blank printable scaffold
   psyuml lint-profile <files...>      # validate a §K extension profile (JSON)
   psyuml help | version
@@ -319,6 +319,7 @@ function cmdExport(args: string[], io: CliIO): number {
   let scope: ExportScope = 'record';
   let deid = true;
   const terms: string[] = [];
+  const coding: Record<string, FhirCoding> = {};
   const files: string[] = [];
   let out: string | undefined;
   for (let i = 0; i < args.length; i += 1) {
@@ -326,14 +327,23 @@ function cmdExport(args: string[], io: CliIO): number {
     if (a === '--scope') scope = args[(i += 1)] as ExportScope;
     else if (a === '--no-deidentify') deid = false;
     else if (a === '--term') terms.push(args[(i += 1)] ?? '');
-    else if (a === '-o' || a === '--out') out = args[(i += 1)];
+    else if (a === '--code') {
+      // --code nodeId=system|code[|display] — caller-supplied terminology binding (never fabricated)
+      const [id, spec] = (args[(i += 1)] ?? '').split('=');
+      const [system, code, display] = (spec ?? '').split('|');
+      if (id && system && code) coding[id] = display ? { system, code, display } : { system, code };
+      else {
+        io.err('usage: --code <nodeId>=<system>|<code>[|<display>]');
+        return 2;
+      }
+    } else if (a === '-o' || a === '--out') out = args[(i += 1)];
     else if (a === '--fhir')
       continue; // FHIR is the only format; accepted for clarity
     else if (!a.startsWith('-')) files.push(a);
   }
   if (files.length !== 1) {
     io.err(
-      'usage: psyuml export <file> [--fhir] [--scope record|client|research|teaching] [--no-deidentify] [--term NAME ...] [-o out.json]',
+      'usage: psyuml export <file> [--fhir] [--scope record|client|research|teaching] [--no-deidentify] [--term NAME ...] [--code id=system|code|display ...] [-o out.json]',
     );
     return 2;
   }
@@ -348,7 +358,7 @@ function cmdExport(args: string[], io: CliIO): number {
     io.err(`${files[0]}: ${msg(e)}`);
     return 1;
   }
-  const res = toFhir(model, { scope, deidentify: deid, redactTerms: terms });
+  const res = toFhir(model, { scope, deidentify: deid, redactTerms: terms, coding });
   const check = validateFhirBundle(res.bundle); // sanity-check our own output before emitting
   const json = JSON.stringify(res.bundle, null, 2);
   if (out) {

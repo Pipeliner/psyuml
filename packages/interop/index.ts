@@ -17,6 +17,14 @@ import { z } from 'zod';
 /** The audience scope an export is cut for (v0.2 §6). Drives the label layer + redaction posture. */
 export type ExportScope = 'record' | 'client' | 'research' | 'teaching';
 
+/** A FHIR terminology coding — supplied by the caller; PsyUML never invents clinical codes. */
+export interface FhirCoding {
+  /** e.g. "http://snomed.info/sct" or "http://loinc.org". */
+  system: string;
+  code: string;
+  display?: string;
+}
+
 export interface FhirExportOptions {
   /** Audience scope (§6). `client` uses the plain client layer; default `record` (clinician). */
   scope?: ExportScope;
@@ -24,6 +32,12 @@ export interface FhirExportOptions {
   deidentify?: boolean;
   /** Extra exact name terms to redact (e.g. ['Rachel', 'R.']). */
   redactTerms?: string[];
+  /**
+   * Optional **terminology binding** keyed by node id: a SNOMED/LOINC `Coding` (or codings) to
+   * attach to that node's `CodeableConcept`. PsyUML ships **no** code map — clinical codes are a
+   * deployment's validated value sets, never fabricated here; nodes with no entry stay text-only.
+   */
+  coding?: Record<string, FhirCoding | FhirCoding[]>;
   lang?: string;
 }
 
@@ -215,6 +229,18 @@ export function toFhir(model: PsyumlModel, options: FhirExportOptions = {}): Fhi
     return fullUrl;
   };
 
+  // Terminology binding (caller-supplied; never fabricated): a node's CodeableConcept gets the
+  // SNOMED/LOINC coding(s) mapped to its id, alongside the text. Unmapped nodes stay text-only.
+  const codingMap = options.coding ?? {};
+  let codedCount = 0;
+  const codeFor = (id: string, text: string): z.infer<typeof CodeableConcept> => {
+    const entry = codingMap[id];
+    if (!entry) return { text };
+    const coding = Array.isArray(entry) ? entry : [entry];
+    if (coding.length) codedCount += 1;
+    return { text, coding };
+  };
+
   const isRelational = scoped.diagram === 'relational-field';
   const interventions: typeof scoped.nodes = [];
   const resources: typeof scoped.nodes = [];
@@ -260,7 +286,7 @@ export function toFhir(model: PsyumlModel, options: FhirExportOptions = {}): Fhi
       {
         resourceType: 'Observation',
         status: 'preliminary',
-        code: cc(name),
+        code: codeFor(node.id, name),
         subject,
         category: [cc(`psyuml:${node.kind}`)],
       },
@@ -274,7 +300,12 @@ export function toFhir(model: PsyumlModel, options: FhirExportOptions = {}): Fhi
   for (const r of resources) {
     const name = getText(r.label, layer, lang) || r.id;
     const url = add(
-      { resourceType: 'Goal', lifecycleStatus: 'proposed', description: cc(name), subject },
+      {
+        resourceType: 'Goal',
+        lifecycleStatus: 'proposed',
+        description: codeFor(r.id, name),
+        subject,
+      },
       `goal-${r.id}`,
     );
     goalRefs.push({ reference: url, display: name });
@@ -363,7 +394,7 @@ export function toFhir(model: PsyumlModel, options: FhirExportOptions = {}): Fhi
 
   return {
     bundle,
-    loss: buildLoss(model, scoped, droppedKinds),
+    loss: buildLoss(model, scoped, droppedKinds, codedCount),
     scope,
     deidentified: deid,
     consent: { obtained: model.meta.consent?.obtained ?? false, scope: model.meta.consent?.scope },
@@ -382,6 +413,7 @@ function buildLoss(
   original: PsyumlModel,
   scoped: PsyumlModel,
   droppedKinds: Set<string>,
+  codedCount: number,
 ): LossReport {
   const items: LossItem[] = [
     {
@@ -399,6 +431,16 @@ function buildLoss(
       detail:
         'Internal nodes map to Observation, never Condition — PsyUML asserts nothing nosological (§A.3).',
     },
+    codedCount === 0
+      ? {
+          what: 'terminology-text-only',
+          detail:
+            'Concepts are CodeableConcept text only — no SNOMED/LOINC codes bound. Supply `coding` (per node id) to bind to your validated value sets; PsyUML never fabricates clinical codes.',
+        }
+      : {
+          what: 'terminology-partial',
+          detail: `${codedCount} concept(s) carry a caller-supplied SNOMED/LOINC code; the rest are text-only.`,
+        },
   ];
   if (
     scoped.diagram === 'relational-field' ||
