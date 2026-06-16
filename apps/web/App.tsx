@@ -11,7 +11,7 @@ import {
   type PsyumlModel,
 } from '@psyuml/model';
 import { fromDSL, toDSL } from '@psyuml/grammar';
-import { render, renderDiff } from '@psyuml/render';
+import { render, renderComposite, renderDiff } from '@psyuml/render';
 import { requiresHumanEscalation, validate } from '@psyuml/validate';
 import {
   AUDIENCE_PROFILES,
@@ -208,13 +208,23 @@ export function App() {
   const [compareWith, setCompareWith] = useState<PsyumlModel | null>(null);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
+  // v0.2 §2 Composite board: an in-memory set of views of one case (a persisted multi-document
+  // "case file" is future). renderComposite cross-links them by shared node id.
+  const [board, setBoard] = useState<PsyumlModel[]>([]);
+  const [showBoard, setShowBoard] = useState(false);
 
-  const { svg, altText } = useMemo(() => {
+  const single = useMemo(() => {
     const roleLabels = school ? roleLabelsFor(school) : undefined;
     // One dispatcher resolves the audience profile → layer + interpretive visibility (§2);
     // monochrome applies to every renderer (colour must stay redundant, §D).
     return render(model, { audience, monochrome, roleLabels });
   }, [model, audience, monochrome, school]);
+  const composite = useMemo(
+    () => (board.length ? renderComposite(board, { audience, monochrome }) : null),
+    [board, audience, monochrome],
+  );
+  // What's on screen / exported: the composite board when toggled on, else the single view.
+  const { svg, altText } = showBoard && composite ? composite : single;
 
   // v0.2 §2: the client/picture profiles cap distinct symbol kinds for cognitive load. Surface a
   // gentle over-budget nudge (never a block; the full pictographic reduction is M14).
@@ -594,6 +604,32 @@ export function App() {
           </ul>
         </section>
       )}
+
+      <section aria-label="Composite board" className="panel">
+        <strong>Composite board (v0.2)</strong>{' '}
+        <span className="muted">— several views of one case, cross-linked by shared node ids.</span>
+        <div className="row" style={{ marginTop: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={() => setBoard((b) => [...b, parseModel(serializeModel(model))])}
+          >
+            Add current view ({board.length} on board)
+          </button>
+          <button type="button" disabled={!board.length} onClick={() => setShowBoard((s) => !s)}>
+            {showBoard ? 'Show single view' : 'Show composite board'}
+          </button>
+          <button
+            type="button"
+            disabled={!board.length}
+            onClick={() => {
+              setBoard([]);
+              setShowBoard(false);
+            }}
+          >
+            Clear board
+          </button>
+        </div>
+      </section>
 
       {escalate && (
         <section role="alert" aria-label="Clinical escalation" className="panel--escalate">

@@ -892,12 +892,13 @@
       "milestone": "M16",
       "status": "implemented",
       "impl": [
-        "packages/render/index.ts"
+        "packages/render/index.ts",
+        "apps/web/App.tsx"
       ],
       "tests": [
         "packages/render/index.test.ts"
       ],
-      "notes": "v0.2 (ADR-0019, spec §2) gives the Composite family — previously taxonomy-only — real output. `renderComposite(models, options)` arranges several member views of ONE case as titled panels (each rendered through the `render()` dispatcher, so the audience profile applies, and nested as a scaled sub-svg) over a `sharedNodeIds()` index — the node ids present in >=2 views (spec §H.10 cross-diagram threads), tagged `data-shared-id`/`data-composite-panel` for cross-navigation. Takes an ARRAY of existing models (a case file), NOT a new model-schema type — additive, no Tier-1 / schema change, never mutates a member. Known nit: nested member svgs duplicate the `arrow` marker def (harmless; ADR-0019). Editor composite UI is future."
+      "notes": "v0.2 (ADR-0019, spec §2) gives the Composite family — previously taxonomy-only — real output. `renderComposite(models, options)` arranges several member views of ONE case as titled panels (each rendered through the `render()` dispatcher, so the audience profile applies, and nested as a scaled sub-svg) over a `sharedNodeIds()` index — the node ids present in >=2 views (spec §H.10 cross-diagram threads), tagged `data-shared-id`/`data-composite-panel` for cross-navigation. Takes an ARRAY of existing models (a case file), NOT a new model-schema type — additive, no Tier-1 / schema change, never mutates a member. Nested-panel def ids are namespaced per panel so shared markers don't collide (ADR-0019 follow-up). The editor (apps/web) exposes a Composite board: add the current view to an in-memory set + toggle the composite; a persisted multi-document case file is future."
     },
     {
       "id": "REQ-CULTURAL-PERMISSION",
