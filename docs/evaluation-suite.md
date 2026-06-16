@@ -124,10 +124,13 @@ instrument" framing.
 
 ## Simulated dry-runs (rehearsals, **not** evidence)
 
-Two LLM-simulated dry-runs have rehearsed the Tier-B instruments — explicitly **not evidence**, not
-samples, and counting for nothing toward the gate (LLMs aren't laypeople/clinicians and can't *see* a
-rendered image): [`evaluation-suite-pilot.md`](evaluation-suite-pilot.md) (role-play of the
-comprehension / inter-rater / multi-school instruments) and
-[`evaluation-suite-pilot-2.md`](evaluation-suite-pilot-2.md) (a **blind, no-inside-view** per-symbol
-comprehension run). They are instrument shake-outs + where-to-look signals for the *real* studies — the
-gate above is unchanged and the per-symbol ledger stays `pending`.
+Three LLM-simulated dry-runs have rehearsed the Tier-B instruments — explicitly **not evidence**, not
+samples, and counting for nothing toward the gate (LLMs aren't laypeople/clinicians): 
+[`evaluation-suite-pilot.md`](evaluation-suite-pilot.md) (role-play of the comprehension / inter-rater /
+multi-school instruments); [`evaluation-suite-pilot-2.md`](evaluation-suite-pilot-2.md) (a **blind,
+no-inside-view** per-symbol run, where symbols were *described in text* — so it could not test
+vision); and [`evaluation-suite-pilot-3.md`](evaluation-suite-pilot-3.md) (a blind formulation run
+where agents **read the actual rendered diagrams as PNGs** — fixing the can't-see gap, though
+multimodal vision ≠ human vision, so it likely runs optimistic). They are instrument shake-outs +
+where-to-look signals for the *real* studies — the gate above is unchanged and the per-symbol ledger
+stays `pending`.
