@@ -268,7 +268,11 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
   // labels in a LEFT gutter, both OUTSIDE the node columns so a long trigger label can never
   // strike a node box. Each gutter is wide enough for its widest label + the lane fan-out. The
   // lanes sit at the inner edge of the gutter and labels extend outward into it.
-  const labelW = (e: MEdge): number => textWidth(edgeText(e), 11);
+  // Trigger / exit labels carry safety-relevant content ("what winds me up", the way out); pilot 3
+  // flagged them as small once the wide State Map is scaled to fit. Size them a touch larger, and
+  // keep the width measurement in lockstep so the gutters + overlap invariant stay consistent.
+  const edgeLabelFs = 12;
+  const labelW = (e: MEdge): number => textWidth(edgeText(e), edgeLabelFs);
   let maxTransW = 0;
   let maxExitW = 0;
   for (const e of model.edges) {
@@ -385,7 +389,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
   }
   for (const el of edgeLabels) {
     parts.push(
-      `<text data-el="edgelabel:${esc(el.id)}" x="${r1(el.x)}" y="${r1(el.y)}" font-family="sans-serif" font-size="11" text-anchor="${el.anchor}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(el.text)}</text>`,
+      `<text data-el="edgelabel:${esc(el.id)}" x="${r1(el.x)}" y="${r1(el.y)}" font-family="sans-serif" font-size="${edgeLabelFs}" text-anchor="${el.anchor}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(el.text)}</text>`,
     );
   }
 

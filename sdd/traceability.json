@@ -832,13 +832,15 @@
       "status": "in-progress",
       "impl": [
         "packages/profiles/index.ts",
+        "packages/render/index.ts",
         "docs/adoption/comprehension-instruments.md",
         "docs/evaluation-suite.md"
       ],
       "tests": [
-        "packages/profiles/index.test.ts"
+        "packages/profiles/index.test.ts",
+        "packages/render/legibility.test.ts"
       ],
-      "notes": "Deep research (v0.2-research-synthesis §4) strongly supports comprehension-testing symbols with laypeople BEFORE freezing the asset library, and a validated method exists. v0.2 spec §5 adopts a two-tier gate. M14 (ADR-0017) ships the half that can be built honestly: (Tier-A, in CI) `@psyuml/profiles` NOTATION_SYMBOLS enumerates the symbol set under test and `auditNotation()` enforces discriminability (no shared glyph) + dual-coding of safety-critical symbols (a redundant word, never glyph/colour-alone) + a gloss/unique-id per symbol; (Tier-B protocol, docs) comprehension-instruments.md gains Instrument D (ISO 9186 per-symbol, >=67% general / >=85% safety, wrong/opposite-meaning reported, participatory generation first) + a per-symbol ledger whose every Tier-B cell is PENDING. Tier-B needs real participants and is NOT done — it remains the v0.x->v1.0 gate; results MUST NOT be fabricated (an LLM dry-run is not a sample). Status stays in-progress until the human studies run."
+      "notes": "Deep research (v0.2-research-synthesis §4) strongly supports comprehension-testing symbols with laypeople BEFORE freezing the asset library, and a validated method exists. v0.2 spec §5 adopts a two-tier gate. M14 (ADR-0017) ships the half that can be built honestly: (Tier-A, in CI) `@psyuml/profiles` NOTATION_SYMBOLS enumerates the symbol set under test and `auditNotation()` enforces discriminability (no shared glyph) + dual-coding of safety-critical symbols (a redundant word, never glyph/colour-alone) + a gloss/unique-id per symbol; render-side, `legibility.test.ts` enforces a font-size floor (no microtext) + a safety dual-coding render invariant (every `exit`/way-out edge is worded, never a bare arrow) + the State-Map trigger-label legibility bump — Tier-A guards MOTIVATED by the simulated dry-runs (pilots 2-3) but NOT evidence; (Tier-B protocol, docs) comprehension-instruments.md gains Instrument D (ISO 9186 per-symbol, >=67% general / >=85% safety, wrong/opposite-meaning reported, participatory generation first) + a per-symbol ledger whose every Tier-B cell is PENDING. Tier-B needs real participants and is NOT done — it remains the v0.x->v1.0 gate; results MUST NOT be fabricated (an LLM dry-run is not a sample). Status stays in-progress until the human studies run."
     },
     {
       "id": "REQ-PATTERN-SEMANTICS",
