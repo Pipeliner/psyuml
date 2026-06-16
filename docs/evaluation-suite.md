@@ -121,3 +121,13 @@ instrument" framing.
 | Privacy | redaction tests + local-first | data-flow audit |
 | Interoperability | DSL round-trip | FHIR (shelved) |
 | Accessibility | conformance role/alt/mono + fit | formal WCAG audit |
+
+## Simulated dry-runs (rehearsals, **not** evidence)
+
+Two LLM-simulated dry-runs have rehearsed the Tier-B instruments — explicitly **not evidence**, not
+samples, and counting for nothing toward the gate (LLMs aren't laypeople/clinicians and can't *see* a
+rendered image): [`evaluation-suite-pilot.md`](evaluation-suite-pilot.md) (role-play of the
+comprehension / inter-rater / multi-school instruments) and
+[`evaluation-suite-pilot-2.md`](evaluation-suite-pilot-2.md) (a **blind, no-inside-view** per-symbol
+comprehension run). They are instrument shake-outs + where-to-look signals for the *real* studies — the
+gate above is unchanged and the per-symbol ledger stays `pending`.
