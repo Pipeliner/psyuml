@@ -2603,7 +2603,15 @@ export function renderComposite(models: PsyumlModel[], options: RenderOptions = 
     const w = nums[2] || panelW;
     const h = nums[3] || 300;
     const ph = Math.min(560, r1(panelW * (h / w)));
-    const inner = svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+    // Namespace every `id`/`url(#…)` per panel so nested member SVGs don't collide on shared
+    // def ids (`arrow`, the `p-*` band patterns, node ids). The `\s` before `id` avoids touching
+    // `data-…-id` attributes; both rewrites use the same suffix so intra-panel refs stay valid.
+    const pfx = `__p${i}`;
+    const inner = svg
+      .replace(/^<svg[^>]*>/, '')
+      .replace(/<\/svg>\s*$/, '')
+      .replace(/(\s)id="([^"]+)"/g, `$1id="$2${pfx}"`)
+      .replace(/url\(#([^)]+)\)/g, `url(#$1${pfx})`);
     parts.push(frame(titleH + ph));
     parts.push(
       `<text x="${pad + 8}" y="${r1(y + 16)}" font-family="sans-serif" font-size="13" font-weight="700">${i + 1}. ${esc(viewName(m, i))}</text>`,

@@ -927,6 +927,21 @@ describe('renderComposite — the Composite board (v0.2 §2)', () => {
     expect(svg).toContain('A walk'); // client label for the shared resource
   });
 
+  it('namespaces nested-panel def ids so shared markers do not collide (ADR-0019 fix)', () => {
+    // the State Map and the Loop both define an `arrow` marker — nested in one document they
+    // would otherwise share the id; each panel's defs + refs must be namespaced.
+    const svg = renderComposite([stateModel, loopView]).svg;
+    expect(svg).not.toContain('id="arrow"'); // no un-namespaced (colliding) id remains
+    expect(svg).toContain('id="arrow__p0"'); // state-map panel
+    expect(svg).toContain('id="arrow__p1"'); // loop panel
+    // references are rewritten to match (no dangling url(#arrow))
+    expect(svg).toContain('url(#arrow__p1)');
+    expect(svg).not.toContain('url(#arrow)');
+    // every emitted id is unique across the whole board
+    const ids = [...svg.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('never mutates the member models', () => {
     const before = JSON.stringify([partsView, loopView]);
     renderComposite([partsView, loopView], { audience: 'client' });
