@@ -38,6 +38,19 @@ import bodyRaw from '../../examples/body-map.psyuml?raw';
 import dramaRaw from '../../examples/drama-triangle.psyuml?raw';
 import twoTriRaw from '../../examples/two-triangles.psyuml?raw';
 import catSdrRaw from '../../examples/cat-sdr.psyuml?raw';
+import socialAnxRaw from '../../examples/social-anxiety-loop.psyuml?raw';
+import perfectionismRaw from '../../examples/perfectionism-parts.psyuml?raw';
+import familyGenogramRaw from '../../examples/family-genogram.psyuml?raw';
+import panicRaw from '../../examples/panic-cycle.psyuml?raw';
+import ocdRaw from '../../examples/ocd-cycle.psyuml?raw';
+import depressionFlowerRaw from '../../examples/depression-flower.psyuml?raw';
+import stagesRaw from '../../examples/stages-of-change.psyuml?raw';
+import longitudinalRaw from '../../examples/longitudinal-formulation.psyuml?raw';
+import fivePsRaw from '../../examples/five-ps.psyuml?raw';
+import dbtChainRaw from '../../examples/dbt-chain.psyuml?raw';
+import goalLadderRaw from '../../examples/goal-ladder.psyuml?raw';
+import choicePointRaw from '../../examples/act-choice-point.psyuml?raw';
+import relapseRaw from '../../examples/relapse-prevention.psyuml?raw';
 import {
   addEdge,
   addNode,
@@ -153,27 +166,235 @@ const EXAMPLES: Record<string, string> = {
   'intervention-sequence': seqRaw,
   ritual: ritualRaw,
   'two-triangles': twoTriRaw,
+  'social-anxiety-loop': socialAnxRaw,
+  'perfectionism-parts': perfectionismRaw,
+  'family-genogram': familyGenogramRaw,
+  'panic-cycle': panicRaw,
+  'ocd-cycle': ocdRaw,
+  'depression-flower': depressionFlowerRaw,
+  'stages-of-change': stagesRaw,
+  'longitudinal-formulation': longitudinalRaw,
+  'five-ps': fivePsRaw,
+  'dbt-chain': dbtChainRaw,
+  'goal-ladder': goalLadderRaw,
+  'act-choice-point': choicePointRaw,
+  'relapse-prevention': relapseRaw,
 };
 
 // The picker, grouped by the v0.2 family each example exemplifies (spec §2). Order within a
 // family is preserved; `cat-sdr` sits under **Pattern** (its dedicated pattern-map type is
 // future, §4) and `drama-triangle` under **Field** (it's a Relational Field instance).
-const EXAMPLE_CATALOG: { key: string; label: string; family: DiagramFamily }[] = [
-  { key: 'state-map', label: 'State Map', family: 'cycle' },
-  { key: 'process-loop', label: 'Process / Loop', family: 'cycle' },
-  { key: 'cat-sdr', label: 'CAT reformulation (SDR)', family: 'pattern' },
-  { key: 'parts-map', label: 'Parts / Agents Map', family: 'parts' },
-  { key: 'mode-map', label: 'Schema Mode Map', family: 'parts' },
-  { key: 'relational-field', label: 'Relational Field', family: 'field' },
-  { key: 'drama-triangle', label: 'Drama triangle (TA)', family: 'field' },
-  { key: 'resource-anchor', label: 'Resource / Anchor map', family: 'field' },
-  { key: 'body-map', label: 'Body Map', family: 'field' },
-  { key: 'timeline', label: 'Timeline / Trajectory', family: 'journey' },
-  { key: 'intervention-sequence', label: 'Intervention Sequence', family: 'change' },
-  { key: 'two-triangles', label: 'Two Triangles (Malan)', family: 'change' },
-  { key: 'decision-nav', label: 'Crisis chart', family: 'change' },
-  { key: 'ritual', label: 'Ritual Structure', family: 'ritual' },
+// The help-site gallery: each example grouped by its v0.2 family, with the school it comes from and
+// an HONEST one-line note (blurb + evidence/limit) drawn from docs/research/diagram-catalog.md. The
+// note is shown beside the live editor so the library teaches the humility, not just the picture.
+interface GalleryItem {
+  key: string;
+  label: string;
+  family: DiagramFamily;
+  school: string;
+  note: string;
+}
+const EXAMPLE_CATALOG: GalleryItem[] = [
+  // — Cycle: what maintaining loop keeps this going? —
+  {
+    key: 'state-map',
+    label: 'State Map',
+    family: 'cycle',
+    school: 'polyvagal-informed / cross-school',
+    note: 'Bands of nervous-system states + what shifts between them, and a way back. A useful map; over-physiologised versions inherit the contested polyvagal theory — use as metaphor.',
+  },
+  {
+    key: 'process-loop',
+    label: 'Process / Loop (hot-cross-bun)',
+    family: 'cycle',
+    school: 'CBT (Padesky & Mooney)',
+    note: 'A generic maintaining cycle. The model underpins evidenced CBT; the diagram itself is a co-drawn heuristic, not a measure.',
+  },
+  {
+    key: 'panic-cycle',
+    label: 'Panic cycle',
+    family: 'cycle',
+    school: 'CBT (Clark 1986)',
+    note: 'The fear-of-fear loop: sensation → catastrophic thought → panic → safety behaviour → more sensations. A well-evidenced cognitive model.',
+  },
+  {
+    key: 'ocd-cycle',
+    label: 'OCD maintenance cycle',
+    family: 'cycle',
+    school: 'CBT',
+    note: 'Intrusion → appraisal → distress → compulsion → relief → more intrusions. Underpins evidenced ERP; the exit is response prevention.',
+  },
+  {
+    key: 'depression-flower',
+    label: 'Low-mood cycle (vicious flower)',
+    family: 'cycle',
+    school: 'CBT (Moorey 2010)',
+    note: 'A low-mood maintaining cycle. A formulation, not an outcome measure; the way out is behavioural activation.',
+  },
+  {
+    key: 'stages-of-change',
+    label: 'Stages of change (TTM)',
+    family: 'cycle',
+    school: 'transtheoretical (Prochaska–DiClemente)',
+    note: 'The change cycle. Popular but genuinely contested as a *stage* model (West 2005) — treat the stages as a heuristic.',
+  },
+  {
+    key: 'social-anxiety-loop',
+    label: 'Social-anxiety loop',
+    family: 'cycle',
+    school: 'CBT (Clark–Wells 1995)',
+    note: 'Self-focused attention + safety behaviours maintain the fear. A well-evidenced model; the cycle is the formulation.',
+  },
+  // — Pattern: what recurring procedure repeats, and where is the exit? —
+  {
+    key: 'cat-sdr',
+    label: 'CAT reformulation (SDR)',
+    family: 'pattern',
+    school: 'CAT (Ryle)',
+    note: 'Reciprocal roles, traps/dilemmas/snags and exits. CAT works *through the alliance*; the map is a co-drawn heuristic — its one dismantling trial found the reformulation letter redundant.',
+  },
+  // — Parts: what internal multiplicity is in play? —
+  {
+    key: 'parts-map',
+    label: 'Parts / Agents Map (IFS)',
+    family: 'parts',
+    school: 'IFS (Schwartz)',
+    note: 'Self + protective/wounded parts. IFS is popular but thinly evidenced (~2 RCTs); "parts" is a metaphor — avoid reifying it, especially with dissociation.',
+  },
+  {
+    key: 'mode-map',
+    label: 'Schema Mode Map',
+    family: 'parts',
+    school: 'Schema Therapy (Young)',
+    note: 'Modes + Healthy Adult "in the driver’s seat". Among the better-evidenced models here (RCTs for personality disorder).',
+  },
+  {
+    key: 'perfectionism-parts',
+    label: 'Perfectionism parts',
+    family: 'parts',
+    school: 'IFS / schema',
+    note: 'A worked parts map with a contested-origin marker where schools disagree about a part — a formulation, not a measure.',
+  },
+  // — Field: who/what is in the person's world? —
+  {
+    key: 'relational-field',
+    label: 'Relational Field',
+    family: 'field',
+    school: 'systemic',
+    note: 'People and ties in the person’s world. A practice tool, not a validated instrument.',
+  },
+  {
+    key: 'family-genogram',
+    label: 'Family genogram',
+    family: 'field',
+    school: 'systemic (McGoldrick)',
+    note: 'Three-generation family map. Widely used but weakly evidenced as an instrument (SAGE-PAGE found no clinical effect); privacy/family-reading caveats.',
+  },
+  {
+    key: 'drama-triangle',
+    label: 'Drama triangle (TA)',
+    family: 'field',
+    school: 'TA (Karpman)',
+    note: 'Persecutor/Rescuer/Victim role-switching. A widely-taught heuristic; "Victim" means a *stance*, not an actual victim of harm — never use it to dismiss real harm.',
+  },
+  {
+    key: 'resource-anchor',
+    label: 'Resource / Anchor map',
+    family: 'field',
+    school: 'strengths-based',
+    note: 'Strengths, safe people/places, values — the "path of hope". Co-created.',
+  },
+  {
+    key: 'body-map',
+    label: 'Body Map',
+    family: 'field',
+    school: 'somatic (Nummenmaa)',
+    note: 'Where emotions are felt in the body. The descriptive maps replicate cross-culturally; body-mapping-as-treatment is thinner; can be triggering for trauma.',
+  },
+  // — Journey: what is the trajectory / story over time? —
+  {
+    key: 'timeline',
+    label: 'Timeline / Trajectory',
+    family: 'journey',
+    school: 'cross-school',
+    note: 'Events and turning points over time. A narrative organiser, not a measure.',
+  },
+  {
+    key: 'longitudinal-formulation',
+    label: 'Longitudinal formulation',
+    family: 'journey',
+    school: 'CBT (Beck)',
+    note: 'How early experiences → beliefs → rules → current triggers. Belief links are tentative hypotheses — the least-reliable part of any formulation.',
+  },
+  {
+    key: 'five-ps',
+    label: 'The 5 Ps',
+    family: 'journey',
+    school: 'integrative (Weerasekera)',
+    note: 'Predisposing/precipitating/perpetuating/protective factors. By nature a grid, not really a diagram; shown here as a factor timeline. (Not coined by Macneil 2012.)',
+  },
+  // — Change: what is the treatment direction / what to do? —
+  {
+    key: 'intervention-sequence',
+    label: 'Intervention Sequence',
+    family: 'change',
+    school: 'cross-school',
+    note: 'Ordered steps/skills toward a goal. A plan, not a measure.',
+  },
+  {
+    key: 'dbt-chain',
+    label: 'DBT chain analysis',
+    family: 'change',
+    school: 'DBT (Linehan)',
+    note: 'Vulnerability → prompt → links → behaviour, with a skill to interrupt it. DBT is strongly evidenced; do it with kindness, not blame.',
+  },
+  {
+    key: 'act-choice-point',
+    label: 'ACT choice point',
+    family: 'change',
+    school: 'ACT (Harris)',
+    note: 'A moment’s fork: toward-moves vs away-moves, with hooks and values. ACT is evidenced; the format is a delivery tool.',
+  },
+  {
+    key: 'goal-ladder',
+    label: 'Goal ladder (SFBT)',
+    family: 'change',
+    school: 'solution-focused',
+    note: 'Small steps toward a preferred future. A practice tool.',
+  },
+  {
+    key: 'two-triangles',
+    label: 'Two Triangles (Malan)',
+    family: 'change',
+    school: 'psychodynamic (Malan)',
+    note: 'Conflict (defence/anxiety/feeling) + Person (therapist/other/parent). The therapy is moderately evidenced; the diagram itself is untested as a mechanism.',
+  },
+  {
+    key: 'relapse-prevention',
+    label: 'Staying-well plan',
+    family: 'change',
+    school: 'CBT/MBCT (Marlatt)',
+    note: 'Triggers → early signs → coping → support. The approach is evidenced; the worksheet isn’t. A wellness plan, NOT a crisis plan.',
+  },
+  {
+    key: 'decision-nav',
+    label: 'Crisis chart',
+    family: 'change',
+    school: 'suicide-prevention (Stanley–Brown)',
+    note: 'One decision per step, resources on every screen, no dead-ends. A collaborative plan — never a no-suicide contract or a risk-prediction tool.',
+  },
+  // — Ritual: what symbolic / ceremonial process? —
+  {
+    key: 'ritual',
+    label: 'Ritual Structure',
+    family: 'ritual',
+    school: 'cross-cultural / therapeutic ritual',
+    note: 'Van Gennep phases with a secular variant. Rituals reliably affect *subjective* anxiety/meaning, not objective disease markers (§F).',
+  },
 ];
+const GALLERY_BY_KEY: Record<string, GalleryItem> = Object.fromEntries(
+  EXAMPLE_CATALOG.map((x) => [x.key, x]),
+);
 
 function downloadText(filename: string, text: string, type: string): void {
   const url = URL.createObjectURL(new Blob([text], { type }));
@@ -703,6 +924,45 @@ export function App() {
               : 'zoom in to enlarge a dense diagram'}
         </span>
       </div>
+      {!showBoard && GALLERY_BY_KEY[example] && (
+        <section aria-label="About this example" className="panel">
+          <strong>{GALLERY_BY_KEY[example].label}</strong>{' '}
+          <span className="muted">
+            · {GALLERY_BY_KEY[example].school} ·{' '}
+            {listFamilies().find((f) => f.id === GALLERY_BY_KEY[example].family)?.title} family
+          </span>
+          <p style={{ margin: '0.4rem 0 0' }}>{GALLERY_BY_KEY[example].note}</p>
+        </section>
+      )}
+
+      <details className="panel">
+        <summary>
+          <strong>About these diagrams — please read</strong>
+        </summary>
+        <p className="note" role="note">
+          PsyUML is an <strong>unvalidated v0.x</strong> communication aid. It{' '}
+          <strong>supports, never replaces, professional care</strong>, and{' '}
+          <strong>does not diagnose</strong>. These are teaching examples — pick one from{' '}
+          <em>Diagram</em>, edit it live, switch the <em>Audience</em> (clinician / client /
+          picture), and export.
+        </p>
+        <p>
+          <strong>Honest by design.</strong> A therapy being evidenced does not mean its{' '}
+          <em>diagram</em> is — the alliance, not the picture, carries most of the change, and a
+          formulation is a shared hypothesis, not a truth. Sharing one can distress a meaningful
+          minority, so co-create it, pace it, and keep it the client&rsquo;s. Many popular
+          &ldquo;tools&rdquo; (thought records, PHQ-9, the 5&nbsp;Ps grid) are worksheets, not
+          diagrams, and aren&rsquo;t included here.
+        </p>
+        <p className="muted">
+          Browse by <strong>family</strong> in the Diagram menu — Cycle (maintaining loops), Pattern
+          (CAT procedures), Parts (inner multiplicity), Field (the person&rsquo;s world), Journey
+          (over time), Change (treatment direction), Ritual, Composite (several views of one case).
+          The full 40+ catalogue with per-diagram evidence notes lives in{' '}
+          <code>docs/research/diagram-catalog.md</code>.
+        </p>
+      </details>
+
       <section aria-label={`${model.diagram} diagram`} className="diagram">
         <div
           ref={diagramRef}

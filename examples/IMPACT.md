@@ -3,9 +3,11 @@
 **Purpose:** the canonical example corpus — a `<name>.psyuml` model + its generated
 `<name>.svg` golden for each diagram type (plus school-specific profiles of a type, e.g.
 the Karpman drama triangle under Relational Field) — used as regression fixtures, the CI
-corpus lint, and the editor's built-in examples.
-**Status:** active (all 9 diagram types)
-**Spec anchor / REQ:** REQ-STATE-MAP, REQ-PARTS-MAP, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR
+corpus lint, and the editor's built-in examples. This corpus is also the **interactive
+help-site example library** (ADR-0020): the editor's family-grouped gallery showcases these
+models with honest per-item evidence notes, so a gallery item is always a real, validated model.
+**Status:** active (12 diagram types + school-specific profile instances)
+**Spec anchor / REQ:** REQ-STATE-MAP, REQ-PARTS-MAP, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR, REQ-EXAMPLE-LIBRARY
 
 <!-- sdd:cover: *.psyuml, *.svg -->
 
@@ -20,9 +22,13 @@ corpus lint, and the editor's built-in examples.
 
 ## Files
 Files are **covered in bulk** by the `sdd:cover` directive above (they don't each need a row):
-- `*.psyuml` — hand-authored canonical models, one per diagram type (plus profile instances
-  such as `drama-triangle.psyuml`). Their validity is enforced by the **examples-corpus lint**
-  in `packages/validate/index.test.ts` (must pass in both layers).
+- `*.psyuml` — hand-authored canonical models, one per diagram type (plus **school-specific
+  profile instances** — `drama-triangle`, `cat-sdr`, and the help-site library: `panic-cycle`,
+  `ocd-cycle`, `depression-flower`, `stages-of-change` (process-loop); `longitudinal-formulation`,
+  `five-ps` (timeline); `dbt-chain`, `goal-ladder` (intervention-sequence); `act-choice-point`,
+  `relapse-prevention` (decision-nav); etc.). Their validity is enforced by the **examples-corpus
+  lint** in `packages/validate/index.test.ts` (must pass in both layers), plus the overlap (ADR-0012)
+  and legibility/dual-coding (ADR-0011) invariants over the whole corpus.
 - `*.svg` — **generated** golden renders (produced by `packages/render/index.test.ts`; never
   hand-edited). Byte-compared in CI.
 
@@ -31,5 +37,6 @@ Files are **covered in bulk** by the `sdd:cover` directive above (they don't eac
 
 ## Change checklist
 - [ ] New diagram example = add `<type>.psyuml` + run the render test to generate `<type>.svg`. No IMPACT edit needed (glob-covered) — but add a render test + a `REQ-…` for the new type.
+- [ ] If the example is shown in the help-site gallery, add a `GalleryItem` (family + school + an **honest** evidence/limit `note`) to `apps/web/App.tsx`'s `EXAMPLE_CATALOG`, and keep the note in step with `docs/research/diagram-catalog.md`.
 - [ ] Never hand-edit a golden `.svg`; regenerate it (delete + `pnpm test`).
 - [ ] Ran `node sdd/check.mjs` (green).

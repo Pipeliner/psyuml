@@ -151,6 +151,17 @@ demands before any 1.0.
 - **Acceptance (met):** a Composite board cross-navigates its member diagrams via shared IDs (proven by `sharedNodeIds` + the tagged index); a cultural pack passes the §K collision check **and** is rejected if a restricted symbol lacks its permission declaration; **no Tier-1 core change** and the board never mutates a member. The editor now exposes a **Composite board** (add the current view to an in-memory set, toggle the cross-linked composite); a persisted multi-document "case file" is future.
 - **Spec refs:** v0.2 §2, §6, §K. **REQ:** REQ-COMPOSITE-BOARD, REQ-CULTURAL-PERMISSION (+ REQ-DIAGRAM-FAMILIES, REQ-EXTENSION-MECH).
 
+## Phase 7 — Onboarding & learnability
+
+> Now the language can *say* a lot, help a newcomer *see* what it can say and *try* it — driven by
+> the cited 59-diagram catalogue (`research/diagram-catalog.md`, ADR-0020).
+
+### M17 · Interactive help site — an honest, live-editable example library *(landed)*
+- **Goal:** let a newcomer browse many worked formulation diagrams across the major schools and edit any of them live — without building a second app or letting the showcase drift from the language.
+- **Deliverables (landed, ADR-0020):** the **editor *is* the help site.** 10 new `examples/*.psyuml` (panic / OCD / vicious-flower / stages-of-change / longitudinal / 5Ps / DBT-chain / goal-ladder / ACT choice-point / staying-well plan) on top of the existing 14, spanning Cycle / Pattern / Parts / Field / Journey / Change / Ritual. A family-grouped **`EXAMPLE_CATALOG`** in `apps/web/App.tsx` carries, per example, its originating **school** + a one-line **honest** `note` (blurb + evidence/limit, from the catalogue), surfaced as an **"About this example"** card beside the live render and an **"About these diagrams — please read"** disclosure (unvalidated-v0.x / therapy-evidence ≠ diagram-evidence / sharing-can-harm). Picking an item loads it into the existing editor → live editing, audience switch, text-DSL, diff and export for free.
+- **Acceptance (met):** every gallery item is a **real, validated model** — parsed, examples-corpus-lint-clean in both layers, overlap-clean (ADR-0012) and legibility/dual-coding-clean (ADR-0011) — so the showcase cannot drift from the language (CI fails if it does); the gallery groups by the live `listFamilies()` registry; no schema / Tier-1 change and no new build target. *Still to come:* the Field-heavy and ◇ new-type catalogue entries (ecomap, social atom, empowerment triangle, structural dissociation, …) as further live examples.
+- **Spec refs:** v0.1 §E, v0.2 §2. **REQ:** REQ-EXAMPLE-LIBRARY (+ REQ-EDITOR-MVP, REQ-DIAGRAM-FAMILIES, REQ-AUDIENCE-PROFILES).
+
 ---
 
 ## Cross-cutting workstreams (run continuously)

@@ -1,0 +1,168 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "intervention-sequence",
+  "meta": {
+    "title": "DBT chain analysis",
+    "disclaimer": "This map supports, and does not replace, professional care. Done with kindness, not blame.",
+    "safety": {
+      "psychosisFlag": false,
+      "acuteRiskFlag": false
+    }
+  },
+  "bands": [
+    {
+      "id": "chain",
+      "order": 0,
+      "label": {
+        "clinician": {
+          "en": "The chain"
+        }
+      }
+    },
+    {
+      "id": "skills",
+      "order": 1,
+      "label": {
+        "clinician": {
+          "en": "Skills / way out"
+        }
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "vuln",
+      "kind": "intervention",
+      "bandId": "chain",
+      "label": {
+        "clinician": {
+          "en": "Vulnerability: tired, hungry, lonely"
+        },
+        "client": {
+          "en": "Run-down, lonely"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "reported"
+      }
+    },
+    {
+      "id": "prompt",
+      "kind": "intervention",
+      "bandId": "chain",
+      "label": {
+        "clinician": {
+          "en": "Prompting event: a critical text"
+        },
+        "client": {
+          "en": "A hurtful message"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "reported"
+      }
+    },
+    {
+      "id": "thought",
+      "kind": "intervention",
+      "bandId": "chain",
+      "label": {
+        "clinician": {
+          "en": "Thought: \"I'm rejected\""
+        },
+        "client": {
+          "en": "\"I'm rejected\""
+        }
+      },
+      "properties": {
+        "epistemicStatus": "reported"
+      }
+    },
+    {
+      "id": "urge",
+      "kind": "intervention",
+      "bandId": "chain",
+      "label": {
+        "clinician": {
+          "en": "Emotion + urge: shame, to self-harm"
+        },
+        "client": {
+          "en": "Shame; urge"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "reported"
+      }
+    },
+    {
+      "id": "behaviour",
+      "kind": "intervention",
+      "bandId": "chain",
+      "label": {
+        "clinician": {
+          "en": "Problem behaviour"
+        },
+        "client": {
+          "en": "What I did"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "reported"
+      }
+    },
+    {
+      "id": "skill",
+      "kind": "intervention",
+      "bandId": "skills",
+      "label": {
+        "clinician": {
+          "en": "Skill: opposite action, TIPP, ride the urge"
+        },
+        "client": {
+          "en": "Ride the urge; reach out"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "planned"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "sequential",
+      "source": "vuln",
+      "target": "prompt"
+    },
+    {
+      "id": "e2",
+      "kind": "sequential",
+      "source": "prompt",
+      "target": "thought"
+    },
+    {
+      "id": "e3",
+      "kind": "sequential",
+      "source": "thought",
+      "target": "urge"
+    },
+    {
+      "id": "e4",
+      "kind": "sequential",
+      "source": "urge",
+      "target": "behaviour"
+    },
+    {
+      "id": "x1",
+      "kind": "sequential",
+      "source": "urge",
+      "target": "skill",
+      "label": {
+        "clinician": {
+          "en": "interrupt here"
+        }
+      }
+    }
+  ]
+}

@@ -86,6 +86,11 @@
       "id": "M16",
       "phase": 6,
       "title": "v0.2: composite board + cultural-extension packs"
+    },
+    {
+      "id": "M17",
+      "phase": 7,
+      "title": "Onboarding: the interactive help site — an honest, live-editable example library"
     }
   ],
   "requirements": [
@@ -919,6 +924,40 @@
         "packages/profiles/index.test.ts"
       ],
       "notes": "v0.2 (ADR-0019, spec §6) adds a `cultural` block to `StereotypeDef` (tradition / restricted / permission / attribution) and a `validateProfile` rule: a `restricted` symbol with no `permission` is a `profile.cultural-permission` ERROR; with permission it surfaces a `profile.cultural-restricted` INFO ('not a generic reusable icon'). Enforced by `psyuml lint-profile` (no CLI change). A worked `CULTURAL_PACK_EXAMPLE` ships as the template (the tradition is an illustrative placeholder; a real pack names its source + authorization). This is a DECLARATION check (permission stated), not verification that permission was granted — it makes the §6 obligation explicit + auditable. Extends REQ-EXTENSION-MECH; additive (the field is optional)."
+    },
+    {
+      "id": "REQ-EXAMPLE-LIBRARY",
+      "title": "The interactive help site: a family-grouped, honestly-annotated, live-editable example library in the browser editor",
+      "spec": [
+        "§E",
+        "§2"
+      ],
+      "source": "docs/research/diagram-catalog.md",
+      "milestone": "M17",
+      "status": "implemented",
+      "impl": [
+        "apps/web/App.tsx",
+        "examples/social-anxiety-loop.psyuml",
+        "examples/perfectionism-parts.psyuml",
+        "examples/family-genogram.psyuml",
+        "examples/panic-cycle.psyuml",
+        "examples/ocd-cycle.psyuml",
+        "examples/depression-flower.psyuml",
+        "examples/stages-of-change.psyuml",
+        "examples/longitudinal-formulation.psyuml",
+        "examples/five-ps.psyuml",
+        "examples/dbt-chain.psyuml",
+        "examples/goal-ladder.psyuml",
+        "examples/act-choice-point.psyuml",
+        "examples/relapse-prevention.psyuml"
+      ],
+      "tests": [
+        "apps/web/editor.test.ts",
+        "packages/validate/index.test.ts",
+        "packages/render/overlap.test.ts",
+        "packages/render/legibility.test.ts"
+      ],
+      "notes": "The interactive help site (ADR-0020): NOT a separate app — the editor IS the help site. The library is real `examples/*.psyuml` models (27 total; 10 new this milestone spanning Cycle/Pattern/Parts/Field/Journey/Change/Ritual — panic, OCD, vicious-flower, TTM, longitudinal, 5Ps, DBT chain, goal-ladder, ACT choice-point, staying-well plan), each parsed + validated by the examples-corpus lint (both layers), overlap-clean (ADR-0012) + legibility/dual-coding-clean (ADR-0011), so a gallery item cannot drift from the language. `EXAMPLE_CATALOG: GalleryItem[]` groups them by v0.2 family (driven by `listFamilies()`) and carries per item the originating SCHOOL + a one-line honest `note` (blurb + evidence/limit lifted from `docs/research/diagram-catalog.md`). A per-example 'About this example' card (label · school · family · note) sits beside the live render; an 'About these diagrams — please read' disclosure carries the unvalidated-v0.x / therapy-evidence-is-not-diagram-evidence / sharing-can-harm honesty clause + points at the full 59-entry catalogue. Picking an item loads it into the existing editor (structured edit + audience switch + text-DSL + diff + export) — live editing for free. Additive: no schema/Tier-1 change, no new build target; cites the deep-research catalogue. Field/◇-new-type catalogue entries (ecomap, social atom, structural dissociation, ...) are catalogued but not yet live examples."
     }
   ]
 }

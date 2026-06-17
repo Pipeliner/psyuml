@@ -1,0 +1,160 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "decision-nav",
+  "meta": {
+    "title": "Staying-well plan (relapse prevention)",
+    "disclaimer": "This plan supports, and does not replace, professional care. It is a wellness plan, not a crisis plan.",
+    "crisisResources": "In a crisis, call your local emergency number or a crisis line (use your local number).",
+    "safety": {
+      "psychosisFlag": false,
+      "acuteRiskFlag": false
+    }
+  },
+  "nodes": [
+    {
+      "id": "well",
+      "kind": "state",
+      "stereotype": "safe",
+      "label": {
+        "clinician": {
+          "en": "Well: what keeps me steady"
+        },
+        "client": {
+          "en": "Doing OK"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "planned"
+      }
+    },
+    {
+      "id": "triggers",
+      "kind": "state",
+      "stereotype": "question",
+      "label": {
+        "clinician": {
+          "en": "Known triggers / high-risk times"
+        },
+        "client": {
+          "en": "Risky times"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "reported"
+      }
+    },
+    {
+      "id": "warning",
+      "kind": "state",
+      "stereotype": "question",
+      "label": {
+        "clinician": {
+          "en": "Early warning signs?"
+        },
+        "client": {
+          "en": "Early warning signs?"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "planned"
+      }
+    },
+    {
+      "id": "coping",
+      "kind": "resource",
+      "stereotype": "action",
+      "label": {
+        "clinician": {
+          "en": "Coping that has worked"
+        },
+        "client": {
+          "en": "What helps me"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "planned"
+      }
+    },
+    {
+      "id": "support",
+      "kind": "resource",
+      "stereotype": "action",
+      "label": {
+        "clinician": {
+          "en": "Who to tell / lean on"
+        },
+        "client": {
+          "en": "Who to tell"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "planned"
+      }
+    },
+    {
+      "id": "back",
+      "kind": "state",
+      "stereotype": "safe",
+      "label": {
+        "clinician": {
+          "en": "Back to steady"
+        },
+        "client": {
+          "en": "Back to steady"
+        }
+      },
+      "properties": {
+        "epistemicStatus": "planned"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "sequential",
+      "source": "well",
+      "target": "triggers"
+    },
+    {
+      "id": "e2",
+      "kind": "sequential",
+      "source": "triggers",
+      "target": "warning"
+    },
+    {
+      "id": "e3",
+      "kind": "sequential",
+      "source": "warning",
+      "target": "coping",
+      "label": {
+        "clinician": {
+          "en": "Yes — act early"
+        }
+      }
+    },
+    {
+      "id": "e4",
+      "kind": "sequential",
+      "source": "coping",
+      "target": "support"
+    },
+    {
+      "id": "e5",
+      "kind": "sequential",
+      "source": "support",
+      "target": "back"
+    },
+    {
+      "id": "e6",
+      "kind": "sequential",
+      "source": "warning",
+      "target": "back",
+      "label": {
+        "clinician": {
+          "en": "No — keep going"
+        }
+      }
+    }
+  ]
+}

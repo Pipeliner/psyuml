@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "intervention-sequence",
+  "meta": {
+    "title": "Goal ladder (solution-focused steps)",
+    "disclaimer": "This map supports, and does not replace, professional care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    { "id": "steps", "order": 0, "label": { "clinician": { "en": "Small steps" } } },
+    { "id": "goal", "order": 1, "label": { "clinician": { "en": "Preferred future" } } }
+  ],
+  "nodes": [
+    { "id": "s1", "kind": "intervention", "bandId": "steps", "label": { "clinician": { "en": "Step 1: text one friend back" }, "client": { "en": "Text a friend" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "s2", "kind": "intervention", "bandId": "steps", "label": { "clinician": { "en": "Step 2: a short daily walk" }, "client": { "en": "A short walk" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "s3", "kind": "intervention", "bandId": "steps", "label": { "clinician": { "en": "Step 3: one social plan a week" }, "client": { "en": "One plan a week" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "g", "kind": "resource", "bandId": "goal", "label": { "clinician": { "en": "Connected, active, hopeful (8/10)" }, "client": { "en": "Connected and active" } }, "properties": { "epistemicStatus": "planned" } }
+  ],
+  "edges": [
+    { "id": "e1", "kind": "sequential", "source": "s1", "target": "s2" },
+    { "id": "e2", "kind": "sequential", "source": "s2", "target": "s3" },
+    { "id": "e3", "kind": "sequential", "source": "s3", "target": "g", "label": { "clinician": { "en": "toward" } } }
+  ]
+}

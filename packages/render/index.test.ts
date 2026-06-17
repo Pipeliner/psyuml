@@ -42,6 +42,17 @@ const catSdrModel = parseModel(read('cat-sdr.psyuml'));
 const socialAnxietyModel = parseModel(read('social-anxiety-loop.psyuml'));
 const perfectionismModel = parseModel(read('perfectionism-parts.psyuml'));
 const familyGenogramModel = parseModel(read('family-genogram.psyuml'));
+// REQ-EXAMPLE-LIBRARY: the help-site gallery examples (school-specific profiles of the base types).
+const panicModel = parseModel(read('panic-cycle.psyuml'));
+const ocdModel = parseModel(read('ocd-cycle.psyuml'));
+const depressionFlowerModel = parseModel(read('depression-flower.psyuml'));
+const stagesModel = parseModel(read('stages-of-change.psyuml'));
+const longitudinalModel = parseModel(read('longitudinal-formulation.psyuml'));
+const fivePsModel = parseModel(read('five-ps.psyuml'));
+const dbtChainModel = parseModel(read('dbt-chain.psyuml'));
+const goalLadderModel = parseModel(read('goal-ladder.psyuml'));
+const choicePointModel = parseModel(read('act-choice-point.psyuml'));
+const relapseModel = parseModel(read('relapse-prevention.psyuml'));
 
 /** Compare against a committed golden; generate it locally on first run. */
 function expectGolden(name: string, svg: string): void {
@@ -750,6 +761,83 @@ describe('REQ-CASE-CORPUS worked cases', () => {
     expect(altText).toContain('Relational field');
     expect(altText).toContain('(cutoff)');
     expectGolden('family-genogram.svg', svg);
+  });
+});
+
+describe('REQ-EXAMPLE-LIBRARY help-site gallery examples (pinned goldens)', () => {
+  // Each gallery item is a real, validated model; pinning its golden guarantees the showcased
+  // render can't silently drift. Titles render as a single (unwrapped) <text>, so a title
+  // substring is a stable content assertion. Rendered through the matching base-type renderer.
+  it('panic cycle (CBT/Clark) — maintaining loop + exit', () => {
+    const { svg } = renderLoopMap(panicModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('fear-of-fear');
+    expect(svg).toContain('EXIT');
+    expectGolden('panic-cycle.svg', svg);
+  });
+
+  it('OCD maintenance cycle (CBT/ERP) — response prevention is the way out', () => {
+    const { svg } = renderLoopMap(ocdModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('OCD maintenance cycle');
+    expect(svg).toContain('EXIT');
+    expectGolden('ocd-cycle.svg', svg);
+  });
+
+  it('low-mood vicious flower (CBT/Moorey) — behavioural-activation exit', () => {
+    const { svg } = renderLoopMap(depressionFlowerModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('vicious flower');
+    expectGolden('depression-flower.svg', svg);
+  });
+
+  it('stages of change (TTM) — labelled contested as a stage model', () => {
+    const { svg } = renderLoopMap(stagesModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('contested as a stage model');
+    expectGolden('stages-of-change.svg', svg);
+  });
+
+  it('longitudinal formulation (CBT/Beck) — past shapes present', () => {
+    const { svg } = renderTimeline(longitudinalModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('how the past shapes the present');
+    expectGolden('longitudinal-formulation.svg', svg);
+  });
+
+  it('the 5 Ps — honestly labelled as a grid shown on a timeline', () => {
+    const { svg } = renderTimeline(fivePsModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('by nature a grid');
+    expectGolden('five-ps.svg', svg);
+  });
+
+  it('DBT chain analysis (Linehan) — vulnerability → behaviour, with a skill', () => {
+    const { svg } = renderInterventionSeq(dbtChainModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('DBT chain analysis');
+    expectGolden('dbt-chain.svg', svg);
+  });
+
+  it('goal ladder (solution-focused) — small steps toward a preferred future', () => {
+    const { svg } = renderInterventionSeq(goalLadderModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('solution-focused steps');
+    expectGolden('goal-ladder.svg', svg);
+  });
+
+  it('ACT choice point (Harris) — toward vs away moves', () => {
+    const { svg } = renderDecisionChart(choicePointModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('ACT choice point');
+    expectGolden('act-choice-point.svg', svg);
+  });
+
+  it('staying-well plan (relapse prevention) — a wellness plan, not a crisis plan', () => {
+    const { svg } = renderDecisionChart(relapseModel);
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('Staying-well plan');
+    expectGolden('relapse-prevention.svg', svg);
   });
 });
 

@@ -1,0 +1,28 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "timeline",
+  "meta": {
+    "title": "The 5 Ps (shown as a factor timeline; by nature a grid)",
+    "disclaimer": "This map supports, and does not replace, professional care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    { "id": "predis", "order": 0, "label": { "clinician": { "en": "Predisposing" } } },
+    { "id": "precip", "order": 1, "label": { "clinician": { "en": "Precipitating" } } },
+    { "id": "perpet", "order": 2, "label": { "clinician": { "en": "Perpetuating" } } },
+    { "id": "protect", "order": 3, "label": { "clinician": { "en": "Protective" } } }
+  ],
+  "nodes": [
+    { "id": "p0", "kind": "state", "stereotype": "action", "bandId": "predis", "label": { "clinician": { "en": "Early adversity; temperament" }, "client": { "en": "Hard start; sensitive" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "p1", "kind": "state", "stereotype": "action", "bandId": "precip", "label": { "clinician": { "en": "Recent loss; work stress" }, "client": { "en": "Loss; stress" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "p2", "kind": "state", "stereotype": "action", "bandId": "perpet", "label": { "clinician": { "en": "Avoidance; rumination" }, "client": { "en": "Avoiding; over-thinking" } }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "p3", "kind": "state", "stereotype": "action", "bandId": "protect", "label": { "clinician": { "en": "Supportive partner; insight" }, "client": { "en": "Good support; self-aware" } }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "pp", "kind": "state", "stereotype": "identity", "bandId": "precip", "label": { "clinician": { "en": "Presenting: low mood, anxiety" }, "client": { "en": "Low, anxious" } }, "properties": { "epistemicStatus": "reported" } }
+  ],
+  "edges": [
+    { "id": "t1", "kind": "sequential", "source": "p0", "target": "p1" },
+    { "id": "t2", "kind": "sequential", "source": "p1", "target": "p2" },
+    { "id": "t3", "kind": "sequential", "source": "p2", "target": "p3" }
+  ]
+}
