@@ -564,6 +564,14 @@ export function App() {
             rel="noopener noreferrer"
           >
             Practitioner handbook
+          </a>{' '}
+          ·{' '}
+          <a
+            href={`${import.meta.env.BASE_URL}diagram-catalog.html`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Diagram catalogue (40+)
           </a>
           .
         </p>
