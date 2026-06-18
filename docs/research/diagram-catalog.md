@@ -21,6 +21,86 @@ Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-
 
 ---
 
+## PsyUML notation — symbols & syntax (the language the mapping column uses)
+
+The mapping column names PsyUML **types** (`process-loop`), **edge kinds** (`reciprocal`),
+**markers** (`loopTopology:trap`, `barrier`, ⚖) and **qualifiers** (`as-if`). This is what those
+symbols mean and how a model is written — the reader's summary of spec §B (symbols) / §C
+(connectors), which are authoritative. **Every symbol is comprehension-test-gated (M14): the table
+below is the *set under test* (ISO 9186), not a claim it is already understood** — so each visual
+channel is kept **redundant with a word** (an exit is always labelled "EXIT", a trap "TRAP").
+
+### Node symbols (the core ontology categories, §B)
+
+| Glyph | Means | DSL `kind` |
+|---|---|---|
+| ◎ | the steady, non-pathological centre (Self) | `self` |
+| ○ | a part / sub-personality / actor | `agent` |
+| rounded box | a state the person can be in | `state` |
+| ◇ | a steadying support, strength or anchor | `resource` |
+| ⬡ | a deliberate change act / skill / technique | `intervention` |
+| ▭ | who/what owns an action (context / role) | `context` |
+| ▮▮▮ | an ordered zone — an arousal band or phase | a `band` statement (`bandId` on nodes) |
+| 👁 "observing-I" | a step-back, self-watching stance | `self` + `stereotype=observing-eye` |
+
+### Connector symbols (§C)
+
+| Glyph | Means | DSL `kind` |
+|---|---|---|
+| → | leads to / then | `sequential` |
+| ↔ | feeds both ways (mutual) | `reciprocal` |
+| dashed arrow **"EXIT"** | the way out of a loop — a way to get help *(safety-critical; always worded)* | `exit` |
+| orbit ( ) | a protector holding / guarding | `containment` |
+| ⤬ **"barrier"** | a dissociative barrier between parts | `barrier` |
+| zig-zag | a conflict between two parts | `conflict` |
+| solid / dashed / triple / slashed line | genogram ties: close / distant / fused / cut-off | `close` `distant` `fused` `cutoff` |
+| (also) | influence +/−, transference, nested-within, invocation | `excitatory` `inhibitory` `transference` `nestedWithin` `invocation` |
+
+### Markers & qualifiers (carried on a node/edge — they never replace the word)
+
+| Mark | Means | Where |
+|---|---|---|
+| ⚑ | a trigger / precipitant on a transition | edge `trigger="…"` |
+| ⚖ **"contested"** | origins disagree — both shown, not merged (§G.2) | a node claimed by ≥2 schools (`provenance`) |
+| (as-if) | named *as if* a part/voice, without asserting that metaphysics (§4) | node `asIf=true` |
+| **solid vs dashed border** | descriptive (reported / observed / jointly-agreed / planned) vs **interpretive** (inferred / clinician-inferred / contested / symbolic) | node/edge `epistemicStatus` |
+| R / B badge | a reinforcing / balancing loop | edge `loop=R\|B` |
+| TRAP / DILEMMA / SNAG (centre glyph + word) | CAT loop shapes: self-confirming / false-binary / self-sabotage | edge `topology=trap\|dilemma\|snag` |
+| L / M / H | confidence in the element | `confidence` |
+
+### Syntax — the text DSL (round-trips losslessly with the JSON `.psyuml` model)
+
+One statement per line; `#` starts a comment; blank lines are ignored; free text is double-quoted.
+
+```
+diagram <type>            lang <code>            version <semver>
+title "…"   disclaimer "…"   crisis "…"   flag acute|psychosis
+ritual framing="…" secular="…"
+band <id> order=<n> [pattern=dots|diagonal|cross-hatch] label="…"
+node <id> <kind> [stereotype=… tier=… band=… pos=x,y <prop>=…] label="…" [client="…"]
+edge <id> <src> <kind> <tgt> [loop=R|B topology=trap|dilemma|snag trigger="…"] [label="…" client="…"]
+```
+
+A worked maintaining-loop with an exit (the "path of hope"):
+
+```
+diagram process-loop
+title "Health-anxiety loop"
+node sensation state label="Notices a body sensation" client="A funny feeling"
+node appraise  state label="\"Something is wrong\""   client="\"Something's wrong\""
+node check     state label="Check, Google, reassure"
+node out       resource label="Sit with the uncertainty"
+edge e1 sensation sequential appraise trigger="a twinge"
+edge e2 appraise  reciprocal check
+edge e3 check     sequential sensation loop=R topology=trap
+edge x1 check     exit       out label="drop the safety behaviour"
+```
+
+The `examples/*.psyuml` files are the JSON surface of the same model; the editor exposes this DSL
+under **Edit as text**, and the `psyuml` CLI reads/writes it.
+
+---
+
 ## Cross-cutting findings from the deep research (what the evidence actually says)
 
 A five-angle, ~25-agent cited deep-research pass (CBT-family · CAT/psychodynamic/TA · third-wave/somatic ·
