@@ -51,6 +51,19 @@ import dbtChainRaw from '../../examples/dbt-chain.psyuml?raw';
 import goalLadderRaw from '../../examples/goal-ladder.psyuml?raw';
 import choicePointRaw from '../../examples/act-choice-point.psyuml?raw';
 import relapseRaw from '../../examples/relapse-prevention.psyuml?raw';
+// Showcase set: one feature-dense model per diagram type (full notation), for the catalogue.
+import scStateRaw from '../../examples/showcase-state-map.psyuml?raw';
+import scLoopRaw from '../../examples/showcase-process-loop.psyuml?raw';
+import scPartsRaw from '../../examples/showcase-parts-map.psyuml?raw';
+import scModeRaw from '../../examples/showcase-mode-map.psyuml?raw';
+import scFieldRaw from '../../examples/showcase-relational-field.psyuml?raw';
+import scBodyRaw from '../../examples/showcase-body-map.psyuml?raw';
+import scTimelineRaw from '../../examples/showcase-timeline.psyuml?raw';
+import scSeqRaw from '../../examples/showcase-intervention-sequence.psyuml?raw';
+import scRitualRaw from '../../examples/showcase-ritual.psyuml?raw';
+import scDecisionRaw from '../../examples/showcase-decision-nav.psyuml?raw';
+import scResourceRaw from '../../examples/showcase-resource-anchor.psyuml?raw';
+import scTwoTriRaw from '../../examples/showcase-two-triangles.psyuml?raw';
 import {
   addEdge,
   addNode,
@@ -179,6 +192,18 @@ const EXAMPLES: Record<string, string> = {
   'goal-ladder': goalLadderRaw,
   'act-choice-point': choicePointRaw,
   'relapse-prevention': relapseRaw,
+  'showcase-state-map': scStateRaw,
+  'showcase-process-loop': scLoopRaw,
+  'showcase-parts-map': scPartsRaw,
+  'showcase-mode-map': scModeRaw,
+  'showcase-relational-field': scFieldRaw,
+  'showcase-body-map': scBodyRaw,
+  'showcase-timeline': scTimelineRaw,
+  'showcase-intervention-sequence': scSeqRaw,
+  'showcase-ritual': scRitualRaw,
+  'showcase-decision-nav': scDecisionRaw,
+  'showcase-resource-anchor': scResourceRaw,
+  'showcase-two-triangles': scTwoTriRaw,
 };
 
 // The picker, grouped by the v0.2 family each example exemplifies (spec §2). Order within a
@@ -390,6 +415,91 @@ const EXAMPLE_CATALOG: GalleryItem[] = [
     family: 'ritual',
     school: 'cross-cultural / therapeutic ritual',
     note: 'Van Gennep phases with a secular variant. Rituals reliably affect *subjective* anxiety/meaning, not objective disease markers (§F).',
+  },
+  // — Showcase set: one feature-dense model per diagram type (the catalogue's "what can it do") —
+  {
+    key: 'showcase-state-map',
+    label: '★ State Map — full showcase',
+    family: 'cycle',
+    school: 'capability demo',
+    note: 'Three banded states with parallel transitions, ⚑ triggers, three worded EXITS (path of hope), and the full certainty range (observed / reported / clinician-inferred + confidence). Edit it to see the audience layers.',
+  },
+  {
+    key: 'showcase-process-loop',
+    label: '★ Process / Loop — full showcase',
+    family: 'cycle',
+    school: 'capability demo',
+    note: 'A maintaining cycle with a reinforcing-loop badge (R), a CAT loop-topology tag (trap), a ⚑ trigger and a worded way-out — plus client-believed vs clinician-inferred certainty.',
+  },
+  {
+    key: 'showcase-parts-map',
+    label: '★ Parts Map — full showcase',
+    family: 'parts',
+    school: 'capability demo',
+    note: 'Self + managers / firefighters / an exile, every part flagged as-if (a metaphor, not a claim), a contested-origin part (⚖ IFS vs schema), containment, a polarization, and a dissociative barrier.',
+  },
+  {
+    key: 'showcase-mode-map',
+    label: '★ Mode Map — full showcase',
+    family: 'parts',
+    school: 'capability demo',
+    note: 'Six schema modes laid out by hand with dominance weighting and the Healthy Adult negotiating — inferred vs observed vs jointly-agreed certainty.',
+  },
+  {
+    key: 'showcase-relational-field',
+    label: '★ Relational Field — full showcase',
+    family: 'field',
+    school: 'capability demo',
+    note: 'Genogram + ecomap: the index person (double ring), all five tie kinds (close / distant / conflict / cutoff / fused), and the wider world (work, faith, services).',
+  },
+  {
+    key: 'showcase-body-map',
+    label: '★ Body Map — full showcase',
+    family: 'field',
+    school: 'capability demo',
+    note: 'Hand-placed sensations down the body with a graded intensity scale and plain-language client labels. Go gently.',
+  },
+  {
+    key: 'showcase-timeline',
+    label: '★ Timeline — full showcase',
+    family: 'journey',
+    school: 'capability demo',
+    note: 'A lifeline of events (reported) over the meanings made of them (client-believed / inferred / jointly-agreed → planned) across five time bands.',
+  },
+  {
+    key: 'showcase-intervention-sequence',
+    label: '★ Intervention Sequence — full showcase',
+    family: 'change',
+    school: 'capability demo',
+    note: 'A phased, three-swimlane plan (client / therapist / support) with gate conditions on the arrows and a jointly-agreed step.',
+  },
+  {
+    key: 'showcase-ritual',
+    label: '★ Ritual — full showcase',
+    family: 'ritual',
+    school: 'capability demo',
+    note: 'Separation → threshold → return, every act flagged symbolic, with the required non-medical framing, a secular variant, recorded consent, and a tradition-claimed element.',
+  },
+  {
+    key: 'showcase-decision-nav',
+    label: '★ Crisis chart — full showcase',
+    family: 'change',
+    school: 'capability demo',
+    note: 'A branching safety plan with no dead ends, crisis resources on every screen, the acute-risk flag set, and a question / crisis / action / safe vocabulary. A plan, never a contract or a risk score.',
+  },
+  {
+    key: 'showcase-resource-anchor',
+    label: '★ Resource / Anchor — full showcase',
+    family: 'field',
+    school: 'capability demo',
+    note: 'Five anchor categories (people / skills / values / soothers / places) each holding several strengths — the "path of hope", co-created and owned by the client.',
+  },
+  {
+    key: 'showcase-two-triangles',
+    label: '★ Two Triangles — full showcase',
+    family: 'change',
+    school: 'capability demo',
+    note: 'Malan in full: the Triangle of Conflict (defence / anxiety / hidden feeling) and the Triangle of Person (current / therapist / past) linked by transference — with confidence and clinician-inferred depth flagged.',
   },
 ];
 const GALLERY_BY_KEY: Record<string, GalleryItem> = Object.fromEntries(

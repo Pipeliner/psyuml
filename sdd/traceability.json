@@ -949,15 +949,28 @@
         "examples/dbt-chain.psyuml",
         "examples/goal-ladder.psyuml",
         "examples/act-choice-point.psyuml",
-        "examples/relapse-prevention.psyuml"
+        "examples/relapse-prevention.psyuml",
+        "examples/showcase-state-map.psyuml",
+        "examples/showcase-process-loop.psyuml",
+        "examples/showcase-parts-map.psyuml",
+        "examples/showcase-mode-map.psyuml",
+        "examples/showcase-relational-field.psyuml",
+        "examples/showcase-body-map.psyuml",
+        "examples/showcase-timeline.psyuml",
+        "examples/showcase-intervention-sequence.psyuml",
+        "examples/showcase-ritual.psyuml",
+        "examples/showcase-decision-nav.psyuml",
+        "examples/showcase-resource-anchor.psyuml",
+        "examples/showcase-two-triangles.psyuml"
       ],
       "tests": [
         "apps/web/editor.test.ts",
         "packages/validate/index.test.ts",
         "packages/render/overlap.test.ts",
-        "packages/render/legibility.test.ts"
+        "packages/render/legibility.test.ts",
+        "packages/render/index.test.ts"
       ],
-      "notes": "The interactive help site (ADR-0020): NOT a separate app — the editor IS the help site. The library is real `examples/*.psyuml` models (27 total; 10 new this milestone spanning Cycle/Pattern/Parts/Field/Journey/Change/Ritual — panic, OCD, vicious-flower, TTM, longitudinal, 5Ps, DBT chain, goal-ladder, ACT choice-point, staying-well plan), each parsed + validated by the examples-corpus lint (both layers), overlap-clean (ADR-0012) + legibility/dual-coding-clean (ADR-0011), so a gallery item cannot drift from the language. `EXAMPLE_CATALOG: GalleryItem[]` groups them by v0.2 family (driven by `listFamilies()`) and carries per item the originating SCHOOL + a one-line honest `note` (blurb + evidence/limit lifted from `docs/research/diagram-catalog.md`). A per-example 'About this example' card (label · school · family · note) sits beside the live render; an 'About these diagrams — please read' disclosure carries the unvalidated-v0.x / therapy-evidence-is-not-diagram-evidence / sharing-can-harm honesty clause + points at the full 59-entry catalogue. Picking an item loads it into the existing editor (structured edit + audience switch + text-DSL + diff + export) — live editing for free. Additive: no schema/Tier-1 change, no new build target; cites the deep-research catalogue. Field/◇-new-type catalogue entries (ecomap, social atom, structural dissociation, ...) are catalogued but not yet live examples."
+      "notes": "The interactive help site (ADR-0020): NOT a separate app — the editor IS the help site. The library is real `examples/*.psyuml` models (39 gallery items: 27 per-school examples + a 12-model ★ SHOWCASE set, one feature-dense model per diagram type exercising the full notation — epistemic variety, provenance/contested-origin ⚖, loop topology, as-if, triggers, bands, exits/path-of-hope, crisis resources, client labels — each pinned by a golden render and documented in `docs/research/diagram-catalog.md`), each parsed + validated by the examples-corpus lint (both layers), overlap-clean (ADR-0012) + legibility/dual-coding-clean (ADR-0011), so a gallery item cannot drift from the language. `EXAMPLE_CATALOG: GalleryItem[]` groups them by v0.2 family (driven by `listFamilies()`) and carries per item the originating SCHOOL + a one-line honest `note` (blurb + evidence/limit lifted from `docs/research/diagram-catalog.md`). A per-example 'About this example' card (label · school · family · note) sits beside the live render; an 'About these diagrams — please read' disclosure carries the unvalidated-v0.x / therapy-evidence-is-not-diagram-evidence / sharing-can-harm honesty clause + points at the full 59-entry catalogue. Picking an item loads it into the existing editor (structured edit + audience switch + text-DSL + diff + export) — live editing for free. Additive: no schema/Tier-1 change, no new build target; cites the deep-research catalogue. Field/◇-new-type catalogue entries (ecomap, social atom, structural dissociation, ...) are catalogued but not yet live examples."
     }
   ]
 }

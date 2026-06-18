@@ -1,0 +1,86 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "process-loop",
+  "meta": {
+    "title": "Health-anxiety maintenance cycle — a trap with a way out",
+    "disclaimer": "A shared formulation drawn together — a hypothesis about what keeps the worry going, not a fact. Supports, does not replace, professional care.",
+    "consent": { "obtained": true, "scope": "Used in session and as a between-sessions reminder" },
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [],
+  "nodes": [
+    {
+      "id": "sensation",
+      "kind": "state",
+      "tier": 1,
+      "label": { "clinician": { "en": "Notices a body sensation" }, "client": { "en": "A funny feeling in my body" } },
+      "properties": { "epistemicStatus": "observed" }
+    },
+    {
+      "id": "appraise",
+      "kind": "state",
+      "tier": 1,
+      "label": { "clinician": { "en": "\"Something is seriously wrong\"" }, "client": { "en": "\"Something's really wrong\"" } },
+      "properties": { "epistemicStatus": "client-believed", "confidence": "M" }
+    },
+    {
+      "id": "anxiety",
+      "kind": "state",
+      "tier": 1,
+      "label": { "clinician": { "en": "Anxiety spikes" }, "client": { "en": "Anxiety shoots up" } },
+      "properties": { "epistemicStatus": "observed", "intensity": 0.8 }
+    },
+    {
+      "id": "checking",
+      "kind": "state",
+      "tier": 1,
+      "label": { "clinician": { "en": "Checks, Googles, seeks reassurance" }, "client": { "en": "Check, Google, reassure" } },
+      "properties": { "epistemicStatus": "observed" }
+    },
+    {
+      "id": "relief",
+      "kind": "state",
+      "tier": 1,
+      "label": { "clinician": { "en": "Brief relief" }, "client": { "en": "Feel better — for a bit" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "wayout",
+      "kind": "resource",
+      "tier": 1,
+      "label": { "clinician": { "en": "Postpone checking; allow doubt" }, "client": { "en": "Wait it out; don't check" } },
+      "properties": { "epistemicStatus": "planned" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "sequential",
+      "source": "sensation",
+      "target": "appraise",
+      "trigger": { "clinician": { "en": "a twinge or skipped beat" }, "client": { "en": "a twinge" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    { "id": "e2", "kind": "reciprocal", "source": "appraise", "target": "anxiety", "properties": {} },
+    { "id": "e3", "kind": "sequential", "source": "anxiety", "target": "checking", "properties": {} },
+    { "id": "e4", "kind": "sequential", "source": "checking", "target": "relief", "properties": {} },
+    {
+      "id": "e5",
+      "kind": "sequential",
+      "source": "relief",
+      "target": "sensation",
+      "loop": "R",
+      "loopTopology": "trap",
+      "properties": { "epistemicStatus": "clinician-inferred", "confidence": "H" }
+    },
+    {
+      "id": "x1",
+      "kind": "exit",
+      "source": "checking",
+      "target": "wayout",
+      "label": { "clinician": { "en": "drop the safety behaviour" }, "client": { "en": "don't check this time" } },
+      "properties": { "epistemicStatus": "planned" }
+    }
+  ]
+}

@@ -26,9 +26,12 @@ Files are **covered in bulk** by the `sdd:cover` directive above (they don't eac
   profile instances** — `drama-triangle`, `cat-sdr`, and the help-site library: `panic-cycle`,
   `ocd-cycle`, `depression-flower`, `stages-of-change` (process-loop); `longitudinal-formulation`,
   `five-ps` (timeline); `dbt-chain`, `goal-ladder` (intervention-sequence); `act-choice-point`,
-  `relapse-prevention` (decision-nav); etc.). Their validity is enforced by the **examples-corpus
-  lint** in `packages/validate/index.test.ts` (must pass in both layers), plus the overlap (ADR-0012)
-  and legibility/dual-coding (ADR-0011) invariants over the whole corpus.
+  `relapse-prevention` (decision-nav); etc.), **and a `showcase-<type>.psyuml` set — one
+  feature-dense model per diagram type** (the catalogue's "what can it do", exercising the full
+  notation). Their validity is enforced by the **examples-corpus lint** in
+  `packages/validate/index.test.ts` (must pass in both layers), plus the overlap (ADR-0012) and
+  legibility/dual-coding (ADR-0011) invariants over the whole corpus; each `showcase-*` is also
+  pinned by a golden in `packages/render/index.test.ts`.
 - `*.svg` — **generated** golden renders (produced by `packages/render/index.test.ts`; never
   hand-edited). Byte-compared in CI.
 

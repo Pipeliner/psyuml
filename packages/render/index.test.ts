@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { parseModel } from '@psyuml/model';
+import { parseModel, type PsyumlModel } from '@psyuml/model';
 import {
   blankTemplate,
   render,
@@ -838,6 +838,37 @@ describe('REQ-EXAMPLE-LIBRARY help-site gallery examples (pinned goldens)', () =
     expect(svg.startsWith('<svg')).toBe(true);
     expect(svg).toContain('Staying-well plan');
     expectGolden('relapse-prevention.svg', svg);
+  });
+});
+
+describe('REQ-EXAMPLE-LIBRARY showcase — one feature-dense model per diagram type (pinned goldens)', () => {
+  // One complex, capability-exercising example per diagram TYPE (epistemic variety, provenance /
+  // contested origins, loop topology, as-if, triggers, bands, exits / path-of-hope, crisis
+  // resources, client labels). Each is rendered through its base-type renderer and pinned.
+  const showcases: [string, (m: PsyumlModel) => { svg: string }][] = [
+    ['showcase-state-map.psyuml', renderStateMap],
+    ['showcase-process-loop.psyuml', renderLoopMap],
+    ['showcase-parts-map.psyuml', renderPartsMap],
+    ['showcase-mode-map.psyuml', renderModeMap],
+    ['showcase-relational-field.psyuml', renderRelationalField],
+    ['showcase-body-map.psyuml', renderBodyMap],
+    ['showcase-timeline.psyuml', renderTimeline],
+    ['showcase-intervention-sequence.psyuml', renderInterventionSeq],
+    ['showcase-ritual.psyuml', renderRitual],
+    ['showcase-decision-nav.psyuml', renderDecisionChart],
+    ['showcase-resource-anchor.psyuml', renderResourceMap],
+    ['showcase-two-triangles.psyuml', renderTwoTriangles],
+  ];
+
+  it('covers all 12 diagram types', () => {
+    expect(showcases.length).toBe(12);
+  });
+
+  it.each(showcases)('%s renders and matches its committed golden', (file, renderFn) => {
+    const { svg } = renderFn(parseModel(read(file)));
+    expect(svg.startsWith('<svg')).toBe(true);
+    expect(svg).toContain('data-el="node:');
+    expectGolden(file.replace(/\.psyuml$/, '.svg'), svg);
   });
 });
 

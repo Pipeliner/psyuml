@@ -171,6 +171,31 @@ help site must teach them, not just the pictures:
 
 ---
 
+## Showcase examples — one feature-dense model per diagram type
+
+Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the
+12 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
+dense, validated model that exercises as much of the notation as that type sensibly carries — so you
+can see, and live-edit, the system's full range in one place. All twelve are corpus-lint clean,
+overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by a golden render.
+
+| Type (★ showcase) | Capabilities it exercises |
+|---|---|
+| **State Map** | 3 patterned bands · ⚑ triggers · 3 worded EXITs (path of hope) · observed/reported/clinician-inferred + confidence · intensity/valence · client labels · recorded consent |
+| **Process / Loop** | reinforcing-loop badge (R) · CAT loop-topology `trap` · ⚑ trigger · worded way-out · client-believed vs clinician-inferred + confidence |
+| **Parts Map** | Self + manager/firefighter/exile · every part `as-if` (metaphor-flagged) · contested-origin ⚖ (IFS vs schema) · containment · polarization · dissociative barrier |
+| **Mode Map** | 6 hand-placed schema modes · dominance weighting · Healthy Adult · inferred/observed/jointly-agreed |
+| **Relational Field** | genogram + ecomap · index person (double ring) · all 5 tie kinds (close/distant/conflict/cutoff/fused) · contexts (work/faith/services) |
+| **Body Map** | hand-placed sensations · graded intensity scale · plain-language client labels |
+| **Timeline** | 5 time bands · events (reported) over meanings (client-believed/inferred/jointly-agreed → planned) |
+| **Intervention Sequence** | 3 swimlanes (client/therapist/support) · phased steps · gate conditions on arrows · jointly-agreed step |
+| **Ritual** | separation→threshold→return · every act `symbolic` · non-medical framing + secular variant + consent · a `tradition-claimed` element |
+| **Decision-Nav (crisis chart)** | branching with no dead-ends · crisis resources on every screen · acute-risk flag · question/crisis/action/safe vocabulary |
+| **Resource / Anchor** | 5 anchor categories holding many strengths — the "path of hope", client-owned |
+| **Two Triangles (Malan)** | Triangle of Conflict (defence/anxiety/hidden feeling) × Triangle of Person (current/therapist/past) linked by transference · confidence + clinician-inferred depth |
+
+---
+
 ## Additional catalogued diagrams (surfaced by the deep research)
 
 | # | Diagram | School | What it shows | Evidence / limits | PsyUML | Aud. |

@@ -1,0 +1,30 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "two-triangles",
+  "meta": {
+    "title": "Malan's two triangles — defence, anxiety, hidden feeling × T–C–P",
+    "disclaimer": "A clinician's psychodynamic working hypothesis offered tentatively, not a verdict. The deep links are inferred. Supports, does not replace, professional care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    { "id": "conflict", "label": { "clinician": { "en": "Triangle of Conflict" } }, "order": 0, "pattern": "none" },
+    { "id": "person", "label": { "clinician": { "en": "Triangle of Person" } }, "order": 1, "pattern": "none" }
+  ],
+  "nodes": [
+    { "id": "defence", "kind": "state", "bandId": "conflict", "position": { "x": 120, "y": 120 }, "label": { "clinician": { "en": "Defence: withdraw & placate" } }, "properties": { "epistemicStatus": "observed", "confidence": "H", "provenance": ["school:psychodynamic"] } },
+    { "id": "anxiety", "kind": "state", "bandId": "conflict", "position": { "x": 330, "y": 120 }, "label": { "clinician": { "en": "Anxiety: fear of rejection" } }, "properties": { "epistemicStatus": "observed", "confidence": "M", "provenance": ["school:psychodynamic"] } },
+    { "id": "feeling", "kind": "state", "bandId": "conflict", "position": { "x": 225, "y": 285 }, "label": { "clinician": { "en": "Hidden feeling: anger & grief" } }, "properties": { "epistemicStatus": "clinician-inferred", "confidence": "L", "provenance": ["school:psychodynamic"] } },
+    { "id": "current", "kind": "state", "bandId": "person", "position": { "x": 540, "y": 120 }, "label": { "clinician": { "en": "Current: partner" } }, "properties": { "epistemicStatus": "observed", "provenance": ["school:psychodynamic"] } },
+    { "id": "transf", "kind": "state", "bandId": "person", "position": { "x": 750, "y": 120 }, "label": { "clinician": { "en": "Therapist (here & now)" } }, "properties": { "epistemicStatus": "observed", "provenance": ["school:psychodynamic"] } },
+    { "id": "past", "kind": "state", "bandId": "person", "position": { "x": 645, "y": 285 }, "label": { "clinician": { "en": "Past: critical parent" } }, "properties": { "epistemicStatus": "clinician-inferred", "confidence": "L", "provenance": ["school:psychodynamic"] } }
+  ],
+  "edges": [
+    { "id": "f_a", "kind": "excitatory", "source": "feeling", "target": "anxiety", "label": { "clinician": { "en": "stirs" } }, "properties": {} },
+    { "id": "a_d", "kind": "excitatory", "source": "anxiety", "target": "defence", "label": { "clinician": { "en": "triggers" } }, "properties": {} },
+    { "id": "d_f", "kind": "inhibitory", "source": "defence", "target": "feeling", "label": { "clinician": { "en": "hides" } }, "properties": {} },
+    { "id": "p_c", "kind": "transference", "source": "past", "target": "current", "label": { "clinician": { "en": "repeats with" } }, "properties": {} },
+    { "id": "p_t", "kind": "transference", "source": "past", "target": "transf", "label": { "clinician": { "en": "repeats with" } }, "properties": {} },
+    { "id": "f_p", "kind": "transference", "source": "feeling", "target": "past", "label": { "clinician": { "en": "enacted in" } }, "properties": {} }
+  ]
+}

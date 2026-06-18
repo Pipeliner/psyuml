@@ -1,0 +1,140 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "state-map",
+  "meta": {
+    "title": "Window of tolerance — a full nervous-system map",
+    "disclaimer": "This map supports, and does not replace, professional care. Co-created; it is a shared picture, not a diagnosis.",
+    "crisisResources": "If you are in danger now, call your local emergency number or a crisis line (use your local number).",
+    "consent": { "obtained": true, "scope": "Shared in session and as a take-home reminder", "date": "2026-05-02" },
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    {
+      "id": "ventral",
+      "order": 0,
+      "pattern": "none",
+      "label": { "clinician": { "en": "Ventral / safe-social" }, "client": { "en": "Green — safe & social" } }
+    },
+    {
+      "id": "sympathetic",
+      "order": 1,
+      "pattern": "diagonal",
+      "label": { "clinician": { "en": "Sympathetic / mobilized" }, "client": { "en": "Amber — revved up" } }
+    },
+    {
+      "id": "dorsal",
+      "order": 2,
+      "pattern": "cross-hatch",
+      "label": { "clinician": { "en": "Dorsal / shutdown" }, "client": { "en": "Red — shut down" } }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "connected",
+      "kind": "state",
+      "bandId": "ventral",
+      "tier": 1,
+      "label": { "clinician": { "en": "Connected / playful" }, "client": { "en": "Calm and open" } },
+      "properties": { "epistemicStatus": "observed", "valence": 0.7 }
+    },
+    {
+      "id": "settled",
+      "kind": "state",
+      "bandId": "ventral",
+      "tier": 1,
+      "label": { "clinician": { "en": "Settled, at ease" }, "client": { "en": "At ease" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "anxious",
+      "kind": "state",
+      "bandId": "sympathetic",
+      "tier": 1,
+      "label": { "clinician": { "en": "Anxious / fight-flight" }, "client": { "en": "Wired, on edge" } },
+      "properties": { "epistemicStatus": "reported", "intensity": 0.6 }
+    },
+    {
+      "id": "panic",
+      "kind": "state",
+      "bandId": "sympathetic",
+      "tier": 1,
+      "label": { "clinician": { "en": "Panic surge" }, "client": { "en": "Panic" } },
+      "properties": { "epistemicStatus": "observed", "intensity": 0.9 }
+    },
+    {
+      "id": "numb",
+      "kind": "state",
+      "bandId": "dorsal",
+      "tier": 1,
+      "label": { "clinician": { "en": "Numb / shutdown" }, "client": { "en": "Foggy, flat" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "collapse",
+      "kind": "state",
+      "bandId": "dorsal",
+      "tier": 1,
+      "label": { "clinician": { "en": "Collapse / dissociation" }, "client": { "en": "Far away" } },
+      "properties": { "epistemicStatus": "clinician-inferred", "confidence": "M" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "kind": "sequential",
+      "source": "connected",
+      "target": "anxious",
+      "trigger": { "clinician": { "en": "criticism" }, "client": { "en": "being criticized" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "e2",
+      "kind": "sequential",
+      "source": "anxious",
+      "target": "panic",
+      "trigger": { "clinician": { "en": "feeling trapped" }, "client": { "en": "no way out" } },
+      "properties": { "epistemicStatus": "observed" }
+    },
+    {
+      "id": "e3",
+      "kind": "sequential",
+      "source": "anxious",
+      "target": "numb",
+      "trigger": { "clinician": { "en": "overwhelm" }, "client": { "en": "too much" } },
+      "properties": { "epistemicStatus": "reported" }
+    },
+    {
+      "id": "e4",
+      "kind": "sequential",
+      "source": "numb",
+      "target": "collapse",
+      "trigger": { "clinician": { "en": "shame flood" }, "client": { "en": "a wave of shame" } },
+      "properties": { "epistemicStatus": "clinician-inferred", "confidence": "M" }
+    },
+    {
+      "id": "x1",
+      "kind": "exit",
+      "source": "collapse",
+      "target": "numb",
+      "label": { "clinician": { "en": "orient: name five things you can see" }, "client": { "en": "look around, name five things" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "x2",
+      "kind": "exit",
+      "source": "numb",
+      "target": "anxious",
+      "label": { "clinician": { "en": "movement / push against a wall" }, "client": { "en": "move my body" } },
+      "properties": { "epistemicStatus": "planned" }
+    },
+    {
+      "id": "x3",
+      "kind": "exit",
+      "source": "anxious",
+      "target": "settled",
+      "label": { "clinician": { "en": "paced breathing + call a safe person" }, "client": { "en": "slow breathing, call someone safe" } },
+      "properties": { "epistemicStatus": "jointly-agreed" }
+    }
+  ]
+}

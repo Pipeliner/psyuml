@@ -1,0 +1,36 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "timeline",
+  "meta": {
+    "title": "Longitudinal lifeline — events and the meanings made of them",
+    "disclaimer": "The events are reported; the meanings are tentative shared hypotheses, the least certain part of any formulation. Supports, does not replace, professional care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    { "id": "childhood", "order": 0, "label": { "clinician": { "en": "Childhood (6–11)" } } },
+    { "id": "teens", "order": 1, "label": { "clinician": { "en": "Teens (12–18)" } } },
+    { "id": "twenties", "order": 2, "label": { "clinician": { "en": "Twenties" } } },
+    { "id": "now", "order": 3, "label": { "clinician": { "en": "Now" } } },
+    { "id": "future", "order": 4, "label": { "clinician": { "en": "Preferred future" } } }
+  ],
+  "nodes": [
+    { "id": "a0", "kind": "state", "stereotype": "action", "bandId": "childhood", "tier": 1, "label": { "clinician": { "en": "Bullied; not protected" }, "client": { "en": "Bullied, no one stepped in" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "a1", "kind": "state", "stereotype": "action", "bandId": "teens", "tier": 1, "label": { "clinician": { "en": "Parents divorced" }, "client": { "en": "Parents split up" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "a2", "kind": "state", "stereotype": "action", "bandId": "twenties", "tier": 1, "label": { "clinician": { "en": "First panic attack" }, "client": { "en": "First panic attack" } }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "a3", "kind": "state", "stereotype": "action", "bandId": "now", "tier": 1, "label": { "clinician": { "en": "Started therapy" }, "client": { "en": "Started therapy" } }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "a4", "kind": "state", "stereotype": "action", "bandId": "future", "tier": 1, "label": { "clinician": { "en": "Values-led, connected life" }, "client": { "en": "A life that fits me" } }, "properties": { "epistemicStatus": "planned" } },
+
+    { "id": "i0", "kind": "state", "stereotype": "identity", "bandId": "childhood", "tier": 1, "label": { "clinician": { "en": "\"I'm not safe\"" }, "client": { "en": "\"I'm not safe\"" } }, "properties": { "epistemicStatus": "client-believed", "confidence": "M" } },
+    { "id": "i1", "kind": "state", "stereotype": "identity", "bandId": "teens", "tier": 1, "label": { "clinician": { "en": "\"I cope alone\"" }, "client": { "en": "\"I cope alone\"" } }, "properties": { "epistemicStatus": "inferred" } },
+    { "id": "i2", "kind": "state", "stereotype": "identity", "bandId": "twenties", "tier": 1, "label": { "clinician": { "en": "\"I'm fragile\"" }, "client": { "en": "\"I'm fragile\"" } }, "properties": { "epistemicStatus": "client-believed" } },
+    { "id": "i3", "kind": "state", "stereotype": "identity", "bandId": "now", "tier": 1, "label": { "clinician": { "en": "\"I'm learning to trust\"" }, "client": { "en": "\"Learning to trust\"" } }, "properties": { "epistemicStatus": "jointly-agreed" } },
+    { "id": "i4", "kind": "state", "stereotype": "identity", "bandId": "future", "tier": 1, "label": { "clinician": { "en": "\"I belong\"" }, "client": { "en": "\"I belong\"" } }, "properties": { "epistemicStatus": "planned" } }
+  ],
+  "edges": [
+    { "id": "t1", "kind": "sequential", "source": "a0", "target": "a1", "properties": {} },
+    { "id": "t2", "kind": "sequential", "source": "a1", "target": "a2", "properties": {} },
+    { "id": "t3", "kind": "sequential", "source": "a2", "target": "a3", "properties": {} },
+    { "id": "t4", "kind": "sequential", "source": "a3", "target": "a4", "properties": {} }
+  ]
+}
