@@ -559,7 +559,7 @@ export function App() {
           replace, professional care; it does not diagnose. Editing is local-first — nothing leaves
           your device.{' '}
           <a
-            href={`${import.meta.env.BASE_URL}handbook.md`}
+            href={`${import.meta.env.BASE_URL}handbook.html`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -966,8 +966,15 @@ export function App() {
           Browse by <strong>family</strong> in the Diagram menu — Cycle (maintaining loops), Pattern
           (CAT procedures), Parts (inner multiplicity), Field (the person&rsquo;s world), Journey
           (over time), Change (treatment direction), Ritual, Composite (several views of one case).
-          The full 40+ catalogue with per-diagram evidence notes lives in{' '}
-          <code>docs/research/diagram-catalog.md</code>.
+          Read the full{' '}
+          <a
+            href={`${import.meta.env.BASE_URL}diagram-catalog.html`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            40+ diagram catalogue
+          </a>{' '}
+          — every diagram with its school, what it shows, and honest evidence notes.
         </p>
       </details>
 

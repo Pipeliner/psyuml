@@ -12,6 +12,9 @@ out/
 .turbo/
 *.tsbuildinfo
 
+# Generated, rendered docs (published from docs/*.md by scripts/build-docs.mjs)
+apps/web/public/*.html
+
 # Test / coverage
 coverage/
 .nyc_output/

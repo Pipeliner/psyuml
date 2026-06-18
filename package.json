@@ -8,8 +8,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "node scripts/build-docs.mjs && vite",
+    "build": "node scripts/build-docs.mjs && vite build",
     "build:cli": "node scripts/build-cli.mjs",
     "e2e": "playwright test",
     "lint": "eslint .",
@@ -29,6 +29,7 @@
     "@vitejs/plugin-react": "^4.3.0",
     "eslint": "^9.13.0",
     "globals": "^15.11.0",
+    "marked": "^18.0.5",
     "prettier": "^3.3.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
