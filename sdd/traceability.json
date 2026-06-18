@@ -96,6 +96,21 @@
       "id": "M18",
       "phase": 7,
       "title": "Layout-quality invariants: text-fits-its-container + edges-don't-cross-nodes (deep-research-driven)"
+    },
+    {
+      "id": "M19",
+      "phase": 8,
+      "title": "Road to v1.0 — run the pre-registered comprehension + utility studies (the validation gate)"
+    },
+    {
+      "id": "M20",
+      "phase": 9,
+      "title": "Notation + expressiveness completeness — new diagram types, obstacle-avoiding edge router, picture pictographs"
+    },
+    {
+      "id": "M21",
+      "phase": 10,
+      "title": "Product depth — persisted case file, live profiles, real i18n, provenance narrative, raster export"
     }
   ],
   "requirements": [
@@ -998,6 +1013,87 @@
         "packages/render/overlap.test.ts"
       ],
       "notes": "Driven by a cited deep-research survey of diagram-layout algorithms (`docs/research/layout-algorithms.md`, 5 angles). ADR-0021 closes the two gaps ADR-0012 left open. NEW geometry primitives in `layout.ts`: `contains` (AABB-in-AABB), `segIntersectsBox` (Liang–Barsky segment↔rectangle), `clipToBox` (Liang–Barsky entry, boundary-clipping); `separate1D` validated unchanged. A shared `introspect.ts` (moved out of overlap.test) reconstructs node/label AABBs HONOURING `textLength` (a compressed label measures at its rendered width) + flattens `data-el=\"edge:*\"` paths (M/L/H/V/Q/C) to polylines; every renderer now tags edges `data-el=\"edge:<id>\"`. `layout-quality.test.ts` asserts, over the corpus in both layers: (A) CONTAINMENT — every interior node label (centre inside its node) fits the node box; enforced for label-in-box renderers (state-map/timeline/intervention-sequence/ritual/two-triangles/decision-nav/process-loop), captions (centre outside) skipped without an allow-list, ~3px slop for the shared metric's unmodeled bold/sub-pixel error. (B) EDGE↔NODE (edge–vertex resolution > 0) — no edge segment passes through a non-incident node; enforced for all tagged-edge renderers EXCEPT a documented EDGE_NODE_KNOWN_GAP = {state-map (multi-node bands), ritual (cross-phase diagonals), decision-nav (back-edges)} that needs an obstacle-avoiding (libavoid-class) router judged disproportionate for a dependency-free renderer. Ritual edges now clip to node borders via `clipToBox`. Additive; the label-fit guarantee itself is the existing `fitText`/`wrapLabel` `textLength` compression, now machine-checked rather than implicit. The 'text fits its container' half is GUARANTEED (compression); the 'arrows don't cross nodes' half is GUARANTEED where enforced and HONESTLY SCOPED elsewhere — the research confirms a universal guarantee needs a router out of scope here."
+    },
+    {
+      "id": "REQ-STUDY-PREREG",
+      "title": "v1.0 validation gate: pre-register and run the comprehension + collaborative-validity + utility studies",
+      "spec": ["§0"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M19",
+      "status": "planned",
+      "notes": "THE dominant gap and the only path to v1.0 (ADR-0022, gap-spec §0). The harness + instruments exist (REQ-EVAL-SUITE, REQ-NOTATION-TESTING, in-progress; auditNotation + ISO-9186 Instrument D + a per-symbol ledger all Tier-B `pending`); what is MISSING is running them with real participants — only blind LLM dry-runs exist and those are explicitly NOT evidence. Spec: pre-register protocols (e.g. OSF); samples = clients (lived experience, supported) / trainees / laypeople / clinicians, N>=30 per audience (ISO-9186) with consent + distress-safety; measures = ISO-9186 comprehension% + comprehensibility, collaborative-validity, editability (SUS-style), clinical-utility, and a sharing-harm probe (Chadwick 2003); pre-stated analysis + stop/revise rules (a sub-threshold symbol is REVISED not shipped). Also subsumes the deferred assistive-tech/WCAG audit with real screen-reader users. Acceptance: a pre-registered protocol + ethics/IRB note + a published results report that drives revisions — only then may any artefact be called 'validated'. Building §1–§3 does NOT move the project toward validity; running this does."
+    },
+    {
+      "id": "REQ-NEW-DIAGRAM-TYPES",
+      "title": "The ◇ new-type renderers catalogued but not built (Venn, three-circles, 2×2 grid, ladder, bullseye, tree, hexagon)",
+      "spec": ["§2", "§E"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M20",
+      "status": "planned",
+      "notes": "The catalogue (`docs/research/diagram-catalog.md`) lists seven shapes with no renderer (◇, catalogued not faked): Venn/overlapping-circles (DBT states-of-mind, schema-domain overlap), three-circles (CFT threat/drive/soothe), 2x2 sorter/grid (schema 18-EMS in 5 domains, ACT matrix), ranked ladder (values/goal ladder), radial bullseye (ACT values bullseye), tree/branching (decision/parts hierarchy), hub/hexagon (ACT hexaflex). Each needs a renderer + golden + clean overlap (ADR-0012) + legibility (ADR-0011) + layout-quality (ADR-0021) + an honest catalogue example. Folds in the still-missing live examples (ecomap, social atom, empowerment triangle, structural dissociation, cultural genogram). Additive (new DiagramType members + renderers); Tier-1 core unchanged."
+    },
+    {
+      "id": "REQ-EDGE-ROUTER",
+      "title": "Obstacle-avoiding edge router to close EDGE_NODE_KNOWN_GAP + the label↔label known-gap",
+      "spec": ["§2", "§D"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M20",
+      "status": "planned",
+      "notes": "Per `docs/research/layout-algorithms.md` (Angle 2): an orthogonal / visibility-graph router (libavoid-class) to turn two documented honest gaps into universal guarantees — the edge↔node EDGE_NODE_KNOWN_GAP (state-map multi-node bands, ritual cross-phase diagonals, decision-nav back-edges; ADR-0021) and the label↔label known-gap for parts-map + process-loop free edge labels (ADR-0012) — or to document the irreducible residue. Deferred in ADR-0012/0021 as disproportionate for a dependency-free renderer; specced here as the way to close it. Deterministic (no stochastic layout) so golden tests stay stable."
+    },
+    {
+      "id": "REQ-PICTURE-PICTOGRAPHS",
+      "title": "Real picture-profile pictographs (gated on the comprehension studies)",
+      "spec": ["§1", "§8"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M20",
+      "status": "planned",
+      "notes": "The picture audience profile is today 'client layer + a flag' (ADR-0016); comprehension-tested pictographic symbols do not exist, and the topology glyphs remain placeholders (ADR-0015). GATED ON REQ-STUDY-PREREG: a pictograph MUST pass the ISO-9186 threshold before shipping; until then picture stays client+flag. Failures drive a documented symbol revision, never a shipped symbol."
+    },
+    {
+      "id": "REQ-CASE-FILE",
+      "title": "Persisted multi-document composite 'case file' + editor composite authoring",
+      "spec": ["§3", "§2"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M21",
+      "status": "planned",
+      "notes": "The Composite board is in-memory and render-only (ADR-0019): no saved case file of several views, and the editor cannot AUTHOR a composite (one model at a time). Spec a persisted multi-document case-file format + editor composite authoring, reusing `renderComposite`/`sharedNodeIds`. Additive (a case file is an array of existing models, never a model-schema change)."
+    },
+    {
+      "id": "REQ-LIVE-PROFILES",
+      "title": "Live §K profile + cultural-pack loading/applying in the editor",
+      "spec": ["§3", "§K", "§6"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M21",
+      "status": "planned",
+      "notes": "§K profiles are validated (`validateProfile`/`lint-profile`) but applied in the editor only as `roleLabels` (ADR-0009); cultural-extension packs ship only as a worked example (ADR-0019). Spec loading/applying a validated profile or cultural pack live in the editor's School switcher, with the §6 permission gate (restricted symbols MUST declare permission) enforced in the UI."
+    },
+    {
+      "id": "REQ-I18N-LOCALIZATION",
+      "title": "Real multi-language label packs + RTL + editor locale switch (the architecture exists; the content does not)",
+      "spec": ["§3"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M21",
+      "status": "planned",
+      "notes": "REQ-I18N (implemented) gave the ARCHITECTURE — concept IDs separate from localized labels, alt-text per view — but only `en` label packs exist. Spec real multi-language label packs, RTL layout, and an editor locale switch. Distinct from REQ-I18N (architecture) — this is the localized CONTENT + RTL rendering + UI."
+    },
+    {
+      "id": "REQ-PROVENANCE-NARRATIVE",
+      "title": "Represent HOW contested schools disagree, not only which (the ⚖ narrative)",
+      "spec": ["§3", "§G"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M21",
+      "status": "planned",
+      "notes": "Today `⚖` (contested) names WHICH schools claim a node but not HOW they disagree — the narrative stays out of the diagram (ADR-0007). Spec capturing + rendering the disagreement narrative so a contested element conveys the substance of the disagreement (§G.2 'preserve disagreement' made richer), in alt-text and on demand."
+    },
+    {
+      "id": "REQ-EXPORT-RASTER",
+      "title": "Raster / print export (PNG, PDF, print stylesheet)",
+      "spec": ["§3"],
+      "source": "docs/specification/roadmap-to-v1.md",
+      "milestone": "M21",
+      "status": "planned",
+      "notes": "The editor exports `.psyuml` + SVG and FHIR (export-only); there is no PNG/PDF or print path for clinicians who need a paper copy. Spec PNG/PDF export + a print stylesheet, preserving the active audience profile + the standing disclaimer/crisis fields on client-facing exports (§L.2 gating unchanged)."
     }
   ]
 }

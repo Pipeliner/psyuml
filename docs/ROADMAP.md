@@ -170,6 +170,30 @@ demands before any 1.0.
 
 ---
 
+## Phase 8–10 — the road to v1.0 (planned, specified) *(no code yet)*
+
+> Full gap analysis + acceptance criteria: [`specification/roadmap-to-v1.md`](./specification/roadmap-to-v1.md)
+> (ADR-0022). **v1.0 is defined by the validation gate (Phase 8), not by features** — PsyUML can ship
+> every renderer below and still be a v0.x *unvalidated* tool. These REQs are `planned`: specified,
+> not built.
+
+### M19 · Phase 8 — Validation gate (the only path to v1.0) *(planned)*
+- **The dominant gap.** The comprehension / collaborative-validity / editability / clinical-utility studies have **never run with real participants** (only blind LLM dry-runs, which are not evidence). The harness + ISO-9186 instruments exist (REQ-EVAL-SUITE, REQ-NOTATION-TESTING, in-progress; every Tier-B cell `pending`).
+- **Spec:** pre-register protocols; samples = clients/trainees/laypeople/clinicians, N≥30/audience, with consent + distress-safety; measures = ISO-9186 comprehension + comprehensibility, collaborative validity, editability, clinical utility, sharing-harm probe; pre-stated stop/revise rules (sub-threshold symbol → revised, never shipped); + the human assistive-tech/WCAG audit. **REQ:** REQ-STUDY-PREREG.
+
+### M20 · Phase 9 — Notation + expressiveness completeness *(planned)*
+- The seven **◇ new-type renderers** the catalogue lists but PsyUML can't draw (Venn/overlapping-circles, three-circles, 2×2 grid, ranked ladder, radial bullseye, tree/branching, hub/hexagon) + the still-missing live examples (ecomap, social atom, empowerment triangle, structural dissociation, cultural genogram); an **obstacle-avoiding edge router** to close `EDGE_NODE_KNOWN_GAP` (ADR-0021) + the label↔label gap (ADR-0012); **picture-profile pictographs** (gated on M19). **REQ:** REQ-NEW-DIAGRAM-TYPES, REQ-EDGE-ROUTER, REQ-PICTURE-PICTOGRAPHS.
+
+### M21 · Phase 10 — Product depth *(planned)*
+- Persisted multi-document **case file** + editor composite authoring (ADR-0019 was in-memory/render-only); **live profile + cultural-pack loading** in the editor (ADR-0009/0019); real **i18n localization** content + RTL (the architecture exists; only `en` packs do); a **provenance-disagreement narrative** (⚖ names which schools, not how; ADR-0007); **raster/print export** (PNG/PDF). **REQ:** REQ-CASE-FILE, REQ-LIVE-PROFILES, REQ-I18N-LOCALIZATION, REQ-PROVENANCE-NARRATIVE, REQ-EXPORT-RASTER.
+
+> **Deliberately out of scope (boundaries, not gaps):** autonomous diagnosis, live-care CDS,
+> outcome/treatment recommendations, safeguard-bypass; and FHIR/interop **import & round-trip**
+> (export-only by design — an importer pulls toward regulated CDS; revisit only behind a governance
+> review). See `specification/roadmap-to-v1.md` §4.
+
+---
+
 ## Cross-cutting workstreams (run continuously)
 - **Examples corpus** (`examples/`): the entire §H worked case ("R.", CPTSD) built as the canonical regression + demo set, one diagram per type.
 - **Accessibility:** monochrome snapshot tests and palette checks in CI from M1 onward.
