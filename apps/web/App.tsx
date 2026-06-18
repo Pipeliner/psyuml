@@ -557,7 +557,15 @@ export function App() {
           pick a diagram type, build it with the panels below, then save or export.{' '}
           <strong>Unvalidated v0.x — not a clinical instrument.</strong> Supports, and does not
           replace, professional care; it does not diagnose. Editing is local-first — nothing leaves
-          your device. <a href="../docs/handbook.md">Practitioner handbook</a>.
+          your device.{' '}
+          <a
+            href={`${import.meta.env.BASE_URL}handbook.md`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Practitioner handbook
+          </a>
+          .
         </p>
 
         <label className="field field--title">
