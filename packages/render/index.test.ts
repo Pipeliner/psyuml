@@ -134,7 +134,9 @@ describe('renderStateMap — parallel-edge fan-out (ADR-0010)', () => {
 
   it('routes the two edges on different paths (distinct lanes)', () => {
     const { svg } = renderStateMap(twoEdgeModel);
-    const paths = [...svg.matchAll(/<path d="(M [^"]+H [^"]+V [^"]+H [^"]+)"/g)].map((m) => m[1]);
+    const paths = [...svg.matchAll(/<path [^>]*\bd="(M [^"]+H [^"]+V [^"]+H [^"]+)"/g)].map(
+      (m) => m[1],
+    );
     expect(paths.length).toBeGreaterThanOrEqual(2);
     // the two transition edges between p,q must differ (different vertical lane x)
     expect(new Set(paths).size).toBe(paths.length);

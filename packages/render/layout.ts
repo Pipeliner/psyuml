@@ -69,6 +69,103 @@ export function union(boxes: Box[]): Box {
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
+/**
+ * Is `inner` fully inside `outer`? (containment, the dual of `overlaps`). A POSITIVE `slop`
+ * tolerates `inner` poking out by up to `slop` px on any side before it counts as escaping — used
+ * by the "a label's text fits inside its node box" invariant (ADR-0021), where the box is sized
+ * from the same `textWidth` estimate, so a sub-pixel estimate error must not fail the check.
+ */
+export function contains(outer: Box, inner: Box, slop = 0): boolean {
+  return (
+    inner.x >= outer.x - slop &&
+    inner.y >= outer.y - slop &&
+    inner.x + inner.w <= outer.x + outer.w + slop &&
+    inner.y + inner.h <= outer.y + outer.h + slop
+  );
+}
+
+/** A 2-D point in SVG coordinates. */
+export interface Pt {
+  x: number;
+  y: number;
+}
+
+/**
+ * Does the segment p→q intersect axis-aligned box `b`? Liang–Barsky parametric clip: treat the
+ * segment as p + t·(q−p), t∈[0,1], and clip it against the four slabs of the box; an intersection
+ * exists iff the surviving t-interval is non-empty. `pad` insets (negative) or grows (positive)
+ * the box first — the "arrow does not cross a non-incident node" invariant (ADR-0021) shrinks the
+ * box by a small slop so an edge that only grazes a node's border (e.g. a neighbour it routes past
+ * tangentially, or its own clipped endpoint) is not counted as passing THROUGH it.
+ *
+ * Deterministic and exact for straight segments — the primitive the edge↔node test asserts on.
+ */
+export function segIntersectsBox(p: Pt, q: Pt, b: Box, pad = 0): boolean {
+  const minX = b.x - pad;
+  const minY = b.y - pad;
+  const maxX = b.x + b.w + pad;
+  const maxY = b.y + b.h + pad;
+  // Degenerate (inset past empty): nothing can intersect.
+  if (minX > maxX || minY > maxY) return false;
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  let t0 = 0;
+  let t1 = 1;
+  // For each of the 4 boundaries: p_i = -delta, q_i = (bound - start). Liang–Barsky.
+  const clip = (pi: number, qi: number): boolean => {
+    if (pi === 0) return qi >= 0; // parallel to this slab: in iff inside the slab
+    const r = qi / pi;
+    if (pi < 0) {
+      if (r > t1) return false;
+      if (r > t0) t0 = r;
+    } else {
+      if (r < t0) return false;
+      if (r < t1) t1 = r;
+    }
+    return true;
+  };
+  if (
+    clip(-dx, p.x - minX) && // left
+    clip(dx, maxX - p.x) && // right
+    clip(-dy, p.y - minY) && // top
+    clip(dy, maxY - p.y) // bottom
+  ) {
+    return t0 <= t1; // a non-empty clipped interval means the segment meets the box
+  }
+  return false;
+}
+
+/**
+ * Where does the segment from `from` toward `to` first ENTER box `b` (grown by `pad`)? Returns that
+ * boundary point — so an arrow travelling from a source toward a target node's centre can stop on
+ * the target's border instead of burying its head in the centre (ADR-0021 boundary-clipping). If
+ * the segment never meets the box, `to` is returned unchanged. Liang–Barsky entry parameter; pure
+ * and deterministic.
+ */
+export function clipToBox(from: Pt, to: Pt, b: Box, pad = 0): Pt {
+  const minX = b.x - pad;
+  const minY = b.y - pad;
+  const maxX = b.x + b.w + pad;
+  const maxY = b.y + b.h + pad;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  let t0 = 0;
+  let t1 = 1;
+  const p = [-dx, dx, -dy, dy];
+  const q = [from.x - minX, maxX - from.x, from.y - minY, maxY - from.y];
+  for (let k = 0; k < 4; k += 1) {
+    if (p[k] === 0) {
+      if (q[k] < 0) return to; // parallel and outside this slab → never enters
+    } else {
+      const r = q[k] / p[k];
+      if (p[k] < 0) t0 = Math.max(t0, r);
+      else t1 = Math.min(t1, r);
+    }
+  }
+  if (t0 > t1) return to; // no intersection
+  return { x: from.x + dx * t0, y: from.y + dy * t0 };
+}
+
 /** An item on one axis: a center coordinate and the half-extent of its box on that axis. */
 export interface Span1D {
   center: number;

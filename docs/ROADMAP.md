@@ -162,6 +162,12 @@ demands before any 1.0.
 - **Acceptance (met):** every gallery item is a **real, validated model** — parsed, examples-corpus-lint-clean in both layers, overlap-clean (ADR-0012) and legibility/dual-coding-clean (ADR-0011) — so the showcase cannot drift from the language (CI fails if it does); the gallery groups by the live `listFamilies()` registry; no schema / Tier-1 change and no new build target. *Still to come:* the Field-heavy and ◇ new-type catalogue entries (ecomap, social atom, empowerment triangle, structural dissociation, …) as further live examples.
 - **Spec refs:** v0.1 §E, v0.2 §2. **REQ:** REQ-EXAMPLE-LIBRARY (+ REQ-EDITOR-MVP, REQ-DIAGRAM-FAMILIES, REQ-AUDIENCE-PROFILES).
 
+### M18 · Layout-quality invariants — text fits its container; arrows don't cross nodes *(landed)*
+- **Goal:** close the two geometry gaps ADR-0012 left open, driven by a cited deep-research survey of diagram-layout algorithms (`research/layout-algorithms.md`).
+- **Deliverables (landed, ADR-0021):** geometry primitives in `layout.ts` (`contains`, `segIntersectsBox`, `clipToBox` — Liang–Barsky); a shared `introspect.ts` that reconstructs node/label AABBs **honouring `textLength`** and flattens `data-el="edge:*"` paths to polylines; every renderer tags its edges; ritual edges clip to node borders. Two new machine-checked invariants in `layout-quality.test.ts`: **(A) containment** — every interior node label fits its box (the existing `fitText`/`wrapLabel` `textLength` compression, now asserted) and **(B) edge↔node** — no edge crosses a non-incident node (edge–vertex resolution > 0).
+- **Acceptance (met):** (A) enforced for all label-in-box renderers (captions skipped by the centre-outside rule); (B) enforced for every tagged-edge renderer except a documented `EDGE_NODE_KNOWN_GAP` (state-map multi-node bands, ritual cross-phase diagonals, decision-nav back-edges) — the research confirms a *universal* edge↔node guarantee needs an obstacle-avoiding (libavoid-class) router, out of proportion for a dependency-free renderer; `separate1D`/non-overlap validated unchanged. *Still to come:* an orthogonal/visibility-graph router to shrink `EDGE_NODE_KNOWN_GAP`.
+- **Spec refs:** §D, §J. **REQ:** REQ-LAYOUT-QUALITY (+ REQ-ACCESSIBILITY, REQ-NOTATION, REQ-CONFORMANCE).
+
 ---
 
 ## Cross-cutting workstreams (run continuously)

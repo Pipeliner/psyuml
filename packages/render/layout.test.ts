@@ -4,12 +4,72 @@
  * leans on these being correct, so we pin them directly here.
  */
 import { describe, expect, it } from 'vitest';
-import { CHAR_W, overlaps, separate1D, textWidth, union, type Span1D } from './layout';
+import {
+  CHAR_W,
+  clipToBox,
+  contains,
+  overlaps,
+  segIntersectsBox,
+  separate1D,
+  textWidth,
+  union,
+  type Span1D,
+} from './layout';
 
 describe('textWidth', () => {
   it('is length × size × CHAR_W (the one shared metric)', () => {
     expect(textWidth('abcd', 10)).toBeCloseTo(4 * 10 * CHAR_W);
     expect(textWidth('', 12)).toBe(0);
+  });
+});
+
+describe('contains (label-in-box, ADR-0021)', () => {
+  const box = { x: 0, y: 0, w: 100, h: 40 };
+  it('accepts an inner box, rejects one that pokes out on any side', () => {
+    expect(contains(box, { x: 10, y: 10, w: 50, h: 10 })).toBe(true);
+    expect(contains(box, { x: -5, y: 10, w: 20, h: 10 })).toBe(false); // left
+    expect(contains(box, { x: 90, y: 10, w: 20, h: 10 })).toBe(false); // right
+    expect(contains(box, { x: 10, y: 35, w: 20, h: 20 })).toBe(false); // bottom
+  });
+  it('tolerates a poke within `slop`', () => {
+    expect(contains(box, { x: 98, y: 10, w: 4, h: 10 })).toBe(false); // 2px over right
+    expect(contains(box, { x: 98, y: 10, w: 4, h: 10 }, 3)).toBe(true); // within 3px slop
+  });
+});
+
+describe('segIntersectsBox (edge↔node, ADR-0021)', () => {
+  const box = { x: 100, y: 100, w: 100, h: 100 }; // [100..200] x [100..200]
+  it('detects a segment passing straight through', () => {
+    expect(segIntersectsBox({ x: 0, y: 150 }, { x: 300, y: 150 }, box)).toBe(true);
+  });
+  it('detects a segment with one endpoint inside', () => {
+    expect(segIntersectsBox({ x: 150, y: 150 }, { x: 300, y: 150 }, box)).toBe(true);
+  });
+  it('detects a segment fully inside', () => {
+    expect(segIntersectsBox({ x: 120, y: 120 }, { x: 180, y: 180 }, box)).toBe(true);
+  });
+  it('misses a segment that clears the box', () => {
+    expect(segIntersectsBox({ x: 0, y: 0 }, { x: 50, y: 300 }, box)).toBe(false);
+    expect(segIntersectsBox({ x: 0, y: 250 }, { x: 300, y: 250 }, box)).toBe(false);
+  });
+  it('a grazing/touching edge is excluded by a negative pad (the EDGE_SLOP convention)', () => {
+    // a segment running exactly along the top border at y=100 touches but should not count
+    expect(segIntersectsBox({ x: 0, y: 100 }, { x: 300, y: 100 }, box, -1)).toBe(false);
+    // …while a clear 2px penetration still counts
+    expect(segIntersectsBox({ x: 0, y: 102 }, { x: 300, y: 102 }, box, -1)).toBe(true);
+  });
+});
+
+describe('clipToBox (boundary clipping, ADR-0021)', () => {
+  const box = { x: 100, y: 100, w: 100, h: 100 };
+  it('stops the segment on the box boundary nearest `to`', () => {
+    const p = clipToBox({ x: 0, y: 150 }, { x: 150, y: 150 }, box); // into the box from the left
+    expect(p.x).toBeCloseTo(100);
+    expect(p.y).toBeCloseTo(150);
+  });
+  it('leaves a segment that never reaches the box unchanged', () => {
+    const to = { x: 50, y: 150 };
+    expect(clipToBox({ x: 0, y: 150 }, to, box)).toEqual(to);
   });
 });
 

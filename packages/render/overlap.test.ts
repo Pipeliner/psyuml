@@ -8,11 +8,12 @@
  *   3. no two label boxes overlap each other;
  *   4. every box lies within the SVG viewBox.
  *
- * Boxes are reconstructed from `data-el`-tagged elements in the emitted SVG, measuring text with
- * the SAME `textWidth` metric the renderers used to size their slots (`layout.ts`). The guarantee
- * therefore holds *under the shared text-metric model* — see ADR-0012 for the honest scope (edge
- * line/path crossings are not "overlap" and are out of scope; bands/chrome are containers and are
- * excluded from node-overlap checks).
+ * Boxes are reconstructed (in `introspect.ts`) from `data-el`-tagged elements in the emitted SVG,
+ * measuring text with the SAME `textWidth` metric the renderers used to size their slots
+ * (`layout.ts`). The guarantee therefore holds *under the shared text-metric model* — see ADR-0012
+ * for the honest scope (edge line/path crossings are not "overlap" and are out of scope HERE — they
+ * are covered separately by the edge↔node invariant in `layout-quality.test.ts`, ADR-0021; bands/
+ * chrome are containers and are excluded from node-overlap checks).
  *
  * Traceability: REQ-ACCESSIBILITY, REQ-NOTATION (§D), REQ-CONFORMANCE (§J).
  */
@@ -20,137 +21,15 @@ import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { parseModel, type PsyumlModel } from '@psyuml/model';
 import * as render from '@psyuml/render';
-import { type Box, overlaps, textWidth } from './layout';
-
-/** A reconstructed element: its AABB plus the `data-el` tag it was drawn with. */
-interface ElBox extends Box {
-  el: string;
-}
+import { overlaps } from './layout';
+import { boxesFromSvg, idOf, kindOf, viewBoxOf } from './introspect';
 
 /** Tolerance: the shared metric is an estimate, so allow <=1px of slop before calling it overlap. */
 const SLOP = 1;
 
-const num = (s: string | undefined): number => Number(s);
-
-/** Parse the attributes of a single SVG element string into a flat map. */
-function attrs(tag: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const m of tag.matchAll(/([\w:-]+)="([^"]*)"/g)) out[m[1]] = m[2];
-  return out;
-}
-
-/** AABB of a `points="x,y x,y …"` polygon. */
-function polygonBox(points: string): Box | null {
-  const xs: number[] = [];
-  const ys: number[] = [];
-  for (const pair of points.trim().split(/\s+/)) {
-    const [x, y] = pair.split(',').map(Number);
-    if (Number.isFinite(x) && Number.isFinite(y)) {
-      xs.push(x);
-      ys.push(y);
-    }
-  }
-  if (!xs.length) return null;
-  const minX = Math.min(...xs);
-  const minY = Math.min(...ys);
-  return { x: minX, y: minY, w: Math.max(...xs) - minX, h: Math.max(...ys) - minY };
-}
-
-/** AABB of one line of text given its baseline x,y, font size, anchor, and string content.
- * SVG `y` is the baseline; approximate the glyph box as ascent ~0.8em above to descent ~0.2em
- * below, and the width from the shared `textWidth` metric, positioned by `text-anchor`. */
-function textLineBox(content: string, x: number, y: number, size: number, anchor: string): Box {
-  const w = textWidth(content, size);
-  const left = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x;
-  return { x: left, y: y - size * 0.8, w, h: size };
-}
-
-const TEXT_RE = /<text\b([^>]*?)(\/>|>([\s\S]*?)<\/text>)/g;
-const TSPAN_RE = /<tspan\b([^>]*?)(?:\/>|>([\s\S]*?)<\/tspan>)/g;
-const SHAPE_RE = /<(rect|circle|ellipse|polygon)\b([^>]*?)\/?>/g;
-
-const unesc = (s: string): string =>
-  s
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"');
-
-/**
- * Extract an AABB for every `data-el`-tagged element in the SVG. Shapes
- * (`rect`/`circle`/`ellipse`/`polygon`) give a geometric AABB; `text` gives an AABB from its
- * `x`,`y`,`text-anchor` + measured content (a multi-line `<tspan>` stack is the union over its
- * lines, each measured at its own `x`,`y`). Untagged drawing (edge lines/paths, decorative
- * silhouettes, defs) is intentionally ignored.
- */
-export function boxesFromSvg(svg: string): ElBox[] {
-  const out: ElBox[] = [];
-
-  for (const m of svg.matchAll(TEXT_RE)) {
-    const a = attrs(m[1]);
-    const el = a['data-el'];
-    if (!el) continue;
-    const size = a['font-size'] ? num(a['font-size']) : 11;
-    const inner = m[3] ?? '';
-    const tspans = [...inner.matchAll(TSPAN_RE)];
-    if (tspans.length) {
-      const boxes: Box[] = [];
-      for (const ts of tspans) {
-        const ta = attrs(ts[1]);
-        const content = unesc((ts[2] ?? '').replace(/<[^>]*>/g, ''));
-        boxes.push(textLineBox(content, num(ta.x), num(ta.y), size, a['text-anchor'] ?? 'start'));
-      }
-      const minX = Math.min(...boxes.map((b) => b.x));
-      const minY = Math.min(...boxes.map((b) => b.y));
-      const maxX = Math.max(...boxes.map((b) => b.x + b.w));
-      const maxY = Math.max(...boxes.map((b) => b.y + b.h));
-      out.push({ el, x: minX, y: minY, w: maxX - minX, h: maxY - minY });
-    } else {
-      const content = unesc(inner.replace(/<[^>]*>/g, ''));
-      out.push({
-        el,
-        ...textLineBox(content, num(a.x), num(a.y), size, a['text-anchor'] ?? 'start'),
-      });
-    }
-  }
-
-  for (const m of svg.matchAll(SHAPE_RE)) {
-    const kind = m[1];
-    const a = attrs(m[2]);
-    const el = a['data-el'];
-    if (!el) continue;
-    let box: Box | null = null;
-    if (kind === 'rect') {
-      box = { x: num(a.x), y: num(a.y), w: num(a.width), h: num(a.height) };
-    } else if (kind === 'circle') {
-      const r = num(a.r);
-      box = { x: num(a.cx) - r, y: num(a.cy) - r, w: 2 * r, h: 2 * r };
-    } else if (kind === 'ellipse') {
-      const rx = num(a.rx);
-      const ry = num(a.ry);
-      box = { x: num(a.cx) - rx, y: num(a.cy) - ry, w: 2 * rx, h: 2 * ry };
-    } else if (kind === 'polygon') {
-      box = polygonBox(a.points ?? '');
-    }
-    if (box) out.push({ el, ...box });
-  }
-
-  return out;
-}
-
-function viewBox(svg: string): Box {
-  const m = svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+)"/);
-  if (!m) throw new Error('no viewBox');
-  return { x: num(m[1]), y: num(m[2]), w: num(m[3]), h: num(m[4]) };
-}
-
-/** The id carried by a `kind:id` tag (e.g. `node:exile` → `exile`, `edgelabel:c1` → `c1`). */
-const idOf = (el: string): string => el.slice(el.indexOf(':') + 1);
-const kindOf = (el: string): string => el.slice(0, el.indexOf(':'));
-
 // Only `node:*` / `nodelabel:*` / `edgelabel:*` participate in the overlap checks; container/chrome
-// tags (`band:*`, `banner:*`, …) are deliberately NOT node/label kinds, so they're excluded from
-// (1)/(2)/(3) and only the in-frame check (4) applies to them.
+// tags (`band:*`, `banner:*`, `edge:*`, …) are deliberately NOT node/label kinds, so they're
+// excluded from (1)/(2)/(3) and only the in-frame check (4) applies to them.
 
 /** Run all four overlap assertions for one rendered SVG. `scopeLabelLabel=false` documents a
  * renderer where label↔label non-overlap is infeasible without a major rewrite (ADR-0012 §gap). */
@@ -158,7 +37,7 @@ function assertNoOverlap(label: string, svg: string, scopeLabelLabel = true): vo
   const all = boxesFromSvg(svg);
   const nodes = all.filter((b) => kindOf(b.el) === 'node');
   const labels = all.filter((b) => kindOf(b.el) === 'nodelabel' || kindOf(b.el) === 'edgelabel');
-  const vb = viewBox(svg);
+  const vb = viewBoxOf(svg);
 
   // 1) no two node boxes overlap
   for (let i = 0; i < nodes.length; i += 1) {
@@ -229,11 +108,7 @@ const files = readdirSync(new URL('../../examples/', import.meta.url)).filter((f
  * Renderers with a documented label↔label known-gap (ADR-0012): their FREE edge labels (on bowed
  * curves / ring chords) collide with another label even on the corpus, and avoiding it needs a
  * routing rewriter we judged disproportionate. For these we scope assertion #3 out and keep #1
- * (node↔node), #2 (label↔non-owner-node), and #4 (in-frame) universal. Every OTHER renderer —
- * incl. the other hand-placed free-chord ones (mode-map, relational-field, two-triangles) and the
- * lane diagrams (intervention-sequence) — currently satisfies #3 on the corpus + stress too, so we
- * assert it for them (extra coverage); #3 there is enforced-where-it-holds rather than
- * architecturally guaranteed for arbitrary hand layouts.
+ * (node↔node), #2 (label↔non-owner-node), and #4 (in-frame) universal.
  */
 const LABEL_LABEL_KNOWN_GAP = new Set([
   'parts-map', // containment "protects/soothes" + conflict labels on bowed curves around the Self

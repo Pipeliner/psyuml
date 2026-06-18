@@ -9,7 +9,7 @@
  */
 import { getText, isInterpretive, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
-import { CHAR_W, separate1D, textWidth } from './layout';
+import { CHAR_W, clipToBox, separate1D, textWidth } from './layout';
 
 type MBand = PsyumlModel['bands'][number];
 type MNode = PsyumlModel['nodes'][number];
@@ -361,7 +361,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     const ex = isExit ? t.cx - NODE_W / 2 : t.cx + NODE_W / 2;
     const dash = isExit ? ' stroke-dasharray="6 5"' : '';
     parts.push(
-      `<path d="M ${r1(sx)},${s.cy} H ${r1(lane)} V ${t.cy} H ${r1(ex)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="M ${r1(sx)},${s.cy} H ${r1(lane)} V ${t.cy} H ${r1(ex)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
     );
     const txt = edgeText(e);
     if (txt) {
@@ -567,7 +567,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     const mx = r1((a.x + b.x) / 2 + (a.x < cx ? -70 : 70));
     const my = r1((a.y + b.y) / 2);
     parts.push(
-      `<path d="M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3 4" opacity="0.7" />`,
+      `<path data-el="edge:${esc(e.id)}" d="M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3 4" opacity="0.7" />`,
     );
     // Show the relationship word (e.g. "protects" / "soothes" / "numbs") on the curve, with a
     // white halo so it stays legible over the dotted line — distinct protections shouldn't all
@@ -600,7 +600,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       d += ` L ${r1(a.x + dx * f + px * 5 * sign)},${r1(a.y + dy * f + py * 5 * sign)}`;
     }
     d += ` L ${r1(b.x)},${r1(b.y)}`;
-    parts.push(`<path d="${d}" fill="none" stroke="#000" stroke-width="1.5" />`);
+    parts.push(
+      `<path data-el="edge:${esc(e.id)}" d="${d}" fill="none" stroke="#000" stroke-width="1.5" />`,
+    );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
@@ -944,7 +946,7 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     const sy = up ? s.y - DNODE_H / 2 : s.y + DNODE_H / 2;
     const ty = up ? t.y + DNODE_H / 2 : t.y - DNODE_H / 2;
     parts.push(
-      `<path d="M ${s.x},${sy} L ${t.x},${ty}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="M ${s.x},${sy} L ${t.x},${ty}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
     );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
@@ -1012,6 +1014,10 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     // Put the actual crisis contact right on the crisis node, not only in the bottom banner.
     if (isCrisis) {
       parts.push(
+        // The crisis-resources reminder is a caption BELOW the node (ADR-0010). It keeps the crisis
+        // id (so the overlap invariant lets it sit against its own node yet still checks it vs
+        // others); the containment invariant (ADR-0021) skips it automatically because its CENTRE
+        // is outside the node box (a caption, not the node's interior label).
         wrapLabel(crisis, p.x, p.y + DNODE_H / 2 + 13, {
           size: 9,
           anchor: 'middle',
@@ -1290,7 +1296,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     const dash = isExit ? ' stroke-dasharray="6 5"' : '';
     const markerStart = e.kind === 'reciprocal' ? ' marker-start="url(#arrow)"' : '';
     parts.push(
-      `<path d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="2"${dash}${markerStart} marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="2"${dash}${markerStart} marker-end="url(#arrow)" />`,
     );
     const lblSrc = e.trigger ?? e.label;
     let txt = lblSrc ? getText(lblSrc, layer, lang) : '';
@@ -1522,7 +1528,7 @@ export function renderTimeline(model: PsyumlModel, options: RenderOptions = {}):
     const t = pos.get(e.target);
     if (!s || !t) continue;
     parts.push(
-      `<path d="M ${r1(s.x + boxW / 2)},${s.y} L ${r1(t.x - boxW / 2)},${t.y}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="M ${r1(s.x + boxW / 2)},${s.y} L ${r1(t.x - boxW / 2)},${t.y}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
     );
   }
 
@@ -1655,7 +1661,7 @@ export function renderInterventionSeq(
     const sy = s.y + HEX_H / 2;
     const ty = t.y - HEX_H / 2;
     parts.push(
-      `<path d="M ${s.x},${sy} L ${t.x},${ty}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="M ${s.x},${sy} L ${t.x},${ty}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
     );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
@@ -1774,8 +1780,14 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
     const s = pos.get(e.source);
     const t = pos.get(e.target);
     if (!s || !t) continue;
+    // Clip both ends to the node boxes (ADR-0021) so the line starts on the source border and the
+    // arrowhead lands on the target border, instead of running centre-to-centre under both glyphs.
+    const sBox = { x: s.x - nw / 2, y: s.y - RNODE_H / 2, w: nw, h: RNODE_H };
+    const tBox = { x: t.x - nw / 2, y: t.y - RNODE_H / 2, w: nw, h: RNODE_H };
+    const a = clipToBox(t, s, sBox);
+    const b = clipToBox(s, t, tBox);
     parts.push(
-      `<path d="M ${s.x},${s.y} L ${t.x},${t.y}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="M ${r1(a.x)},${r1(a.y)} L ${r1(b.x)},${r1(b.y)}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
     );
   }
 
@@ -2060,7 +2072,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     const x2 = r1(t.x - ux * rt);
     const y2 = r1(t.y - uy * rt);
     parts.push(
-      `<path d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
     );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
@@ -2407,7 +2419,7 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     const uy = (t.y - s.y) / len;
     const dotted = e.kind === 'transference' ? ' stroke-dasharray="2 4"' : '';
     parts.push(
-      `<line x1="${r1(s.x + ux * TT_SHORT)}" y1="${r1(s.y + uy * TT_SHORT)}" x2="${r1(t.x - ux * TT_SHORT)}" y2="${r1(t.y - uy * TT_SHORT)}" stroke="#000" stroke-width="1.5"${dotted} />`,
+      `<line data-el="edge:${esc(e.id)}" x1="${r1(s.x + ux * TT_SHORT)}" y1="${r1(s.y + uy * TT_SHORT)}" x2="${r1(t.x - ux * TT_SHORT)}" y2="${r1(t.y - uy * TT_SHORT)}" stroke="#000" stroke-width="1.5"${dotted} />`,
     );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {

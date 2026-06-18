@@ -91,6 +91,11 @@
       "id": "M17",
       "phase": 7,
       "title": "Onboarding: the interactive help site — an honest, live-editable example library"
+    },
+    {
+      "id": "M18",
+      "phase": 7,
+      "title": "Layout-quality invariants: text-fits-its-container + edges-don't-cross-nodes (deep-research-driven)"
     }
   ],
   "requirements": [
@@ -971,6 +976,28 @@
         "packages/render/index.test.ts"
       ],
       "notes": "The interactive help site (ADR-0020): NOT a separate app — the editor IS the help site. The library is real `examples/*.psyuml` models (39 gallery items: 27 per-school examples + a 12-model ★ SHOWCASE set, one feature-dense model per diagram type exercising the full notation — epistemic variety, provenance/contested-origin ⚖, loop topology, as-if, triggers, bands, exits/path-of-hope, crisis resources, client labels — each pinned by a golden render and documented in `docs/research/diagram-catalog.md`), each parsed + validated by the examples-corpus lint (both layers), overlap-clean (ADR-0012) + legibility/dual-coding-clean (ADR-0011), so a gallery item cannot drift from the language. `EXAMPLE_CATALOG: GalleryItem[]` groups them by v0.2 family (driven by `listFamilies()`) and carries per item the originating SCHOOL + a one-line honest `note` (blurb + evidence/limit lifted from `docs/research/diagram-catalog.md`). A per-example 'About this example' card (label · school · family · note) sits beside the live render; an 'About these diagrams — please read' disclosure carries the unvalidated-v0.x / therapy-evidence-is-not-diagram-evidence / sharing-can-harm honesty clause + points at the full 59-entry catalogue. Picking an item loads it into the existing editor (structured edit + audience switch + text-DSL + diff + export) — live editing for free. Additive: no schema/Tier-1 change, no new build target; cites the deep-research catalogue. Field/◇-new-type catalogue entries (ecomap, social atom, structural dissociation, ...) are catalogued but not yet live examples."
+    },
+    {
+      "id": "REQ-LAYOUT-QUALITY",
+      "title": "Layout-quality invariants: a node's text fits its container, and an edge never crosses a non-incident node",
+      "spec": [
+        "§D",
+        "§J"
+      ],
+      "source": "docs/research/layout-algorithms.md",
+      "milestone": "M18",
+      "status": "implemented",
+      "impl": [
+        "packages/render/layout.ts",
+        "packages/render/introspect.ts",
+        "packages/render/index.ts"
+      ],
+      "tests": [
+        "packages/render/layout-quality.test.ts",
+        "packages/render/layout.test.ts",
+        "packages/render/overlap.test.ts"
+      ],
+      "notes": "Driven by a cited deep-research survey of diagram-layout algorithms (`docs/research/layout-algorithms.md`, 5 angles). ADR-0021 closes the two gaps ADR-0012 left open. NEW geometry primitives in `layout.ts`: `contains` (AABB-in-AABB), `segIntersectsBox` (Liang–Barsky segment↔rectangle), `clipToBox` (Liang–Barsky entry, boundary-clipping); `separate1D` validated unchanged. A shared `introspect.ts` (moved out of overlap.test) reconstructs node/label AABBs HONOURING `textLength` (a compressed label measures at its rendered width) + flattens `data-el=\"edge:*\"` paths (M/L/H/V/Q/C) to polylines; every renderer now tags edges `data-el=\"edge:<id>\"`. `layout-quality.test.ts` asserts, over the corpus in both layers: (A) CONTAINMENT — every interior node label (centre inside its node) fits the node box; enforced for label-in-box renderers (state-map/timeline/intervention-sequence/ritual/two-triangles/decision-nav/process-loop), captions (centre outside) skipped without an allow-list, ~3px slop for the shared metric's unmodeled bold/sub-pixel error. (B) EDGE↔NODE (edge–vertex resolution > 0) — no edge segment passes through a non-incident node; enforced for all tagged-edge renderers EXCEPT a documented EDGE_NODE_KNOWN_GAP = {state-map (multi-node bands), ritual (cross-phase diagonals), decision-nav (back-edges)} that needs an obstacle-avoiding (libavoid-class) router judged disproportionate for a dependency-free renderer. Ritual edges now clip to node borders via `clipToBox`. Additive; the label-fit guarantee itself is the existing `fitText`/`wrapLabel` `textLength` compression, now machine-checked rather than implicit. The 'text fits its container' half is GUARANTEED (compression); the 'arrows don't cross nodes' half is GUARANTEED where enforced and HONESTLY SCOPED elsewhere — the research confirms a universal guarantee needs a router out of scope here."
     }
   ]
 }
