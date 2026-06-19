@@ -678,7 +678,17 @@ export function App() {
   return (
     <main className="app">
       <header className="app__header">
-        <h1 className="app__title">PsyUML editor</h1>
+        <div className="wordmark">
+          <span className="wordmark__mark" aria-hidden="true">
+            ◎
+          </span>
+          <span className="wordmark__lockup">
+            <span className="wordmark__eyebrow">Case formulation, mapped.</span>
+            <h1 className="app__title">
+              PsyUML <span className="app__title-ed">editor</span>
+            </h1>
+          </span>
+        </div>
         <p role="note" className="note">
           Map a person's inner / relational world as a shareable, plain-language case formulation:
           pick a diagram type, build it with the panels below, then save or export.{' '}
@@ -902,6 +912,68 @@ export function App() {
         </div>
       </div>
 
+      {/* The live formulation IS the product — promoted directly under the controls so it is the
+          first thing you see and work with, not buried below the panels (ADR-0026: hero = the map). */}
+      <div role="group" aria-label="View controls" className="viewbar">
+        <span className="muted">View:</span>
+        <button
+          type="button"
+          className="btn-icon"
+          aria-label="Zoom out"
+          title="Zoom out"
+          onClick={() => setZoom((z) => Math.max(0.5, Math.round((z - 0.25) * 100) / 100))}
+        >
+          −
+        </button>
+        <span aria-live="polite" className="viewbar__zoom">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          className="btn-icon"
+          aria-label="Zoom in"
+          title="Zoom in"
+          onClick={() => setZoom((z) => Math.min(4, Math.round((z + 0.25) * 100) / 100))}
+        >
+          +
+        </button>
+        <button type="button" onClick={() => setZoom(1)} title="Reset zoom to 100% (full size)">
+          Reset
+        </button>
+        <span className="viewbar__hint">
+          {draggable
+            ? 'drag a node to reposition it'
+            : zoom > 1
+              ? 'scroll the panel to pan'
+              : 'zoom in to enlarge a dense diagram'}
+        </span>
+      </div>
+      {!showBoard && GALLERY_BY_KEY[example] && (
+        <section aria-label="About this example" className="panel panel--caption">
+          <strong>{GALLERY_BY_KEY[example].label}</strong>{' '}
+          <span className="muted">
+            · {GALLERY_BY_KEY[example].school} ·{' '}
+            {listFamilies().find((f) => f.id === GALLERY_BY_KEY[example].family)?.title} family
+          </span>
+          <p style={{ margin: '0.4rem 0 0' }}>{GALLERY_BY_KEY[example].note}</p>
+        </section>
+      )}
+      <section aria-label={`${model.diagram} diagram`} className="diagram">
+        <div
+          ref={diagramRef}
+          className="diagram__canvas"
+          onPointerDown={onDiagramPointerDown}
+          onPointerMove={onDiagramPointerMove}
+          onPointerUp={onDiagramPointerUp}
+          style={{
+            width: `${zoom * 100}%`,
+            touchAction: draggable ? 'none' : undefined,
+            cursor: draggable ? 'grab' : undefined,
+          }}
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+      </section>
+
       {compareError && (
         <p role="alert" className="alert-text">
           {compareError}
@@ -1033,51 +1105,6 @@ export function App() {
         )}
       </section>
 
-      <div role="group" aria-label="View controls" className="viewbar">
-        <span className="muted">View:</span>
-        <button
-          type="button"
-          className="btn-icon"
-          aria-label="Zoom out"
-          title="Zoom out"
-          onClick={() => setZoom((z) => Math.max(0.5, Math.round((z - 0.25) * 100) / 100))}
-        >
-          −
-        </button>
-        <span aria-live="polite" className="viewbar__zoom">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          type="button"
-          className="btn-icon"
-          aria-label="Zoom in"
-          title="Zoom in"
-          onClick={() => setZoom((z) => Math.min(4, Math.round((z + 0.25) * 100) / 100))}
-        >
-          +
-        </button>
-        <button type="button" onClick={() => setZoom(1)} title="Reset zoom to 100% (full size)">
-          Reset
-        </button>
-        <span className="viewbar__hint">
-          {draggable
-            ? 'drag a node to reposition it'
-            : zoom > 1
-              ? 'scroll the panel to pan'
-              : 'zoom in to enlarge a dense diagram'}
-        </span>
-      </div>
-      {!showBoard && GALLERY_BY_KEY[example] && (
-        <section aria-label="About this example" className="panel">
-          <strong>{GALLERY_BY_KEY[example].label}</strong>{' '}
-          <span className="muted">
-            · {GALLERY_BY_KEY[example].school} ·{' '}
-            {listFamilies().find((f) => f.id === GALLERY_BY_KEY[example].family)?.title} family
-          </span>
-          <p style={{ margin: '0.4rem 0 0' }}>{GALLERY_BY_KEY[example].note}</p>
-        </section>
-      )}
-
       <details className="panel">
         <summary>
           <strong>About these diagrams — please read</strong>
@@ -1112,22 +1139,6 @@ export function App() {
           — every diagram with its school, what it shows, and honest evidence notes.
         </p>
       </details>
-
-      <section aria-label={`${model.diagram} diagram`} className="diagram">
-        <div
-          ref={diagramRef}
-          className="diagram__canvas"
-          onPointerDown={onDiagramPointerDown}
-          onPointerMove={onDiagramPointerMove}
-          onPointerUp={onDiagramPointerUp}
-          style={{
-            width: `${zoom * 100}%`,
-            touchAction: draggable ? 'none' : undefined,
-            cursor: draggable ? 'grab' : undefined,
-          }}
-          dangerouslySetInnerHTML={{ __html: svg }}
-        />
-      </section>
 
       <details className="disclose">
         <summary>Text description (screen-reader friendly)</summary>

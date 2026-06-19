@@ -58,9 +58,9 @@ test.describe('new user: diagramming a partially understood situation', () => {
     await expect(diagram(page)).toContainText('A newly-noticed part');
 
     // 6) Show it to the client in plain language — it still renders.
-    await page.getByRole('combobox', { name: 'Layer' }).selectOption('client');
+    await page.getByRole('combobox', { name: 'Audience' }).selectOption('client');
     await expect(diagram(page).locator('svg')).toBeVisible();
-    await page.getByRole('combobox', { name: 'Layer' }).selectOption('clinician');
+    await page.getByRole('combobox', { name: 'Audience' }).selectOption('clinician');
 
     // 7) Live validation feedback — no surprises at export time.
     await expect(page.getByRole('region', { name: 'Formulation health' })).toBeVisible();
@@ -143,7 +143,7 @@ test.describe('new user: diagramming a partially understood situation', () => {
       .fill('the one who looks after everyone');
     await page.getByRole('button', { name: 'Add node' }).click();
     // In the client layer the GUI-made node shows the plain words, not a blank.
-    await page.getByRole('combobox', { name: 'Layer' }).selectOption('client');
+    await page.getByRole('combobox', { name: 'Audience' }).selectOption('client');
     await expect(diagram(page)).toContainText('the one who looks after everyone');
   });
 
