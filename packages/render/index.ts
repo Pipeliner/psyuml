@@ -9,7 +9,7 @@
  */
 import { getText, isInterpretive, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
-import { CHAR_W, clipToBox, segIntersectsBox, separate1D, textWidth } from './layout';
+import { CHAR_W, clipToBox, type Pt, segIntersectsBox, separate1D, textWidth } from './layout';
 import { routeToPath, type RouterObstacle } from './router';
 import { BespokeRouter } from './router-bespoke';
 
@@ -22,6 +22,28 @@ export { LibavoidRouter } from './router-libavoid';
  * (the libavoid backend stays available for callers but needs async `init`, so renderers use this).
  * Edges are routed ONLY when their straight path would cross a non-incident node (ADR-0024). */
 const edgeRouter = new BespokeRouter();
+
+/** Point at the half-length mark along a polyline — used to place an edge label on its (possibly
+ * routed) path rather than the straight source→target midpoint, which may sit on a detoured node. */
+function polyMid(pts: Pt[]): Pt {
+  if (pts.length <= 1) return pts[0] ?? { x: 0, y: 0 };
+  let total = 0;
+  for (let i = 0; i < pts.length - 1; i += 1)
+    total += Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y);
+  let acc = 0;
+  for (let i = 0; i < pts.length - 1; i += 1) {
+    const seg = Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y);
+    if (acc + seg >= total / 2) {
+      const f = seg === 0 ? 0 : (total / 2 - acc) / seg;
+      return {
+        x: pts[i].x + (pts[i + 1].x - pts[i].x) * f,
+        y: pts[i].y + (pts[i + 1].y - pts[i].y) * f,
+      };
+    }
+    acc += seg;
+  }
+  return pts[pts.length - 1];
+}
 
 type MBand = PsyumlModel['bands'][number];
 type MNode = PsyumlModel['nodes'][number];
@@ -950,6 +972,18 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     y: number;
   }
   const branchLabels: BranchLabel[] = [];
+  // All nodes are obstacles (box = the rect the edge↔node invariant reconstructs). An edge whose
+  // straight segment would cross a NON-incident node is re-routed around it (ADR-0024); its branch
+  // label then rides the routed path's midpoint, not the straight one (which sat on the node).
+  const dObstacles: RouterObstacle[] = nodes
+    .filter((n) => pos.has(n.id))
+    .map((n) => {
+      const p = pos.get(n.id)!;
+      return {
+        id: n.id,
+        box: { x: p.x - DNODE_W / 2, y: p.y - DNODE_H / 2, w: DNODE_W, h: DNODE_H },
+      };
+    });
   for (const e of edges) {
     const s = pos.get(e.source);
     const t = pos.get(e.target);
@@ -957,17 +991,27 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     const up = t.y <= s.y; // back-edge / same-row link
     const sy = up ? s.y - DNODE_H / 2 : s.y + DNODE_H / 2;
     const ty = up ? t.y + DNODE_H / 2 : t.y - DNODE_H / 2;
+    const straight: Pt[] = [
+      { x: s.x, y: sy },
+      { x: t.x, y: ty },
+    ];
+    const crosses = dObstacles.some(
+      (o) =>
+        o.id !== e.source &&
+        o.id !== e.target &&
+        segIntersectsBox(straight[0], straight[1], o.box, -1),
+    );
+    const points = crosses
+      ? edgeRouter.route(dObstacles, [e], { obstacleMargin: 10 })[0].points
+      : straight;
+    const d = crosses ? routeToPath(points) : `M ${s.x},${sy} L ${t.x},${ty}`;
     parts.push(
-      `<path data-el="edge:${esc(e.id)}" d="M ${s.x},${sy} L ${t.x},${ty}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="${d}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
     );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
-      branchLabels.push({
-        id: e.id,
-        text: lbl,
-        x: s.x + (t.x - s.x) * 0.5,
-        y: (sy + ty) / 2 + 4,
-      });
+      const mid = crosses ? polyMid(points) : { x: s.x + (t.x - s.x) * 0.5, y: (sy + ty) / 2 };
+      branchLabels.push({ id: e.id, text: lbl, x: mid.x, y: mid.y + 4 });
     }
   }
   // Spread labels that share a gap-row (same rounded y) along x so they don't overprint.
