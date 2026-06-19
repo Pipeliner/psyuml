@@ -380,6 +380,20 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     anchor: 'start' | 'end';
   }
   const edgeLabels: EdgeLabel[] = [];
+  // Band states are obstacles: when a band holds several nodes in one row, a gutter-lane edge's
+  // H-segment can cross a sibling (the state-map EDGE_NODE_KNOWN_GAP, ADR-0021). Such an edge is
+  // re-routed around the siblings (ADR-0024) and its trigger/exit label rides the routed-path
+  // midpoint; single-row layouts keep the gutter lane + label byte-identical.
+  const sObstacles: RouterObstacle[] = model.nodes
+    .filter((n) => center.has(n.id))
+    .map((n) => {
+      const c = center.get(n.id)!;
+      return {
+        id: n.id,
+        box: { x: c.cx - NODE_W / 2, y: c.cy - NODE_H / 2, w: NODE_W, h: NODE_H },
+      };
+    });
+  const routedLabels: { id: string; text: string; at: Pt }[] = [];
   for (const e of model.edges) {
     const s = center.get(e.source);
     const t = center.get(e.target);
@@ -394,18 +408,40 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     const sx = isExit ? s.cx - NODE_W / 2 : s.cx + NODE_W / 2;
     const ex = isExit ? t.cx - NODE_W / 2 : t.cx + NODE_W / 2;
     const dash = isExit ? ' stroke-dasharray="6 5"' : '';
-    parts.push(
-      `<path data-el="edge:${esc(e.id)}" d="M ${r1(sx)},${s.cy} H ${r1(lane)} V ${t.cy} H ${r1(ex)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
+    const lanePts: Pt[] = [
+      { x: sx, y: s.cy },
+      { x: lane, y: s.cy },
+      { x: lane, y: t.cy },
+      { x: ex, y: t.cy },
+    ];
+    const crosses = sObstacles.some(
+      (o) =>
+        o.id !== e.source &&
+        o.id !== e.target &&
+        lanePts.some(
+          (p, i) => i < lanePts.length - 1 && segIntersectsBox(p, lanePts[i + 1], o.box, -1),
+        ),
     );
     const txt = edgeText(e);
-    if (txt) {
-      edgeLabels.push({
-        id: e.id,
-        text: txt,
-        x: isExit ? lane - 8 : lane + 8,
-        y: (s.cy + t.cy) / 2 - 4 + spread,
-        anchor: isExit ? 'end' : 'start',
-      });
+    if (crosses) {
+      const points = edgeRouter.route(sObstacles, [e], { obstacleMargin: 10 })[0].points;
+      parts.push(
+        `<path data-el="edge:${esc(e.id)}" d="${routeToPath(points)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
+      );
+      if (txt) routedLabels.push({ id: e.id, text: txt, at: polyMid(points) });
+    } else {
+      parts.push(
+        `<path data-el="edge:${esc(e.id)}" d="M ${r1(sx)},${s.cy} H ${r1(lane)} V ${t.cy} H ${r1(ex)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
+      );
+      if (txt) {
+        edgeLabels.push({
+          id: e.id,
+          text: txt,
+          x: isExit ? lane - 8 : lane + 8,
+          y: (s.cy + t.cy) / 2 - 4 + spread,
+          anchor: isExit ? 'end' : 'start',
+        });
+      }
     }
   }
   // Group by side; within a side, separate all labels on y (their baselines), since they share
@@ -424,6 +460,24 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
   for (const el of edgeLabels) {
     parts.push(
       `<text data-el="edgelabel:${esc(el.id)}" x="${r1(el.x)}" y="${r1(el.y)}" font-family="sans-serif" font-size="${edgeLabelFs}" text-anchor="${el.anchor}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(el.text)}</text>`,
+    );
+  }
+  // Routed edges (multi-node bands): label rides the routed path's midpoint, centred + haloed.
+  // Two routed labels whose midpoints land in the same crowded area are spread on y (like the
+  // gutter labels) so they don't overprint (ADR-0012 label↔label).
+  routedLabels.sort((a, b) => a.at.y - b.at.y || a.id.localeCompare(b.id));
+  if (routedLabels.length >= 2) {
+    const ys = separate1D(
+      routedLabels.map((rl) => ({ center: rl.at.y, half: edgeLabelFs / 2 + 1 })),
+      6,
+    );
+    routedLabels.forEach((rl, i) => {
+      rl.at = { x: rl.at.x, y: ys[i] };
+    });
+  }
+  for (const rl of routedLabels) {
+    parts.push(
+      `<text data-el="edgelabel:${esc(rl.id)}" x="${r1(rl.at.x)}" y="${r1(rl.at.y)}" font-family="sans-serif" font-size="${edgeLabelFs}" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(rl.text)}</text>`,
     );
   }
 

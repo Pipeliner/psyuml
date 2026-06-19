@@ -81,15 +81,12 @@ const centreInside = (
   cy: number,
 ): boolean => cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
 
-/** Renderers where a renderer-routed straight edge can cross a non-incident node and closing it
- * needs an obstacle-avoiding router (ADR-0021 documented gap). `ritual` and `decision-nav` are now
- * CLOSED — they route any crossing edge through the bespoke `EdgeRouter` (ADR-0024), so they are
- * enforced. Only `state-map` remains (REQ-EDGE-ROUTER, in-progress): a band can hold several nodes
- * in one row and its side-lane H-segment can cross a sibling; its gutter-lane edge style + trigger
- * labels make the wiring a partial rewrite rather than a drop-in. Every OTHER tagged-edge renderer
- * (columnar timeline/intervention-sequence, ring process-loop, the router-backed ritual + decision-
- * nav, and the hand-placed mode-map/two-triangles/parts-map) meets the invariant and is enforced. */
-const EDGE_NODE_KNOWN_GAP = new Set(['state-map']);
+/** Renderers where a renderer-routed straight edge could cross a non-incident node. Now EMPTY:
+ * every renderer that routed edges through channels/lanes (ritual, decision-nav, state-map) wires
+ * the bespoke `EdgeRouter` (ADR-0024) to detour any crossing edge around the obstacle; the rest are
+ * columnar/ring/hand-placed and clear by construction. So edge↔node is ENFORCED for EVERY tagged-
+ * edge renderer (REQ-EDGE-ROUTER). Kept as the documented hook should a future renderer need it. */
+const EDGE_NODE_KNOWN_GAP = new Set<string>();
 
 describe('layout-quality A: a node label fits inside its container (ADR-0021)', () => {
   const inBox = files.filter((f) => LABEL_IN_BOX.has(load(f).diagram));
