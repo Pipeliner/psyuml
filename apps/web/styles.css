@@ -540,6 +540,26 @@ button:disabled {
   height: auto;
 }
 
+/* Edge hover/focus highlight (ADR-0025 legibility) — trace ONE relationship line through a crossing.
+   Hovering or keyboard-focusing an edge keeps it bright + thickens it while the OTHER edges fade, so
+   the eye (or a screen-reader user tabbing through) can follow a single line where several cross.
+   Pure CSS via :has(); App.tsx makes the edges focusable + aria-labelled. Node/label elements
+   (data-el="node:"/"nodelabel:"/"edgelabel:") are untouched, so the surrounding context stays put. */
+.diagram__canvas
+  svg:has([data-el^='edge:']:hover, [data-el^='edge:']:focus-visible)
+  [data-el^='edge:'] {
+  opacity: 0.22;
+  transition: opacity 0.12s ease;
+}
+.diagram__canvas svg [data-el^='edge:']:hover,
+.diagram__canvas svg [data-el^='edge:']:focus-visible {
+  opacity: 1 !important;
+  stroke-width: 4;
+  outline: none;
+  cursor: help;
+  filter: drop-shadow(0 0 2.5px #fff) drop-shadow(0 0 2.5px #fff);
+}
+
 /* ---------- Disclosures (<details>) ---------- */
 details.disclose {
   background: var(--c-surface);

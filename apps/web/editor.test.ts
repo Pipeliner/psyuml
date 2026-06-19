@@ -4,6 +4,7 @@ import { parseModel } from '@psyuml/model';
 import {
   addEdge,
   addNode,
+  edgeAriaLabel,
   nextId,
   removeEdge,
   removeNode,
@@ -187,5 +188,17 @@ describe('editor', () => {
     expect(stateModel.meta.safety.acuteRiskFlag).toBe(false); // input untouched
     const cleared = setSafetyFlag(flagged, 'acuteRiskFlag', false);
     expect(cleared.meta.safety.acuteRiskFlag).toBe(false);
+  });
+
+  it('edgeAriaLabel words the relationship + resolves node names per layer (ADR-0025)', () => {
+    // e1: calm --sequential--> anxious. Names resolve in the requested audience layer.
+    expect(edgeAriaLabel(stateModel, 'e1', 'clinician')).toBe(
+      'Link: Calm / connected leads to Anxious / fight-flight',
+    );
+    expect(edgeAriaLabel(stateModel, 'e1', 'client')).toContain('Calm and connected');
+    // an EXIT edge is worded as a "way out", never the raw kind.
+    expect(edgeAriaLabel(stateModel, 'x1')).toContain('way out to');
+    // a missing edge id degrades to the id, never throws.
+    expect(edgeAriaLabel(stateModel, 'nope')).toBe('nope');
   });
 });

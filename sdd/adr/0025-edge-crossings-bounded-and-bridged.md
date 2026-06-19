@@ -77,3 +77,26 @@ all of one structural kind — a dashed **EXIT** chord escaping across a cycle r
 - **Global white casing on every edge (automatic bridges everywhere).** Rejected — doubles every edge
   element and churns all 39 goldens with heavier-looking lines, for a 4-crossing payoff; per-crossing
   bridges keep non-crossing diagrams byte-identical.
+
+## Update (2026-06-19): legibility upgrades — arc hop, focal-on-top, editor hover/focus
+
+Asked "how can we make crossings *more* legible?", two improvements landed (the static + the live):
+
+1. **Arc line-hop instead of a flat casing.** The over-edge is re-stroked as a gentle semicircular
+   bump (a quadratic `Q` arc, white casing-arc + the edge's own stroke on top) so it visibly *passes
+   over* — far harder to mistake for a junction than a straight break. Still decorative (no `data-el`).
+2. **Focal-edge-on-top.** Which line hops is no longer "the solid one" but the **focal** edge when the
+   renderer names one (`focalEdges` → a loop's EXIT chord, a parts-map POLARIZATION tie). The
+   narratively-important line stays *continuous*; breaking the escape route's line (a mis-read of
+   "blocked") is avoided. The hop now carries the over-edge's dash, so a dashed EXIT hops as a dashed
+   arc. Only the same 4 goldens changed.
+3. **Editor hover / keyboard-focus highlight** (apps/web, no golden impact). Hovering or focusing an
+   edge keeps it bright + thickens it while the OTHER edges fade (pure CSS via `:has()` on the inlined
+   SVG); nodes/labels are untouched so context stays put. `App.tsx` decorates the injected SVG's edges
+   with `tabindex`/`role`/`aria-label` (from the new pure `edgeAriaLabel` in `editor.ts`) so the SAME
+   highlight works from the keyboard via `:focus-visible`, with a screen-reader announcement
+   ("Link: <source> <relationship> <target>"). The biggest win for *live* tracing, accessibility-first.
+
+The evidence-based **crossing-angle** lever (near-90° crossings read best; Huang/Eades/Hong) and
+**good-continuation curvature** were considered and deferred — the residue is 4 structural crossings,
+so the hop + highlight are the proportionate wins; the angle work stays available behind the invariant.

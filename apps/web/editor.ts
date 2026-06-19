@@ -7,6 +7,7 @@
  * REQ-NOTATION (author typed connectors / edges, §C), REQ-VERSIONING-DIFF (in-session snapshots).
  */
 import {
+  getText,
   parseModel,
   serializeModel,
   type EdgeKind,
@@ -14,6 +15,38 @@ import {
   type NodeKind,
   type PsyumlModel,
 } from '@psyuml/model';
+
+/** Plain-language relationship phrasing per edge kind, for the edge's screen-reader label. */
+const EDGE_REL: Record<string, string> = {
+  sequential: 'leads to',
+  reciprocal: 'reciprocal with',
+  exit: 'way out to',
+  containment: 'protects',
+  conflict: 'in conflict with',
+  barrier: 'barrier to',
+  influence: 'influences',
+  transference: 'transference onto',
+};
+
+/**
+ * A plain-language `aria-label` for an edge — what the hover/focus highlight announces to a screen
+ * reader (ADR-0025 legibility, REQ-ACCESSIBILITY): "Link: <source> <relationship> <target>", with the
+ * node names resolved in the requested audience layer and the relationship worded (never the raw
+ * `kind` jargon). Falls back gracefully if the edge or a node is missing. Pure + unit-testable.
+ */
+export function edgeAriaLabel(
+  model: PsyumlModel,
+  id: string,
+  layer: 'clinician' | 'client' = 'clinician',
+): string {
+  const e = model.edges.find((x) => x.id === id);
+  if (!e) return id;
+  const name = (nid: string): string => {
+    const n = model.nodes.find((x) => x.id === nid);
+    return n ? getText(n.label, layer) : nid;
+  };
+  return `Link: ${name(e.source)} ${EDGE_REL[e.kind] ?? 'to'} ${name(e.target)}`;
+}
 
 /** An immutable in-session snapshot of a formulation (M6 versioning). */
 export interface Version {

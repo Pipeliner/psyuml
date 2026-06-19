@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createEmptyModel,
   getText,
@@ -67,6 +67,7 @@ import scTwoTriRaw from '../../examples/showcase-two-triangles.psyuml?raw';
 import {
   addEdge,
   addNode,
+  edgeAriaLabel,
   removeEdge,
   removeNode,
   restoreVersion,
@@ -640,6 +641,22 @@ export function App() {
       /* capture may already be released */
     }
   };
+
+  // Edge legibility (ADR-0025): hovering/focusing an edge thickens it + dims the others (styles.css)
+  // so you can trace ONE relationship line through a crossing. The SVG is injected as innerHTML, so
+  // after each render we make its edges keyboard-focusable + screen-reader-labelled — the same
+  // highlight then works from the keyboard (`:focus-visible`), not the mouse alone. Re-runs per render.
+  useEffect(() => {
+    const root = diagramRef.current;
+    if (!root) return;
+    root.querySelectorAll('[data-el^="edge:"]').forEach((el) => {
+      const id = el.getAttribute('data-el')?.slice('edge:'.length);
+      if (!id) return;
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('role', 'img');
+      el.setAttribute('aria-label', edgeAriaLabel(model, id, layer));
+    });
+  }, [svg, model, layer]);
 
   // Structured authoring (add node of any kind; connect/remove links).
   const [newNodeLabel, setNewNodeLabel] = useState('');

@@ -57,24 +57,30 @@ function polyMid(pts: Pt[]): Pt {
 
 /**
  * Bridge/casing legibility pass (ADR-0025, REQ-EDGE-CROSSING). Where two NON-incident edges PROPERLY
- * cross, draw a small white casing + black re-stroke on the "over" edge at the crossing point, so a
- * reader can trace which line passes over which without relying on colour — the metro-map / circuit
- * "line hop" convention, monochrome and accessibility-first. The marks are PURELY decorative: they
- * carry no `data-el`, so the crossing invariant still COUNTS the (structural) crossing — this only
- * makes it legible, it does not claim the crossing away. `over` = the SOLID edge (so the black
- * re-stroke is continuous), tie-broken to the later-drawn one. No crossing → empty array, so a
- * crossing-free diagram stays byte-identical. `edgeStrings` are the `<path|line data-el="edge:*">`
- * the renderer already emitted, in draw order; `incident` reports edges that share a node (they meet
- * at it, not a crossing). Emit the returned marks ABOVE the edges and BELOW the nodes.
+ * cross, draw a small **arc "line-hop"** on the OVER edge at the crossing — a white casing-arc that
+ * breaks the under-edge, then the over-edge re-stroked as a gentle bump that visibly passes over it.
+ * This is the metro-map / circuit convention, monochrome and accessibility-first; far more legible
+ * than a flat break (a reader can't mistake the hop for a junction). The marks are PURELY decorative:
+ * they carry no `data-el`, so the crossing invariant still COUNTS the (structural) crossing — this
+ * only makes it legible, it does not claim the crossing away.
+ *
+ * Which line goes OVER (stays continuous, hops): the **focal** edge if the renderer named one
+ * (`isFocal` — e.g. a loop's EXIT chord, a parts-map POLARIZATION tie), so the narratively-important
+ * line is never the one broken (breaking the escape route would mis-read as "blocked"); otherwise the
+ * SOLID edge (clean hop), tie-broken to the later-drawn one. No crossing → empty array, so a
+ * crossing-free diagram stays byte-identical. `edgeStrings` are the `<path|line data-el="edge:*">` the
+ * renderer already emitted, in draw order; `incident` reports edges that share a node (they meet at
+ * it, not a crossing). Emit the returned marks ABOVE the edges and BELOW the nodes.
  */
 function addCrossingBridges(
   edgeStrings: string[],
   incident: (a: string, b: string) => boolean,
+  isFocal: (id: string) => boolean = () => false,
 ): string[] {
   if (edgeStrings.length < 2) return [];
   const joined = edgeStrings.join('');
   const segsById = new Map(edgeSegments(joined).map((e) => [e.id, e.segs]));
-  const meta = new Map<string, { order: number; solid: boolean; width: number }>();
+  const meta = new Map<string, { order: number; solid: boolean; width: number; dash: string }>();
   edgeStrings.forEach((s, i) => {
     const a = attrs(s);
     const el = a['data-el'];
@@ -83,6 +89,7 @@ function addCrossingBridges(
       order: i,
       solid: !a['stroke-dasharray'],
       width: a['stroke-width'] ? Number(a['stroke-width']) : 2,
+      dash: a['stroke-dasharray'] ? ` stroke-dasharray="${a['stroke-dasharray']}"` : '',
     });
   });
   const marks: string[] = [];
@@ -91,10 +98,25 @@ function addCrossingBridges(
     const ma = meta.get(a);
     const mb = meta.get(b);
     if (!ma || !mb) continue;
-    // Prefer the SOLID edge as the over-line (clean re-stroke); else the later-drawn one.
-    const overId = ma.solid === mb.solid ? (ma.order > mb.order ? a : b) : ma.solid ? a : b;
-    const overW = meta.get(overId)?.width ?? 2;
-    // Direction of the over-edge's segment nearest the crossing (so the casing lies ALONG that line).
+    // The OVER (hopping) line: the focal edge if exactly one is focal; else the solid one; else
+    // the later-drawn. Keeps the narratively-important edge continuous instead of broken.
+    const fa = isFocal(a);
+    const fb = isFocal(b);
+    const overId =
+      fa !== fb
+        ? fa
+          ? a
+          : b
+        : ma.solid !== mb.solid
+          ? ma.solid
+            ? a
+            : b
+          : ma.order > mb.order
+            ? a
+            : b;
+    const over = meta.get(overId);
+    const overW = over?.width ?? 2;
+    // Direction of the over-edge's segment nearest the crossing (the hop lies ALONG that line).
     let dir = { x: 1, y: 0 };
     let best = Infinity;
     for (const [p, q] of segsById.get(overId) ?? []) {
@@ -105,14 +127,22 @@ function addCrossingBridges(
         dir = { x: (q.x - p.x) / len, y: (q.y - p.y) / len };
       }
     }
-    const h = 6; // half the bridge length
+    // A gentle semicircular bump: endpoints ±h along the line, a quadratic control offset 2·s on the
+    // perpendicular so the apex rises s above the crossing — the over-edge visibly arcs over.
+    const h = 6;
+    const s = 5;
+    const px = -dir.y;
+    const py = dir.x;
     const x1 = r1(at.x - dir.x * h);
     const y1 = r1(at.y - dir.y * h);
     const x2 = r1(at.x + dir.x * h);
     const y2 = r1(at.y + dir.y * h);
+    const cx = r1(at.x + px * 2 * s);
+    const cy = r1(at.y + py * 2 * s);
+    const arc = `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`;
     marks.push(
-      `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="${overW + 5}" stroke-linecap="round" />`,
-      `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#000" stroke-width="${overW}" stroke-linecap="round" />`,
+      `<path d="${arc}" fill="none" stroke="#fff" stroke-width="${overW + 5}" stroke-linecap="round" />`,
+      `<path d="${arc}" fill="none" stroke="#000" stroke-width="${overW}"${over?.dash ?? ''} stroke-linecap="round" />`,
     );
   }
   return marks;
@@ -126,6 +156,13 @@ function edgeIncidence(model: PsyumlModel): (a: string, b: string) => boolean {
     const B: readonly string[] = inc.get(b) ?? [];
     return A.some((x) => B.includes(x));
   };
+}
+
+/** Focal-edge predicate: the narratively-salient cross-cutting edges that should stay continuous and
+ * hop OVER at a crossing (never the broken one) — a loop's EXIT chord, a parts-map POLARIZATION tie. */
+function focalEdges(model: PsyumlModel, kinds: string[]): (id: string) => boolean {
+  const set = new Set(model.edges.filter((e) => kinds.includes(e.kind)).map((e) => e.id));
+  return (id) => set.has(id);
 }
 
 type MBand = PsyumlModel['bands'][number];
@@ -874,8 +911,10 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   }
 
   // Bridge/casing pass (ADR-0025): a cross-map POLARIZATION tie crossing the containment lines is
-  // rendered with a legible hop. Above the edges, below the barrier + nodes.
-  parts.push(...addCrossingBridges(partsEdgeStrings, edgeIncidence(model)));
+  // rendered with a legible hop — the tie stays continuous and hops OVER. Above edges, below nodes.
+  parts.push(
+    ...addCrossingBridges(partsEdgeStrings, edgeIncidence(model), focalEdges(model, ['conflict'])),
+  );
 
   // Dissociative barrier (double bar) between Self and the exiles
   const barrier = model.edges.find((e) => e.kind === 'barrier');
@@ -1577,8 +1616,11 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   }
 
   // Bridge/casing pass (ADR-0025): a cross-ring EXIT chord crossing a cycle chord is rendered with a
-  // legible hop so the two lines are traceable. Above the edges, below the centre badge + nodes.
-  parts.push(...addCrossingBridges(loopEdgeStrings, edgeIncidence(model)));
+  // legible hop so the two lines are traceable — the EXIT stays continuous and hops OVER. Above the
+  // edges, below the centre badge + nodes.
+  parts.push(
+    ...addCrossingBridges(loopEdgeStrings, edgeIncidence(model), focalEdges(model, ['exit'])),
+  );
 
   // Reinforcing / balancing loop badge + CAT loop-topology marker in the centre (spec §C, v0.2 §4).
   const loop = model.edges.find((e) => e.loop);
