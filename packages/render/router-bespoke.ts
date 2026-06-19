@@ -153,8 +153,13 @@ export class BespokeRouter implements EdgeRouter {
       const sBox = byId.get(e.source);
       const tBox = byId.get(e.target);
       if (!sBox || !tBox) return { id: e.id, points: [] };
-      const start = clipToBox(centre(tBox), centre(sBox), sBox);
-      const goal = clipToBox(centre(sBox), centre(tBox), tBox);
+      // Round endpoints to the same 0.1 grid `axis` snaps to, so the A* start/goal nodes exist in
+      // the grid (an unrounded clipped coord would miss `xs.indexOf`/`ys.indexOf` → spurious fallback).
+      const r1 = (n: number): number => Math.round(n * 10) / 10;
+      const s0 = clipToBox(centre(tBox), centre(sBox), sBox);
+      const g0 = clipToBox(centre(sBox), centre(tBox), tBox);
+      const start = { x: r1(s0.x), y: r1(s0.y) };
+      const goal = { x: r1(g0.x), y: r1(g0.y) };
       const blockers = obstacles
         .filter((o) => o.id !== e.source && o.id !== e.target)
         .map((o) => grow(o.box, margin));

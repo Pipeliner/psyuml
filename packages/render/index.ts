@@ -9,20 +9,19 @@
  */
 import { getText, isInterpretive, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
-import { CHAR_W, clipToBox, separate1D, textWidth } from './layout';
+import { CHAR_W, clipToBox, segIntersectsBox, separate1D, textWidth } from './layout';
+import { routeToPath, type RouterObstacle } from './router';
+import { BespokeRouter } from './router-bespoke';
 
-// Edge routing (REQ-EDGE-ROUTER, ADR-0023): the swappable EdgeRouter interface + both backends.
-export {
-  type EdgeRouter,
-  type RouterObstacle,
-  type RouterEdge,
-  type RouteOptions,
-  type RoutedEdge,
-  DEFAULT_OBSTACLE_MARGIN,
-  routeToPath,
-} from './router';
+// Edge routing (REQ-EDGE-ROUTER, ADR-0023/0024): export the EdgeRouter interface + both backends.
+export * from './router';
 export { BespokeRouter } from './router-bespoke';
 export { LibavoidRouter } from './router-libavoid';
+
+/** Shared bespoke router for in-renderer obstacle avoidance — deterministic, sync, zero-dependency
+ * (the libavoid backend stays available for callers but needs async `init`, so renderers use this).
+ * Edges are routed ONLY when their straight path would cross a non-incident node (ADR-0024). */
+const edgeRouter = new BespokeRouter();
 
 type MBand = PsyumlModel['bands'][number];
 type MNode = PsyumlModel['nodes'][number];
@@ -1789,6 +1788,15 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
     );
   });
 
+  // All phase nodes are obstacles for edge routing (box = the hexagon's AABB, what the
+  // edge↔node invariant also reconstructs). An edge whose clipped straight segment would cross a
+  // NON-incident node is re-routed around it via the bespoke router (ADR-0024); others stay straight.
+  const obstacles: RouterObstacle[] = model.nodes
+    .filter((n) => pos.has(n.id))
+    .map((n) => {
+      const p = pos.get(n.id)!;
+      return { id: n.id, box: { x: p.x - nw / 2, y: p.y - RNODE_H / 2, w: nw, h: RNODE_H } };
+    });
   for (const e of model.edges) {
     const s = pos.get(e.source);
     const t = pos.get(e.target);
@@ -1799,8 +1807,14 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
     const tBox = { x: t.x - nw / 2, y: t.y - RNODE_H / 2, w: nw, h: RNODE_H };
     const a = clipToBox(t, s, sBox);
     const b = clipToBox(s, t, tBox);
+    const crosses = obstacles.some(
+      (o) => o.id !== e.source && o.id !== e.target && segIntersectsBox(a, b, o.box, -1),
+    );
+    const d = crosses
+      ? routeToPath(edgeRouter.route(obstacles, [e], { obstacleMargin: 8 })[0].points)
+      : `M ${r1(a.x)},${r1(a.y)} L ${r1(b.x)},${r1(b.y)}`;
     parts.push(
-      `<path data-el="edge:${esc(e.id)}" d="M ${r1(a.x)},${r1(a.y)} L ${r1(b.x)},${r1(b.y)}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+      `<path data-el="edge:${esc(e.id)}" d="${d}" fill="none" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
     );
   }
 

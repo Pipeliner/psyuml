@@ -82,14 +82,15 @@ const centreInside = (
 ): boolean => cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
 
 /** Renderers where a renderer-routed straight edge can cross a non-incident node and closing it
- * needs an obstacle-avoiding router (ADR-0021 documented gap):
+ * needs an obstacle-avoiding router (ADR-0021 documented gap). `ritual` is now CLOSED — it routes
+ * crossing cross-phase edges through the bespoke `EdgeRouter` (ADR-0024), so it is enforced. The
+ * remaining two await the same router wiring (REQ-EDGE-ROUTER, in-progress):
  *   - state-map: a band can hold several nodes in one row; the side-lane H-segment can cross a sibling;
- *   - ritual: a cross-phase edge is a diagonal that can clip a stacked phase node;
  *   - decision-nav: a back-/long edge can cross an intervening-layer node.
- * Every OTHER tagged-edge renderer (columnar timeline/intervention-sequence, ring process-loop, and
- * the hand-placed mode-map/two-triangles/parts-map whose authors place nodes off the edges) meets
- * the invariant on the corpus and is enforced. */
-const EDGE_NODE_KNOWN_GAP = new Set(['state-map', 'ritual', 'decision-nav']);
+ * Every OTHER tagged-edge renderer (columnar timeline/intervention-sequence, ring process-loop, the
+ * router-backed ritual, and the hand-placed mode-map/two-triangles/parts-map whose authors place
+ * nodes off the edges) meets the invariant on the corpus and is enforced. */
+const EDGE_NODE_KNOWN_GAP = new Set(['state-map', 'decision-nav']);
 
 describe('layout-quality A: a node label fits inside its container (ADR-0021)', () => {
   const inBox = files.filter((f) => LABEL_IN_BOX.has(load(f).diagram));

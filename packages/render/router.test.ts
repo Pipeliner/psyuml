@@ -95,6 +95,17 @@ describe.each(ROUTERS)('EdgeRouter contract — $name', (router) => {
     assertClears(router, obstacles, edges);
   });
 
+  it('routes around an obstacle with non-integer (clipped) coordinates', () => {
+    // real renderers clip endpoints to glyph borders → fractional coords; the router must still
+    // snap into its grid and detour (a regression that bespoke fallback-straight once hit).
+    const obstacles = [
+      { id: 'a', box: box(2.3, 10.7, 41.4, 39.6) },
+      { id: 'mid', box: box(101.5, 8.2, 38.9, 44.1) },
+      { id: 'b', box: box(203.6, 11.1, 40.2, 38.4) },
+    ];
+    assertClears(router, obstacles, [{ id: 'e', source: 'a', target: 'b' }]);
+  });
+
   it('is deterministic — identical input yields identical output', () => {
     const obstacles = [
       { id: 'a', box: box(0, 0, 40, 40) },
