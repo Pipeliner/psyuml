@@ -172,6 +172,32 @@ export interface TaggedBox extends Box {
 }
 
 /**
+ * Where do two segments p1→p2 and p3→p4 PROPERLY cross? Returns the interior intersection point, or
+ * `null` when they are parallel/collinear or only meet at an endpoint. "Proper" = both parameters
+ * strictly inside (0,1), so edges that merely share a vertex (incident edges meeting at a node) or
+ * touch tip-to-tip do NOT count — only a genuine transversal crossing does. The primitive behind the
+ * edge↔edge crossing invariant (ADR-0025, `crossing.test.ts`) and the bridge/casing legibility pass.
+ * Deterministic; the standard 2-D cross-product parametric solution.
+ */
+export function segSegCross(p1: Pt, p2: Pt, p3: Pt, p4: Pt): Pt | null {
+  const rx = p2.x - p1.x;
+  const ry = p2.y - p1.y;
+  const sx = p4.x - p3.x;
+  const sy = p4.y - p3.y;
+  const denom = rx * sy - ry * sx;
+  if (Math.abs(denom) < 1e-9) return null; // parallel or collinear — not a proper crossing
+  const qpx = p3.x - p1.x;
+  const qpy = p3.y - p1.y;
+  const t = (qpx * sy - qpy * sx) / denom;
+  const u = (qpx * ry - qpy * rx) / denom;
+  const EPS = 1e-6;
+  if (t > EPS && t < 1 - EPS && u > EPS && u < 1 - EPS) {
+    return { x: p1.x + t * rx, y: p1.y + t * ry };
+  }
+  return null;
+}
+
+/**
  * Deterministic 2-D label de-collision (ADR-0024, the label↔label half of REQ-EDGE-ROUTER) — a
  * minimal Force-Scan-style relaxation (Misue et al.): nudge each `movable` box, as little as
  * possible, so it overlaps neither another `movable` box nor any `fixed` box (node boxes / node

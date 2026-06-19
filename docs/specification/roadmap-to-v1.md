@@ -74,7 +74,19 @@ users** (automated a11y checks are done; human testing is part of this gate) and
   (state-map multi-node bands, ritual cross-phase diagonals, decision-nav back-edges; ADR-0021) and
   the **label↔label known-gap** for parts-map + process-loop free edge labels (ADR-0012) — turning
   two documented "enforced-where-it-holds" invariants into universal guarantees, or documenting the
-  irreducible residue.
+  irreducible residue. **(implemented — ADR-0023/0024; both gaps empty.)**
+- **Edge↔edge crossings in scope (`REQ-EDGE-CROSSING`, implemented — ADR-0025).** ADR-0012 honestly
+  scoped edge line/path crossings OUT of the overlap guarantee: clinical graphs (genograms, loops) are
+  routinely non-planar and node order is meaningful, so universal *planarity is impossible*. Instead of
+  ignoring crossings, bring them into scope the way the other gaps were closed — **measure + bound +
+  make legible**: (1) a machine-checked invariant (`crossing.test.ts`) counts the proper crossings
+  between non-incident edges in every rendered example and asserts the count never exceeds a pinned
+  per-file baseline (a NEW gratuitous crossing fails CI); (2) the corpus is already near-planar — only
+  the few *structural* crossings remain (a cross-ring EXIT chord, a cross-map POLARIZATION tie), pinned
+  + documented; (3) each is rendered with a **bridge / line-hop casing** (the metro-map convention,
+  monochrome + accessibility-first) so a reader can trace which line passes over which. Crossings are
+  also minimized where the renderer controls ordering (e.g. decision-nav's cycle-aware layering). No
+  planarity is claimed — the honest guarantee is *bounded + legible*, not *zero*.
 - **More live examples (folded into `REQ-NEW-DIAGRAM-TYPES`).** ecomap, social atom, empowerment
   triangle, structural dissociation, cultural genogram — some `◐` on existing renderers, some on the
   new types above.
@@ -125,7 +137,7 @@ These are **not** missing features — they are scope lines PsyUML holds on purp
 | Phase | Theme | Planned REQs |
 |---|---|---|
 | **8** | **Validation gate (the only path to v1.0)** | `REQ-STUDY-PREREG` |
-| **9** | Notation + expressiveness completeness | `REQ-NEW-DIAGRAM-TYPES`, `REQ-EDGE-ROUTER`, `REQ-PICTURE-PICTOGRAPHS` |
+| **9** | Notation + expressiveness completeness | `REQ-NEW-DIAGRAM-TYPES`, `REQ-EDGE-ROUTER`, `REQ-EDGE-CROSSING`, `REQ-PICTURE-PICTOGRAPHS` |
 | **10** | Product depth | `REQ-CASE-FILE`, `REQ-LIVE-PROFILES`, `REQ-I18N-LOCALIZATION`, `REQ-PROVENANCE-NARRATIVE`, `REQ-EXPORT-RASTER` |
 
 **v1.0 is defined by §0, not by §1–§3.** PsyUML may ship every renderer in §2 and still be a v0.x

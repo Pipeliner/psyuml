@@ -85,7 +85,11 @@ overlap; (4) every box lies within the `viewBox`. A 1px slop absorbs the metric'
   shared constant, which both sides honour at once.
 - **Out of scope (honest):** edge **line/path crossings** are not "overlap" (a genogram or loop
   necessarily has crossing relations); we guarantee *box* non-overlap, not planarity. Decorative
-  chrome (silhouette strokes, band fills, dividers) is excluded from node checks.
+  chrome (silhouette strokes, band fills, dividers) is excluded from node checks. **(Update
+  2026-06-19, ADR-0025: edge↔edge crossings are no longer ignored — they are now MEASURED + BOUNDED by
+  a per-file baseline invariant (`crossing.test.ts`) and the structural residue is rendered with a
+  legible bridge/casing. This is still NOT a planarity claim — the guarantee is *bounded + legible*,
+  not zero — so the boundary above stands; ADR-0025 just brings the crossings into a checked scope.)**
 - **Documented known-gaps — assertion (3) label↔label** is *not* guaranteed for **two** renderers
   whose edge labels float on free curves/chords and collide even on the corpus, where collision-
   free placement needs a routing rewriter we judged disproportionate: `parts-map` (the

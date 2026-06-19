@@ -21,7 +21,7 @@ import {
 } from './layout';
 import { routeToPath, type RouterObstacle } from './router';
 import { BespokeRouter } from './router-bespoke';
-import { boxesFromSvg, textLineBox } from './introspect';
+import { attrs, boxesFromSvg, edgeCrossings, edgeSegments, textLineBox } from './introspect';
 
 // Edge routing (REQ-EDGE-ROUTER, ADR-0023/0024): export the EdgeRouter interface + both backends.
 export * from './router';
@@ -53,6 +53,79 @@ function polyMid(pts: Pt[]): Pt {
     acc += seg;
   }
   return pts[pts.length - 1];
+}
+
+/**
+ * Bridge/casing legibility pass (ADR-0025, REQ-EDGE-CROSSING). Where two NON-incident edges PROPERLY
+ * cross, draw a small white casing + black re-stroke on the "over" edge at the crossing point, so a
+ * reader can trace which line passes over which without relying on colour — the metro-map / circuit
+ * "line hop" convention, monochrome and accessibility-first. The marks are PURELY decorative: they
+ * carry no `data-el`, so the crossing invariant still COUNTS the (structural) crossing — this only
+ * makes it legible, it does not claim the crossing away. `over` = the SOLID edge (so the black
+ * re-stroke is continuous), tie-broken to the later-drawn one. No crossing → empty array, so a
+ * crossing-free diagram stays byte-identical. `edgeStrings` are the `<path|line data-el="edge:*">`
+ * the renderer already emitted, in draw order; `incident` reports edges that share a node (they meet
+ * at it, not a crossing). Emit the returned marks ABOVE the edges and BELOW the nodes.
+ */
+function addCrossingBridges(
+  edgeStrings: string[],
+  incident: (a: string, b: string) => boolean,
+): string[] {
+  if (edgeStrings.length < 2) return [];
+  const joined = edgeStrings.join('');
+  const segsById = new Map(edgeSegments(joined).map((e) => [e.id, e.segs]));
+  const meta = new Map<string, { order: number; solid: boolean; width: number }>();
+  edgeStrings.forEach((s, i) => {
+    const a = attrs(s);
+    const el = a['data-el'];
+    if (!el || !el.startsWith('edge:')) return;
+    meta.set(el.slice('edge:'.length), {
+      order: i,
+      solid: !a['stroke-dasharray'],
+      width: a['stroke-width'] ? Number(a['stroke-width']) : 2,
+    });
+  });
+  const marks: string[] = [];
+  for (const { a, b, at } of edgeCrossings(joined)) {
+    if (incident(a, b)) continue;
+    const ma = meta.get(a);
+    const mb = meta.get(b);
+    if (!ma || !mb) continue;
+    // Prefer the SOLID edge as the over-line (clean re-stroke); else the later-drawn one.
+    const overId = ma.solid === mb.solid ? (ma.order > mb.order ? a : b) : ma.solid ? a : b;
+    const overW = meta.get(overId)?.width ?? 2;
+    // Direction of the over-edge's segment nearest the crossing (so the casing lies ALONG that line).
+    let dir = { x: 1, y: 0 };
+    let best = Infinity;
+    for (const [p, q] of segsById.get(overId) ?? []) {
+      const d2 = ((p.x + q.x) / 2 - at.x) ** 2 + ((p.y + q.y) / 2 - at.y) ** 2;
+      if (d2 < best) {
+        best = d2;
+        const len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+        dir = { x: (q.x - p.x) / len, y: (q.y - p.y) / len };
+      }
+    }
+    const h = 6; // half the bridge length
+    const x1 = r1(at.x - dir.x * h);
+    const y1 = r1(at.y - dir.y * h);
+    const x2 = r1(at.x + dir.x * h);
+    const y2 = r1(at.y + dir.y * h);
+    marks.push(
+      `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="${overW + 5}" stroke-linecap="round" />`,
+      `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#000" stroke-width="${overW}" stroke-linecap="round" />`,
+    );
+  }
+  return marks;
+}
+
+/** Incidence predicate (two edges share a node → they meet, not cross) from a model's edges. */
+function edgeIncidence(model: PsyumlModel): (a: string, b: string) => boolean {
+  const inc = new Map(model.edges.map((e) => [e.id, [e.source, e.target]] as const));
+  return (a, b) => {
+    const A: readonly string[] = inc.get(a) ?? [];
+    const B: readonly string[] = inc.get(b) ?? [];
+    return A.some((x) => B.includes(x));
+  };
 }
 
 type MBand = PsyumlModel['bands'][number];
@@ -745,6 +818,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   }
 
   // Protect edges (containment): bowed dotted lines routed around the Self
+  const partsEdgeStrings: string[] = [];
   for (const e of model.edges) {
     if (e.kind !== 'containment') continue;
     const a = pos.get(e.source);
@@ -752,9 +826,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     if (!a || !b) continue;
     const mx = r1((a.x + b.x) / 2 + (a.x < cx ? -70 : 70));
     const my = r1((a.y + b.y) / 2);
-    parts.push(
-      `<path data-el="edge:${esc(e.id)}" d="M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3 4" opacity="0.7" />`,
-    );
+    const ePath = `<path data-el="edge:${esc(e.id)}" d="M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3 4" opacity="0.7" />`;
+    parts.push(ePath);
+    partsEdgeStrings.push(ePath);
     // Show the relationship word (e.g. "protects" / "soothes" / "numbs") on the curve, with a
     // white halo so it stays legible over the dotted line — distinct protections shouldn't all
     // look identical (eval finding). Placed near the curve's control point.
@@ -787,9 +861,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       d += ` L ${r1(a.x + dx * f + px * 5 * sign)},${r1(a.y + dy * f + py * 5 * sign)}`;
     }
     d += ` L ${r1(b.x)},${r1(b.y)}`;
-    parts.push(
-      `<path data-el="edge:${esc(e.id)}" d="${d}" fill="none" stroke="#000" stroke-width="1.5" />`,
-    );
+    const ePath = `<path data-el="edge:${esc(e.id)}" d="${d}" fill="none" stroke="#000" stroke-width="1.5" />`;
+    parts.push(ePath);
+    partsEdgeStrings.push(ePath);
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       const off = edgeLblOff.get(e.id) ?? { dx: 0, dy: 0 };
@@ -798,6 +872,10 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       );
     }
   }
+
+  // Bridge/casing pass (ADR-0025): a cross-map POLARIZATION tie crossing the containment lines is
+  // rendered with a legible hop. Above the edges, below the barrier + nodes.
+  parts.push(...addCrossingBridges(partsEdgeStrings, edgeIncidence(model)));
 
   // Dissociative barrier (double bar) between Self and the exiles
   const barrier = model.edges.find((e) => e.kind === 'barrier');
@@ -1467,6 +1545,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   const loopLblOff = deCollide(loopLabels, loopNodeBoxes, 1);
 
   // Edges (chords, endpoints pulled to the node boundary)
+  const loopEdgeStrings: string[] = [];
   for (const e of model.edges) {
     const s = pos.get(e.source);
     const t = pos.get(e.target);
@@ -1483,9 +1562,9 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     const isExit = e.kind === 'exit';
     const dash = isExit ? ' stroke-dasharray="6 5"' : '';
     const markerStart = e.kind === 'reciprocal' ? ' marker-start="url(#arrow)"' : '';
-    parts.push(
-      `<path data-el="edge:${esc(e.id)}" d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="2"${dash}${markerStart} marker-end="url(#arrow)" />`,
-    );
+    const ePath = `<path data-el="edge:${esc(e.id)}" d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="2"${dash}${markerStart} marker-end="url(#arrow)" />`;
+    parts.push(ePath);
+    loopEdgeStrings.push(ePath);
     const lblSrc = e.trigger ?? e.label;
     let txt = lblSrc ? getText(lblSrc, layer, lang) : '';
     if (isExit) txt = txt ? `${txt} (EXIT)` : 'EXIT';
@@ -1496,6 +1575,10 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
       );
     }
   }
+
+  // Bridge/casing pass (ADR-0025): a cross-ring EXIT chord crossing a cycle chord is rendered with a
+  // legible hop so the two lines are traceable. Above the edges, below the centre badge + nodes.
+  parts.push(...addCrossingBridges(loopEdgeStrings, edgeIncidence(model)));
 
   // Reinforcing / balancing loop badge + CAT loop-topology marker in the centre (spec §C, v0.2 §4).
   const loop = model.edges.find((e) => e.loop);

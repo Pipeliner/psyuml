@@ -7,7 +7,7 @@
  * `layout-quality.test.ts` import from here, so they reason about identical geometry — a label is
  * never measured one way when drawn and another way when checked.
  */
-import { type Box, type Pt, textWidth } from './layout';
+import { type Box, type Pt, segSegCross, textWidth } from './layout';
 
 /** A reconstructed element: its AABB plus the `data-el` tag it was drawn with. */
 export interface ElBox extends Box {
@@ -164,7 +164,7 @@ export const kindOf = (el: string): string => el.slice(0, el.indexOf(':'));
 
 /** Flatten an SVG path `d` (absolute M/L/H/V/Q/C/Z, as our renderers emit) into line segments;
  * Bézier curves are sampled into short chords so curved edges can be intersection-tested too. */
-function pathToSegments(d: string): [Pt, Pt][] {
+export function pathToSegments(d: string): [Pt, Pt][] {
   const toks = d.match(/[MLHVQCZ]|-?[\d.]+/gi) ?? [];
   const segs: [Pt, Pt][] = [];
   let cur: Pt = { x: 0, y: 0 };
@@ -255,6 +255,40 @@ export function edgeSegments(svg: string): { id: string; segs: [Pt, Pt][] }[] {
         ],
       ],
     });
+  }
+  return out;
+}
+
+/** A proper crossing between two distinct drawn edges: their ids + the intersection point. */
+export interface EdgeCrossing {
+  a: string;
+  b: string;
+  at: Pt;
+}
+
+/**
+ * Every PROPER crossing between two DISTINCT `data-el="edge:*"` polylines in the SVG (the edge↔edge
+ * invariant primitive, ADR-0025). Uses `edgeSegments` (so curved edges are flattened) + `segSegCross`
+ * (interior crossings only — shared vertices don't count). The id pair is ordered as it appears in
+ * the SVG (`a` drawn before `b`), so the bridge pass can tell which edge is on top. INCIDENCE is NOT
+ * filtered here (this layer has no model) — callers drop pairs that share a node; for one crossing of
+ * two edges, only the FIRST intersection point is reported (enough to place one bridge / count once).
+ */
+export function edgeCrossings(svg: string): EdgeCrossing[] {
+  const edges = edgeSegments(svg);
+  const out: EdgeCrossing[] = [];
+  for (let i = 0; i < edges.length; i += 1) {
+    for (let j = i + 1; j < edges.length; j += 1) {
+      let hit: Pt | null = null;
+      for (const [p1, p2] of edges[i].segs) {
+        for (const [p3, p4] of edges[j].segs) {
+          hit = segSegCross(p1, p2, p3, p4);
+          if (hit) break;
+        }
+        if (hit) break;
+      }
+      if (hit) out.push({ a: edges[i].id, b: edges[j].id, at: hit });
+    }
   }
   return out;
 }
