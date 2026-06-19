@@ -11,6 +11,19 @@ import { getText, isInterpretive, parseModel, schoolClaims, type PsyumlModel } f
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
 import { CHAR_W, clipToBox, separate1D, textWidth } from './layout';
 
+// Edge routing (REQ-EDGE-ROUTER, ADR-0023): the swappable EdgeRouter interface + both backends.
+export {
+  type EdgeRouter,
+  type RouterObstacle,
+  type RouterEdge,
+  type RouteOptions,
+  type RoutedEdge,
+  DEFAULT_OBSTACLE_MARGIN,
+  routeToPath,
+} from './router';
+export { BespokeRouter } from './router-bespoke';
+export { LibavoidRouter } from './router-libavoid';
+
 type MBand = PsyumlModel['bands'][number];
 type MNode = PsyumlModel['nodes'][number];
 
