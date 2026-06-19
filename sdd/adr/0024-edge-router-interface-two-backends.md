@@ -67,3 +67,28 @@ reconstructed 3-node-band gap, determinism), proving they are genuinely swappabl
   async; instead the async cost is isolated to one-time `init()` and `route()` stays sync.
 - **Build only one backend now.** Rejected — the owner asked for both; and having both behind one
   contract is what lets the bespoke-vs-libavoid choice be made empirically when wiring the renderers.
+
+## Update (2026-06-19): the deferred "REMAINING work" is now done — REQ-EDGE-ROUTER `implemented`
+
+Both gaps this ADR's REQ named are now universal guarantees:
+
+1. **edge↔node — wired.** `renderRitual`, `renderDecisionChart`, and `renderStateMap` route any edge
+   whose default (clipped-straight / gutter-lane) path would cross a non-incident node through the
+   shared `BespokeRouter` (sync, deterministic, zero-dep), drawn via `routeToPath`; a routed edge's
+   label rides the routed-path midpoint (`polyMid`), and state-map's routed labels are y-separated
+   (`separate1D`). Non-crossing edges stay byte-identical (only `showcase-ritual.svg`,
+   `relapse-prevention.svg`, `showcase-state-map.svg` changed). `EDGE_NODE_KNOWN_GAP` is **empty** →
+   the edge↔node (edge–vertex resolution > 0) invariant is enforced for every tagged-edge renderer.
+   Bespoke-router fix found here: round endpoints to the 0.1 grid `axis` snaps to (non-integer-coord
+   contract test added).
+2. **label↔label — de-collided.** The free edge labels ADR-0012 scoped out (`process-loop` ring
+   chords, `parts-map` bowed containment/conflict labels) are separated by `deCollide` in `layout.ts`
+   (a deterministic 2-D Force-Scan relaxation) off the node boxes / node labels and each other —
+   parts-map measures its fixed obstacles from the rendered node fragment via `boxesFromSvg`, so they
+   are exactly what the overlap invariant checks. `LABEL_LABEL_KNOWN_GAP` is **empty**; only
+   `cat-sdr.svg`, `depression-flower.svg`, `parts-map.svg`, `showcase-parts-map.svg` moved a label.
+
+This is the same accepted decision carried to completion (no new architectural choice), so it is
+recorded here as an append rather than a new ADR. REQ-EDGE-ROUTER → **implemented**. The `deCollide`
+label-placement helper is a complement to the router (label geometry, not edge geometry); both live
+in `@psyuml/render` and share `layout.ts`/`introspect.ts` geometry with the invariants.

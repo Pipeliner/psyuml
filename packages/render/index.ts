@@ -9,9 +9,19 @@
  */
 import { getText, isInterpretive, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
-import { CHAR_W, clipToBox, type Pt, segIntersectsBox, separate1D, textWidth } from './layout';
+import {
+  CHAR_W,
+  clipToBox,
+  deCollide,
+  type Pt,
+  segIntersectsBox,
+  separate1D,
+  type TaggedBox,
+  textWidth,
+} from './layout';
 import { routeToPath, type RouterObstacle } from './router';
 import { BespokeRouter } from './router-bespoke';
+import { boxesFromSvg, textLineBox } from './introspect';
 
 // Edge routing (REQ-EDGE-ROUTER, ADR-0023/0024): export the EdgeRouter interface + both backends.
 export * from './router';
@@ -639,6 +649,94 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
 
   const parts: string[] = [];
 
+  // Render the nodes (Self ◎, parts ○, role tags, wrapped names, provenance) into their OWN
+  // fragment first — `nodeParts` is emitted later (after the connectors, so parts draw on top), but
+  // building it now lets the label↔label de-collision below measure the exact node + node-label
+  // boxes the overlap invariant will check. Pure: depends only on `pos`/`model.nodes`/`options`.
+  const renderNode = (node: (typeof model.nodes)[number]): string[] => {
+    const np: string[] = [];
+    const p = pos.get(node.id);
+    if (!p) return np;
+    const name = getText(node.label, layer, lang);
+    if (node.kind === 'self') {
+      np.push(
+        `<circle data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" r="30" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<circle cx="${p.x}" cy="${p.y}" r="23" fill="none" stroke="#000" stroke-width="2" />`,
+        `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#000" />`,
+        `<text data-el="nodelabel:${esc(node.id)}" x="${p.x}" y="${p.y + 50}" font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle">${esc(name)}</text>`,
+      );
+      return np;
+    }
+    if (node.stereotype) {
+      const roleTerm = options.roleLabels?.[node.stereotype] ?? node.stereotype;
+      np.push(
+        `<text data-el="nodelabel:${esc(node.id)}" x="${p.x}" y="${p.y - nodeR - 5}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">${esc(roleTerm)}</text>`,
+      );
+    }
+    np.push(
+      `<circle data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      wrapLabel(name, p.x, p.y + 3, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: 110,
+        dataEl: `nodelabel:${node.id}`,
+      }),
+    );
+    const claims = schoolClaims(node.properties.provenance);
+    if (showInterpretive && claims.length > 1) {
+      // Co-present opposed origin-claims (§G.2): mark the disagreement on the element itself
+      // ("⚖ … vs …"), don't merge it into one bland slash-list. Matches the validator's
+      // `provenance.node-mixed-school` and the alt-text below.
+      np.push(
+        wrapLabel(`⚖ ${claims.join(' vs ')}`, p.x, p.y + nodeR + 13, {
+          size: 8,
+          anchor: 'middle',
+          maxWidth: 124,
+          maxLines: 2,
+          fill: '#333',
+          dataEl: `nodelabel:${node.id}`,
+        }),
+      );
+    } else if (showInterpretive && node.properties.provenance?.length) {
+      np.push(
+        `<text data-el="nodelabel:${esc(node.id)}" x="${p.x}" y="${p.y + nodeR + 13}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555">${esc(node.properties.provenance.join(' / '))}</text>`,
+      );
+    }
+    return np;
+  };
+  const nodeParts = model.nodes.flatMap(renderNode);
+
+  // Pre-pass (ADR-0024, the label↔label half of REQ-EDGE-ROUTER): the FREE containment ("protects"/
+  // "soothes"/"numbs") and conflict ("polarized") edge labels sit on bowed curves around the Self and
+  // can collide with node-NAME labels (and each other) — the documented parts-map gap. De-collide
+  // them off the node shapes + node labels (measured from `nodeParts`, so the boxes are exactly what
+  // the overlap invariant checks) and off each other; the offset map keyed by edge id is applied
+  // where each label is emitted below. A non-colliding label gets a zero offset and stays byte-identical.
+  const fixedBoxes = boxesFromSvg(nodeParts.join(''));
+  const edgeLabelBoxes: TaggedBox[] = [];
+  for (const e of model.edges) {
+    const a = pos.get(e.source);
+    const b = pos.get(e.target);
+    if (!a || !b) continue;
+    let lx: number;
+    let ly: number;
+    if (e.kind === 'containment') {
+      const mx = r1((a.x + b.x) / 2 + (a.x < cx ? -70 : 70));
+      const my = r1((a.y + b.y) / 2);
+      lx = mx;
+      ly = r1((my + b.y) / 2);
+    } else if (e.kind === 'conflict') {
+      lx = r1((a.x + b.x) / 2);
+      ly = r1((a.y + b.y) / 2 - 4);
+    } else {
+      continue;
+    }
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (!lbl) continue;
+    edgeLabelBoxes.push({ id: e.id, ...textLineBox(lbl, lx, ly, 8, 'middle') });
+  }
+  const edgeLblOff = deCollide(edgeLabelBoxes, fixedBoxes, 1);
+
   // Containment orbit around the exiles (a container; sized to hold the spread exiles).
   if (exiles.length) {
     parts.push(
@@ -662,8 +760,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     // look identical (eval finding). Placed near the curve's control point.
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
+      const off = edgeLblOff.get(e.id) ?? { dx: 0, dy: 0 };
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${mx}" y="${r1((my + b.y) / 2)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1(mx + off.dx)}" y="${r1((my + b.y) / 2 + off.dy)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
@@ -693,8 +792,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
+      const off = edgeLblOff.get(e.id) ?? { dx: 0, dy: 0 };
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((a.x + b.x) / 2)}" y="${r1((a.y + b.y) / 2 - 4)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((a.x + b.x) / 2 + off.dx)}" y="${r1((a.y + b.y) / 2 - 4 + off.dy)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
@@ -710,56 +810,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     );
   }
 
-  // Nodes
-  for (const n of model.nodes) {
-    const p = pos.get(n.id);
-    if (!p) continue;
-    const name = getText(n.label, layer, lang);
-    if (n.kind === 'self') {
-      parts.push(
-        `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="30" fill="#fff" stroke="#000" stroke-width="2" />`,
-        `<circle cx="${p.x}" cy="${p.y}" r="23" fill="none" stroke="#000" stroke-width="2" />`,
-        `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#000" />`,
-        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${p.y + 50}" font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle">${esc(name)}</text>`,
-      );
-      continue;
-    }
-    if (n.stereotype) {
-      const roleTerm = options.roleLabels?.[n.stereotype] ?? n.stereotype;
-      parts.push(
-        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${p.y - nodeR - 5}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">${esc(roleTerm)}</text>`,
-      );
-    }
-    parts.push(
-      `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="#fff" stroke="#000" stroke-width="2" />`,
-      wrapLabel(name, p.x, p.y + 3, {
-        size: 10,
-        anchor: 'middle',
-        maxWidth: 110,
-        dataEl: `nodelabel:${n.id}`,
-      }),
-    );
-    const claims = schoolClaims(n.properties.provenance);
-    if (showInterpretive && claims.length > 1) {
-      // Co-present opposed origin-claims (§G.2): mark the disagreement on the element itself
-      // ("⚖ … vs …"), don't merge it into one bland slash-list. Matches the validator's
-      // `provenance.node-mixed-school` and the alt-text below.
-      parts.push(
-        wrapLabel(`⚖ ${claims.join(' vs ')}`, p.x, p.y + nodeR + 13, {
-          size: 8,
-          anchor: 'middle',
-          maxWidth: 124,
-          maxLines: 2,
-          fill: '#333',
-          dataEl: `nodelabel:${n.id}`,
-        }),
-      );
-    } else if (showInterpretive && n.properties.provenance?.length) {
-      parts.push(
-        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${p.y + nodeR + 13}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555">${esc(n.properties.provenance.join(' / '))}</text>`,
-      );
-    }
-  }
+  // Nodes (◎ Self, ○ parts) — built early into `nodeParts` (above) for the de-collision pass, but
+  // emitted HERE so they draw over the connectors. Z-order and bytes are identical to emitting inline.
+  parts.push(...nodeParts);
 
   // Legend (chrome).
   parts.push(
@@ -1388,6 +1441,31 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   const parts: string[] = [];
   const SHORT = 64;
 
+  // Pre-pass (ADR-0024 label↔label): chord-midpoint edge labels on a ring can collide (the
+  // documented process-loop gap). De-collide them off each other + the node boxes; the chord
+  // midpoint is exactly (s+t)/2 (the symmetric pull-back cancels), so the offset map keyed by edge
+  // id is applied where each label is emitted below — non-colliding labels get a zero offset and
+  // stay byte-identical.
+  const loopNodeBoxes = [...pos.values()].map((p) => ({
+    x: p.x - LNODE_W / 2,
+    y: p.y - LNODE_H / 2,
+    w: LNODE_W,
+    h: LNODE_H,
+  }));
+  const loopLabels: TaggedBox[] = [];
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const src = e.trigger ?? e.label;
+    let txt = src ? getText(src, layer, lang) : '';
+    if (e.kind === 'exit') txt = txt ? `${txt} (EXIT)` : 'EXIT';
+    if (!txt) continue;
+    const w = textWidth(txt, 10);
+    loopLabels.push({ id: e.id, x: (s.x + t.x) / 2 - w / 2, y: (s.y + t.y) / 2 - 3 - 8, w, h: 10 });
+  }
+  const loopLblOff = deCollide(loopLabels, loopNodeBoxes, 1);
+
   // Edges (chords, endpoints pulled to the node boundary)
   for (const e of model.edges) {
     const s = pos.get(e.source);
@@ -1412,8 +1490,9 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     let txt = lblSrc ? getText(lblSrc, layer, lang) : '';
     if (isExit) txt = txt ? `${txt} (EXIT)` : 'EXIT';
     if (txt) {
+      const off = loopLblOff.get(e.id) ?? { dx: 0, dy: 0 };
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(txt)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2 + off.dx)}" y="${r1((y1 + y2) / 2 - 3 + off.dy)}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(txt)}</text>`,
       );
     }
   }

@@ -116,3 +116,17 @@ overlap; (4) every box lies within the `viewBox`. A 1px slop absorbs the metric'
   guarantee) so no clinical content is lost; never silently overlap.
 - **Guarantee label↔label everywhere by rewriting edge-label routing.** Deferred — disproportionate
   for the six free-edge-label renderers; scoped as documented known-gaps and minimized.
+
+## Update (2026-06-19): the two label↔label known-gaps are now CLOSED (ADR-0024)
+
+Both documented assertion-(3) gaps above are closed — not by a routing rewriter (the alternative
+judged disproportionate), but by a small deterministic **label de-collision** (`deCollide` in
+`layout.ts`, a 2-D Force-Scan relaxation): nudge each free edge label, minimally and along its axis
+of least overlap, off the node boxes / node labels and off the other free labels. `process-loop`
+de-collides its ring-chord trigger labels; `parts-map` de-collides the bowed containment/conflict
+labels, building the fixed obstacle set from the rendered node fragment via `boxesFromSvg` so the
+boxes are exactly what this invariant measures. `LABEL_LABEL_KNOWN_GAP` is now **empty** and the
+parts-map stress case runs all four assertions, so **assertion (3) (label↔label) is enforced for
+every renderer**. Non-colliding labels get a zero offset and stay byte-identical (only four goldens
+moved a single label). The "out of scope" line above (edge *line/path* crossings are not "overlap")
+is unchanged — that remains the honest boundary; box non-overlap is now total.

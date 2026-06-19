@@ -166,6 +166,51 @@ export function clipToBox(from: Pt, to: Pt, b: Box, pad = 0): Pt {
   return { x: from.x + dx * t0, y: from.y + dy * t0 };
 }
 
+/** A box that carries an id (for `deCollide` to return per-element offsets). */
+export interface TaggedBox extends Box {
+  id: string;
+}
+
+/**
+ * Deterministic 2-D label de-collision (ADR-0024, the label↔label half of REQ-EDGE-ROUTER) — a
+ * minimal Force-Scan-style relaxation (Misue et al.): nudge each `movable` box, as little as
+ * possible, so it overlaps neither another `movable` box nor any `fixed` box (node boxes / node
+ * labels), separating along the axis of LEAST overlap. Gauss–Seidel passes in a fixed order with a
+ * `gap` margin, bounded by `iters`; returns the net offset per id (zero when nothing collided, so a
+ * non-colliding diagram is byte-identical). Used for the free curve/chord edge labels in
+ * parts-map + process-loop that ADR-0012 had scoped out. Not guaranteed to resolve a pathological
+ * pile-up within `iters` — the overlap invariant is the backstop that would catch a residual.
+ */
+export function deCollide(
+  movable: TaggedBox[],
+  fixed: Box[],
+  gap = 2,
+  iters = 60,
+): Map<string, { dx: number; dy: number }> {
+  const work = movable.map((m) => ({ ...m }));
+  for (let it = 0; it < iters; it += 1) {
+    let any = false;
+    for (let i = 0; i < work.length; i += 1) {
+      const a = work[i];
+      const obstacles: Box[] = [];
+      for (let j = 0; j < work.length; j += 1) if (j !== i) obstacles.push(work[j]);
+      for (const f of fixed) obstacles.push(f);
+      for (const b of obstacles) {
+        if (!overlaps(a, b, gap)) continue;
+        const pushX = Math.min(a.x + a.w - b.x, b.x + b.w - a.x) + gap;
+        const pushY = Math.min(a.y + a.h - b.y, b.y + b.h - a.y) + gap;
+        if (pushX <= pushY) a.x += a.x + a.w / 2 <= b.x + b.w / 2 ? -pushX : pushX;
+        else a.y += a.y + a.h / 2 <= b.y + b.h / 2 ? -pushY : pushY;
+        any = true;
+      }
+    }
+    if (!any) break;
+  }
+  const out = new Map<string, { dx: number; dy: number }>();
+  movable.forEach((m, i) => out.set(m.id, { dx: work[i].x - m.x, dy: work[i].y - m.y }));
+  return out;
+}
+
 /** An item on one axis: a center coordinate and the half-extent of its box on that axis. */
 export interface Span1D {
   center: number;

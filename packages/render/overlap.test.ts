@@ -110,9 +110,10 @@ const files = readdirSync(new URL('../../examples/', import.meta.url)).filter((f
  * routing rewriter we judged disproportionate. For these we scope assertion #3 out and keep #1
  * (node↔node), #2 (label↔non-owner-node), and #4 (in-frame) universal.
  */
-const LABEL_LABEL_KNOWN_GAP = new Set([
-  'parts-map', // containment "protects/soothes" + conflict labels on bowed curves around the Self
-  'process-loop', // ring-chord trigger labels on a maintaining cycle (cat-sdr's trap + exit collide)
+const LABEL_LABEL_KNOWN_GAP = new Set<string>([
+  // CLOSED (ADR-0024) via `deCollide` in layout.ts:
+  //   • process-loop — ring-chord trigger labels de-collided off each other + the node boxes;
+  //   • parts-map — free containment/conflict curve labels de-collided off the node + node-label boxes.
 ]);
 
 describe('overlap invariant — corpus (ADR-0012)', () => {
@@ -289,8 +290,9 @@ describe('overlap invariant — stress models (ADR-0012)', () => {
     assertNoOverlap('stress/state-map', render.renderStateMap(stateStress()).svg);
   });
   it('parts-map: 6 protectors + 2 conflict ties', () => {
-    // #3 (label↔label) is a documented known-gap for the parts-map's free containment/conflict
-    // curve labels (ADR-0012); #1/#2/#4 hold even in this crowded stress case.
-    assertNoOverlap('stress/parts-map', render.renderPartsMap(partsStress()).svg, false);
+    // ALL FOUR assertions, incl. #3 (label↔label): the free containment/conflict curve labels are
+    // de-collided off the node + node-label boxes and each other (ADR-0024), so even this crowded
+    // stress case keeps every label clear.
+    assertNoOverlap('stress/parts-map', render.renderPartsMap(partsStress()).svg);
   });
 });
