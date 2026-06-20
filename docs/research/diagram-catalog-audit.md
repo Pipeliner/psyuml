@@ -11,11 +11,15 @@
   `conformance/catalog.test.ts` now enforce catalog↔corpus fidelity in CI: the catalog can no longer
   claim an example that isn't shipped, nor leave a shipped example un-catalogued. REQ-CATALOG-CONFORMANCE
   → implemented.
-- **#2 coverage — first batch shipped.** 10 named-but-absent / disorder-specific examples landed
-  (safety-behaviour, reciprocal-roles, dilemma, snag, health-anxiety, ptsd-cycle, metacognitive-cas,
-  sorc, abc, trauma-timeline), each invariant-clean + manifest-registered (37 non-showcase examples
-  now). REQ-CATALOG-COVERAGE → in-progress (remaining: relational-field instances, ED/psychosis,
-  narrative externalising, composite). The grades below are the *original* audit; #4 and #2 are moving.
+- **#2 coverage — closed (as files).** All 18 named-but-absent / disorder-specific / narrative
+  examples shipped across two batches (CAT pattern: safety-behaviour, reciprocal-roles, dilemma, snag;
+  disorder-specific: health-anxiety, ptsd-cycle, metacognitive-cas, eating-disorder, psychosis-cycle;
+  functional analysis: sorc, abc; journey: trauma-timeline; field: empowerment-triangle,
+  structural-dissociation, ecomap, social-atom, cultural-genogram, narrative-externalising), each
+  invariant-clean + manifest-registered (**45 non-showcase examples now**). REQ-CATALOG-COVERAGE →
+  implemented. A standalone *composite* example is out of scope as a single file (renderComposite takes
+  an array — demoed live in the editor); wiring the new examples into the editor gallery is optional
+  (REQ-EXAMPLE-LIBRARY). The grades below are the *original* audit; #4 and #2 are now addressed.
 
 ## Rubric (what a reviewer marks, and what full marks means)
 

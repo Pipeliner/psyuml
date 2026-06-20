@@ -1,0 +1,24 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "process-loop",
+  "meta": {
+    "title": "Psychosis — a cognitive maintenance model (Morrison)",
+    "disclaimer": "This map supports, and does not replace, professional care. A shared, non-judgemental account of experience.",
+    "safety": { "psychosisFlag": true, "acuteRiskFlag": false }
+  },
+  "nodes": [
+    { "id": "intrusion", "kind": "state", "label": { "clinician": { "en": "Intrusion / unusual experience" }, "client": { "en": "An unusual experience" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "interp", "kind": "state", "label": { "clinician": { "en": "Threatening interpretation" }, "client": { "en": "\"It means danger\"" } }, "properties": { "epistemicStatus": "inferred" } },
+    { "id": "distress", "kind": "state", "label": { "clinician": { "en": "Anxiety, low mood, arousal" }, "client": { "en": "Fear, low mood" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "safety", "kind": "state", "label": { "clinician": { "en": "Safety behaviours: avoid, check, comply" }, "client": { "en": "Avoid, check" } }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "out", "kind": "resource", "label": { "clinician": { "en": "Normalise; test the interpretation gently" }, "client": { "en": "Another explanation is possible" } }, "properties": { "epistemicStatus": "planned" } }
+  ],
+  "edges": [
+    { "id": "e1", "kind": "sequential", "source": "intrusion", "target": "interp" },
+    { "id": "e2", "kind": "sequential", "source": "interp", "target": "distress" },
+    { "id": "e3", "kind": "sequential", "source": "distress", "target": "safety" },
+    { "id": "e4", "kind": "sequential", "source": "safety", "target": "intrusion", "loop": "R", "loopTopology": "trap", "label": { "clinician": { "en": "keeps the meaning unchallenged" } } },
+    { "id": "x1", "kind": "exit", "source": "safety", "target": "out", "label": { "clinician": { "en": "consider another meaning" } } }
+  ]
+}

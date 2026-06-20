@@ -234,18 +234,20 @@ help site must teach them, not just the pictures:
 
 - **The shipped example set is the machine-verified manifest `examples/catalog.json`** (the source of
   truth; `conformance/catalog.test.ts` asserts every row is a real, catalogued, correctly-typed
-  `.psyuml` and no example is un-catalogued — ADR-0027). **37 non-showcase examples ship today** on the
+  `.psyuml` and no example is un-catalogued — ADR-0027). **45 non-showcase examples ship today** on the
   shipped renderers, spanning all 8 families — each real and rendered, golden-stable under the overlap
   / legibility / layout-quality / edge↔edge invariants. Reused base examples (state-map, parts-map,
   mode-map, relational-field, drama-triangle, body-map, decision-nav, resource-anchor, process-loop,
   cat-sdr, timeline, intervention-sequence, ritual, two-triangles) are joined by instances incl.
   panic / social / OCD / **safety-behaviour** cycles; depression vicious flower; **reciprocal-roles**;
-  **dilemma / snag** (trap ships via cat-sdr); IFS (parts-map); **health-anxiety, PTSD/Ehlers–Clark,
-  metacognitive/Wells** maintenance models; longitudinal + 5 Ps + **trauma** timelines; DBT chain;
-  ACT choice point; **SORC / ABC**; relapse-prevention; goal ladder; grief ritual (ritual.psyuml).
-  *Still to ship (REQ-CATALOG-COVERAGE, tracked):* the relational-field instances (structural
-  dissociation, empowerment triangle, ecomap, social atom, cultural genogram), ED/psychosis loops,
-  narrative externalising, and a standalone composite board.
+  **dilemma / snag** (trap ships via cat-sdr); IFS (parts-map) + **structural-dissociation**;
+  **health-anxiety, PTSD/Ehlers–Clark, metacognitive/Wells, eating-disorder/Fairburn,
+  psychosis/Morrison** maintenance models; longitudinal + 5 Ps + **trauma** timelines; DBT chain;
+  ACT choice point; **SORC / ABC**; relapse-prevention; goal ladder; grief ritual (ritual.psyuml);
+  and the field set — **empowerment-triangle, ecomap, social-atom, cultural-genogram,
+  narrative-externalising** (White). The catalogued **composite** board is rendered live
+  (`renderComposite` over several views) rather than a single `.psyuml`; the ◇ new-type rows stay
+  catalogued-not-faked pending their renderers.
 - **◇ new-type rows are catalogued, not faked** (sorter/2×2 grid, Venn/overlapping-circles,
   three-circles, tree/branching, ranked ladder, radial bullseye, hub/hexagon). Each is a candidate
   **new renderer** — a future milestone, recorded here so the help site can show them as "planned"

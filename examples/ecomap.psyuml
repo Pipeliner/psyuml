@@ -1,0 +1,26 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "relational-field",
+  "meta": {
+    "title": "Ecomap — the person in their systems",
+    "disclaimer": "A shared map of supports and strains, co-created. Supports, does not replace, care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [],
+  "nodes": [
+    { "id": "me", "kind": "agent", "stereotype": "role", "tier": 3, "label": { "clinician": { "en": "Me / the family" }, "client": { "en": "Me" } }, "position": { "x": 380, "y": 230 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "friends", "kind": "context", "stereotype": "system", "tier": 3, "label": { "clinician": { "en": "Friends" } }, "position": { "x": 380, "y": 60 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "work", "kind": "context", "stereotype": "system", "tier": 3, "label": { "clinician": { "en": "Work" } }, "position": { "x": 120, "y": 110 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "health", "kind": "context", "stereotype": "system", "tier": 3, "label": { "clinician": { "en": "Health services" } }, "position": { "x": 640, "y": 110 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "faith", "kind": "context", "stereotype": "system", "tier": 3, "label": { "clinician": { "en": "Faith community" } }, "position": { "x": 120, "y": 380 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "school", "kind": "context", "stereotype": "system", "tier": 3, "label": { "clinician": { "en": "Kids' school" } }, "position": { "x": 640, "y": 380 }, "properties": { "epistemicStatus": "observed" } }
+  ],
+  "edges": [
+    { "id": "tf", "kind": "close", "source": "me", "target": "friends", "label": { "clinician": { "en": "supportive" } } },
+    { "id": "tw", "kind": "distant", "source": "me", "target": "work", "label": { "clinician": { "en": "draining" } } },
+    { "id": "th", "kind": "close", "source": "me", "target": "health", "label": { "clinician": { "en": "helpful" } } },
+    { "id": "tfa", "kind": "close", "source": "me", "target": "faith", "label": { "clinician": { "en": "steadying" } } },
+    { "id": "ts", "kind": "conflict", "source": "me", "target": "school", "label": { "clinician": { "en": "stressful" } } }
+  ]
+}

@@ -1099,7 +1099,7 @@
       "spec": ["§E"],
       "source": "docs/research/diagram-catalog-audit.md",
       "milestone": "M22",
-      "status": "in-progress",
+      "status": "implemented",
       "impl": [
         "examples/safety-behaviour.psyuml",
         "examples/reciprocal-roles.psyuml",
@@ -1110,10 +1110,18 @@
         "examples/metacognitive-cas.psyuml",
         "examples/sorc.psyuml",
         "examples/abc.psyuml",
-        "examples/trauma-timeline.psyuml"
+        "examples/trauma-timeline.psyuml",
+        "examples/eating-disorder.psyuml",
+        "examples/psychosis-cycle.psyuml",
+        "examples/empowerment-triangle.psyuml",
+        "examples/structural-dissociation.psyuml",
+        "examples/ecomap.psyuml",
+        "examples/social-atom.psyuml",
+        "examples/narrative-externalising.psyuml",
+        "examples/cultural-genogram.psyuml"
       ],
       "tests": ["conformance/catalog.test.ts", "conformance/conformance.test.ts"],
-      "notes": "Catalog audit dimensions #2 (coverage A−) + #4 (the drift). FIRST BATCH SHIPPED (ADR-0027): 10 new examples, each authored to pass EVERY existing invariant (validate both layers, overlap ADR-0012, legibility, layout-quality ADR-0021, edge↔edge ADR-0025) and registered in examples/catalog.json — safety-behaviour (#5), reciprocal-roles (#13), dilemma (#11), snag (#12) [CAT pattern]; health-anxiety, ptsd-cycle/Ehlers–Clark, metacognitive-cas/Wells [the disorder-specific maintenance models the audit flagged]; sorc (#43), abc (#44) [functional analysis]; trauma-timeline (#34). Authoring rule learned: a loop's EXIT must leave the same node the loop-closing edge does (cf panic-cycle), else the exit chord crosses the closing chord — keeps the new loops crossing-free without growing the ADR-0025 baseline. Also confirmed ritual.psyuml IS the grief ritual (#48+#49 — not drift). REMAINING (still in-progress): the relational-field instances (ecomap #22, social-atom #23, cultural-genogram #24, empowerment-triangle #19, structural-dissociation #17 — higher layout risk), ED-transdiagnostic/Fairburn + psychosis/Morrison loops, the NARRATIVE EXTERNALISING map (White), a standalone composite example, and wiring the new examples into the curated editor gallery (apps/web). Each lands as a verified manifest row. More coverage = more honest evidence notes, never fewer caveats."
+      "notes": "Catalog audit dimensions #2 (coverage) + #4 (drift). DONE (ADR-0027): 18 new examples shipped across two batches, each authored to pass EVERY existing invariant (validate both layers, overlap ADR-0012, legibility, layout-quality ADR-0021, edge↔edge ADR-0025) and registered in examples/catalog.json — 45 non-showcase examples now. Batch 1 (10): safety-behaviour (#5), reciprocal-roles (#13), dilemma (#11), snag (#12); health-anxiety, ptsd-cycle/Ehlers–Clark, metacognitive-cas/Wells; sorc (#43), abc (#44); trauma-timeline (#34). Batch 2 (8): eating-disorder/Fairburn, psychosis-cycle/Morrison [the remaining disorder-specific maintenance models]; empowerment-triangle (#19), structural-dissociation (#17 ANP/EP); ecomap (#22), social-atom (#23), cultural-genogram (#24) [relational-field, hand-laid-out planar star/family layouts]; narrative-externalising/White. Authoring rules learned + recorded in ADR-0027: a loop's EXIT must leave the same node the loop-closing edge does (else the exit chord crosses); relational-field star layouts (person + radial systems/others) are naturally planar. Confirmed ritual.psyuml IS the grief ritual (#48+#49 — not drift). OUT OF SCOPE as a single file: a standalone COMPOSITE example — renderComposite takes an ARRAY of models, not a single .psyuml of type 'composite' (no such renderer type); it is demoed live in the editor's Composite board, and a persisted multi-document case file is REQ-CASE-FILE (M21). REMAINING (tracked under REQ-EXAMPLE-LIBRARY, optional): wire the new examples into the curated editor gallery for browseability — the files are shipped, verified, and catalogued today regardless."
     },
     {
       "id": "REQ-CATALOG-METADATA",

@@ -38,7 +38,15 @@
     { "file": "trauma-timeline.psyuml", "type": "timeline", "family": "Journey", "name": "Trauma timeline (titrated)", "catalogId": 34 },
     { "file": "health-anxiety.psyuml", "type": "process-loop", "family": "Cycle", "name": "Health-anxiety loop (disorder-specific)" },
     { "file": "ptsd-cycle.psyuml", "type": "process-loop", "family": "Cycle", "name": "PTSD maintenance — Ehlers–Clark (disorder-specific)" },
-    { "file": "metacognitive-cas.psyuml", "type": "process-loop", "family": "Cycle", "name": "Metacognitive CAS — Wells (disorder-specific)" }
+    { "file": "metacognitive-cas.psyuml", "type": "process-loop", "family": "Cycle", "name": "Metacognitive CAS — Wells (disorder-specific)" },
+    { "file": "eating-disorder.psyuml", "type": "process-loop", "family": "Cycle", "name": "Eating disorder — transdiagnostic, Fairburn (disorder-specific)" },
+    { "file": "psychosis-cycle.psyuml", "type": "process-loop", "family": "Cycle", "name": "Psychosis — cognitive maintenance, Morrison (disorder-specific)" },
+    { "file": "empowerment-triangle.psyuml", "type": "relational-field", "family": "Field", "name": "Empowerment (winner's) triangle", "catalogId": 19 },
+    { "file": "structural-dissociation.psyuml", "type": "parts-map", "family": "Parts", "name": "Structural dissociation (ANP/EP)", "catalogId": 17 },
+    { "file": "ecomap.psyuml", "type": "relational-field", "family": "Field", "name": "Ecomap — person in their systems", "catalogId": 22 },
+    { "file": "social-atom.psyuml", "type": "relational-field", "family": "Field", "name": "Social atom / sociogram", "catalogId": 23 },
+    { "file": "narrative-externalising.psyuml", "type": "relational-field", "family": "Field", "name": "Externalising map — narrative (disorder-agnostic)" },
+    { "file": "cultural-genogram.psyuml", "type": "relational-field", "family": "Field", "name": "Cultural genogram — heritage & identity", "catalogId": 24 }
   ],
   "newTypes": [
     { "name": "Schema 18-EMS / 5-domains sorter", "shape": "sorter/grid", "catalogId": 16 },

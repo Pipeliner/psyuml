@@ -60,3 +60,19 @@ make the catalog a **verified artifact** and then close the drift.
 - **Golden-pin every new example.** Deferred — the invariants (overlap/legibility/layout-quality/
   crossing) already guarantee quality corpus-wide; goldens stay for the feature-dense showcase set and
   named regressions, avoiding 10 large golden blobs that churn on any benign layout tweak.
+
+## Update (2026-06-20): batch 2 — REQ-CATALOG-COVERAGE complete (as files)
+
+Eight more examples shipped, all invariant-clean + manifest-registered (45 non-showcase total):
+`eating-disorder` (Fairburn) + `psychosis-cycle` (Morrison) [the remaining disorder-specific loops];
+`empowerment-triangle` (#19), `structural-dissociation` (#17 ANP/EP), `ecomap` (#22), `social-atom`
+(#23), `cultural-genogram` (#24), `narrative-externalising` (White). A second authoring rule: the
+relational-field instances are **hand-laid-out** — placing the person at the centre with systems /
+others on a **radial star** (ecomap, social-atom, narrative) is naturally planar, and a couple +
+side-placed cultural contexts keeps the cultural genogram crossing-free. Every named-absent ✅/◐ row
+from the audit + the disorder-specific gaps + narrative externalising are now shipped. **Out of scope
+as a single file:** a standalone *composite* example — `renderComposite` takes an **array** of models,
+not a single `.psyuml` of a 'composite' renderer type; it is demoed live in the editor's Composite
+board, and a persisted multi-document case file is REQ-CASE-FILE (M21). The only remaining,
+optional follow-up is wiring the new examples into the curated editor *gallery* (REQ-EXAMPLE-LIBRARY) —
+they are shipped, verified, and catalogued today regardless. REQ-CATALOG-COVERAGE → implemented.

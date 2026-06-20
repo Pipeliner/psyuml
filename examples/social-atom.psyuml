@@ -1,0 +1,26 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "relational-field",
+  "meta": {
+    "title": "Social atom — significant others by closeness",
+    "disclaimer": "A shared map of the people who matter, co-created. Supports, does not replace, care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [],
+  "nodes": [
+    { "id": "me", "kind": "agent", "stereotype": "role", "tier": 3, "label": { "clinician": { "en": "Me" }, "client": { "en": "Me" } }, "position": { "x": 380, "y": 240 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "partner", "kind": "agent", "stereotype": "female", "tier": 3, "label": { "clinician": { "en": "Partner" } }, "position": { "x": 380, "y": 90 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "mum", "kind": "agent", "stereotype": "female", "tier": 3, "label": { "clinician": { "en": "Mum" } }, "position": { "x": 150, "y": 130 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "friend", "kind": "agent", "stereotype": "male", "tier": 3, "label": { "clinician": { "en": "Best friend" } }, "position": { "x": 610, "y": 140 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "sibling", "kind": "agent", "stereotype": "male", "tier": 3, "label": { "clinician": { "en": "Brother" } }, "position": { "x": 610, "y": 370 }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "boss", "kind": "agent", "stereotype": "male", "tier": 3, "label": { "clinician": { "en": "Old boss" } }, "position": { "x": 150, "y": 380 }, "properties": { "epistemicStatus": "observed" } }
+  ],
+  "edges": [
+    { "id": "mp", "kind": "close", "source": "me", "target": "partner", "label": { "clinician": { "en": "close" } } },
+    { "id": "mm", "kind": "fused", "source": "me", "target": "mum", "label": { "clinician": { "en": "enmeshed" } } },
+    { "id": "mf", "kind": "close", "source": "me", "target": "friend", "label": { "clinician": { "en": "close" } } },
+    { "id": "ms", "kind": "distant", "source": "me", "target": "sibling", "label": { "clinician": { "en": "distant" } } },
+    { "id": "mb", "kind": "cutoff", "source": "me", "target": "boss", "label": { "clinician": { "en": "cut off" } } }
+  ]
+}
