@@ -464,6 +464,16 @@
       "school": "CBT (Wolpe)",
       "note": "Feared situations ranked by SUDS, climbed least → most. Exposure therapy is strongly evidenced; the ladder is a planning aid — the inhibitory-learning turn questions strict graded ordering / SUDS-drop stopping rules.",
       "audience": "B"
+    },
+    {
+      "file": "three-circles.psyuml",
+      "type": "three-circles",
+      "family": "Field",
+      "name": "CFT three circles (threat / drive / soothing)",
+      "catalogId": 27,
+      "school": "CFT (Gilbert)",
+      "note": "Three emotion-regulation systems sized by balance — grow the soothing system. CFT has systematic-review support for self-criticism/shame; \"three systems\" is a neuroscientific simplification, not a brain map.",
+      "audience": "B"
     }
   ],
   "newTypes": [
@@ -476,11 +486,6 @@
       "name": "DBT states of mind",
       "shape": "Venn",
       "catalogId": 20
-    },
-    {
-      "name": "CFT three circles",
-      "shape": "three-circles",
-      "catalogId": 27
     },
     {
       "name": "River / Tree of Life",

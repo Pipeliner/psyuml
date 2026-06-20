@@ -33,6 +33,7 @@ const RENDERERS: Record<string, Renderer> = {
   'resource-anchor': render.renderResourceMap,
   'two-triangles': render.renderTwoTriangles,
   ladder: render.renderLadder,
+  'three-circles': render.renderThreeCircles,
 };
 
 const load = (f: string): PsyumlModel =>

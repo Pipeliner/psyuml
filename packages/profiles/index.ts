@@ -483,6 +483,7 @@ export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
   'two-triangles': 'change',
   'decision-nav': 'change',
   ladder: 'change',
+  'three-circles': 'field',
   ritual: 'ritual',
 };
 

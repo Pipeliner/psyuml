@@ -192,7 +192,7 @@ help site must teach them, not just the pictures:
 | 24 | **Cultural genogram / cultural formulation** | systemic + DSM-5 CFI | culture, migration, identity, belief across the family | Practice/assessment aid; **cultural-humility + appropriation caveats** | ◐ relational-field | C |
 | 25 | **Resource / anchor map** | strengths-based / cross-school | strengths, safe people/places, values, coping anchors | A "path-of-hope" staple; co-created | ✅ resource-anchor | B |
 | 26 | **Body / sensation map** | somatic (Nummenmaa research) | where emotions/sensations are felt in the body | The *descriptive* maps replicate cross-culturally; **body-mapping-as-treatment** is thinner; trauma/dissociation caveat | ✅ body-map | B |
-| 27 | **CFT three circles** (threat/drive/soothing) | CFT (Gilbert) | three emotion-regulation systems; grow the soothing system | CFT has systematic-review support for self-criticism/shame; "three systems" is a neuroscientific **simplification** | ◇ new (three circles) | B |
+| 27 | **CFT three circles** (threat/drive/soothing) | CFT (Gilbert) | three emotion-regulation systems; grow the soothing system | CFT has systematic-review support for self-criticism/shame; "three systems" is a neuroscientific **simplification** | ✅ three-circles | B |
 | 28 | **Window of tolerance** | Siegel/Ogden | hyper- / optimal / hypo-arousal bands | Ubiquitous, intuitive; **largely heuristic**, light direct validation | ✅ state-map (bands) | B |
 | 29 | **Polyvagal "ladder"** | Dana / Porges | ventral (safe) → sympathetic (mobilised) → dorsal (shutdown) | **⚠ Most contested item.** A 38-author critique (*Clin. Neurophysiology*) disputes the core neurophysiology; even defenders retreat to "interventions help regardless of mechanism." **Use as metaphor with that disclaimer; do not teach as settled neuroscience** | ✅ state-map (bands) + caveat | B |
 
@@ -277,7 +277,7 @@ can never drift from what actually ships. To change it, edit the manifest and ru
 
 <!-- BEGIN catalog:generated -->
 
-_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 46 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 47 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
 
 ### Cycle
 
@@ -328,6 +328,7 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 | Social atom / sociogram | psychodrama (Moreno) | B | Significant others mapped by closeness and tie quality (close / distant / fused / cut-off). A practice tool for the relational field. | `social-atom.psyuml` |
 | Externalising map — narrative (disorder-agnostic) | narrative (White) | L | The person is never the problem — "the Worry" is mapped as a separate entity, alongside unique outcomes and allies who know the real person. A co-authored, client-led tool. | `narrative-externalising.psyuml` |
 | Cultural genogram — heritage & identity | systemic + DSM-5 CFI | C | Family plus heritage, faith, identity and migration. An assessment aid — hold it with cultural humility; the client is the expert on their own culture. | `cultural-genogram.psyuml` |
+| CFT three circles (threat / drive / soothing) | CFT (Gilbert) | B | Three emotion-regulation systems sized by balance — grow the soothing system. CFT has systematic-review support for self-criticism/shame; "three systems" is a neuroscientific simplification, not a brain map. | `three-circles.psyuml` |
 
 ### Journey
 
@@ -367,9 +368,9 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 ## Showcase examples — one feature-dense model per diagram type
 
 Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the
-13 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
+14 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
 dense, validated model that exercises as much of the notation as that type sensibly carries — so you
-can see, and live-edit, the system's full range in one place. All thirteen are corpus-lint clean,
+can see, and live-edit, the system's full range in one place. All fourteen are corpus-lint clean,
 overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by a golden render.
 
 | Type (★ showcase) | Capabilities it exercises |
@@ -387,6 +388,7 @@ overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by
 | **Resource / Anchor** | 5 anchor categories holding many strengths — the "path of hope", client-owned |
 | **Two Triangles (Malan)** | Triangle of Conflict (defence/anxiety/hidden feeling) × Triangle of Person (current/therapist/past) linked by transference · confidence + clinician-inferred depth |
 | **Ladder** | 7 rungs ranked by SUDS (0–100) · hardest-first ordering · intensity arrow (harder ↑ / easier) · an inferred rung (dashed) · client labels · pacing note |
+| **Three Circles (CFT)** | threat / drive / soothing sized by `weight` (an over-active threat, a depleted soothing) · per-system contents (containment) · client labels · "grow the soothing system" note |
 
 ---
 

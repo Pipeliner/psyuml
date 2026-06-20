@@ -235,6 +235,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderTwoTriangles(model, o);
     case 'ladder':
       return renderLadder(model, o);
+    case 'three-circles':
+      return renderThreeCircles(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -243,6 +245,7 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
 
 const WIDTH = 680;
 const LADDER_W = 560;
+const TC_W = 620;
 const NODE_W = 220;
 const NODE_H = 40;
 const BAND_H = 96;
@@ -3073,6 +3076,106 @@ export function renderLadder(model: PsyumlModel, options: RenderOptions = {}): R
     `<title>${esc(model.meta.title ?? 'Ranked ladder')}</title><desc>${esc(altText)}</desc>` +
     `<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>` +
     `<rect x="0" y="0" width="${LADDER_W}" height="${h}" fill="#fff" />` +
+    title +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
+
+/**
+ * Three circles (REQ-NEW-DIAGRAM-TYPES, ADR-0030) — the CFT (Gilbert) emotion-regulation model:
+ * three systems, Threat (protect) · Drive (pursue) · Soothing (rest), drawn as labelled circles in
+ * the canonical triangle (soothe at the bottom — the one to grow). Each system is a node identified by
+ * `stereotype` (threat|drive|soothing); its `properties.weight` (0–1) sizes the circle, so an
+ * over-developed threat system and a depleted soothing system are visible at a glance — the clinical
+ * point. A one-line summary of each system's contents (its `containment` items) sits below its circle.
+ * Monochrome; the alt-text reads the three systems, their relative balance, and contents.
+ */
+export function renderThreeCircles(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const POS: Record<string, { x: number; y: number }> = {
+    threat: { x: 165, y: 170 },
+    drive: { x: 455, y: 170 },
+    soothing: { x: 310, y: 385 },
+  };
+  const SUB: Record<string, string> = {
+    threat: 'protect',
+    drive: 'pursue',
+    soothing: 'rest & connect',
+  };
+  const order = ['threat', 'drive', 'soothing'];
+  const systems = order
+    .map((s) => model.nodes.find((n) => n.stereotype === s))
+    .filter((n): n is (typeof model.nodes)[number] => Boolean(n));
+
+  const itemsOf = (id: string): string[] =>
+    model.nodes
+      .filter((n) =>
+        model.edges.some((e) => e.kind === 'containment' && e.source === id && e.target === n.id),
+      )
+      .map((n) => getText(n.label, layer, lang));
+
+  const parts: string[] = [];
+  const altSys: string[] = [];
+
+  for (const sys of systems) {
+    const key = sys.stereotype as string;
+    const p = POS[key] ?? { x: 310, y: 175 };
+    const w = sys.properties.weight ?? 0.5;
+    const r = Math.round(46 + w * 38);
+    const name = getText(sys.label, layer, lang);
+    parts.push(
+      `<circle data-el="node:${esc(sys.id)}" cx="${p.x}" cy="${p.y}" r="${r}" fill="#fff" stroke="#000" stroke-width="2" />`,
+      fitText(name, p.x, p.y - 2, {
+        size: 13,
+        maxWidth: 2 * r - 18,
+        anchor: 'middle',
+        dataEl: `nodelabel:${sys.id}`,
+      }),
+      `<text x="${p.x}" y="${p.y + 14}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">(${esc(SUB[key] ?? '')})</text>`,
+    );
+    const items = itemsOf(sys.id);
+    if (items.length) {
+      parts.push(
+        fitText(items.join(' · '), p.x, p.y + r + 16, {
+          size: 10,
+          maxWidth: 220,
+          anchor: 'middle',
+          fill: '#333',
+        }),
+      );
+    }
+    altSys.push(
+      `${name} (${SUB[key] ?? ''}; ${w >= 0.66 ? 'over-developed' : w <= 0.34 ? 'depleted' : 'moderate'})${items.length ? `: ${items.join(', ')}` : ''}`,
+    );
+  }
+
+  const height = 560;
+  parts.push(
+    `<text x="20" y="${height - 26}" font-family="sans-serif" font-size="11">Three systems (Gilbert): grow the soothing system — it balances threat and drive.</text>`,
+  );
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="20" y="${height - 10}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+  }
+
+  const altText =
+    `CFT three circles${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Systems — ${altSys.join('; ') || 'none'}. Grow the soothing system to balance threat and drive.`;
+
+  const title = model.meta.title
+    ? `<text x="20" y="24" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${TC_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Three circles (CFT)')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${TC_W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
     '</svg>';

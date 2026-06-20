@@ -248,6 +248,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: 'A 7-rung fear ladder ranked by SUDS (0–100), hardest-first, with the intensity arrow, an inferred rung (dashed), client labels and a pacing note.',
   },
+  {
+    key: 'showcase-three-circles',
+    label: '★ Three Circles — full showcase',
+    family: 'field',
+    school: 'capability demo',
+    note: 'The CFT threat / drive / soothing systems sized by balance (an over-active threat, a depleted soothing), each with its contents and client labels — grow the soothing system.',
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

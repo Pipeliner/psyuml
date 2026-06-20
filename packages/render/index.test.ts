@@ -18,6 +18,7 @@ import {
   renderResourceMap,
   renderRitual,
   renderStateMap,
+  renderThreeCircles,
   renderTimeline,
   renderTwoTriangles,
 } from './index';
@@ -862,10 +863,11 @@ describe('REQ-EXAMPLE-LIBRARY showcase — one feature-dense model per diagram t
     ['showcase-resource-anchor.psyuml', renderResourceMap],
     ['showcase-two-triangles.psyuml', renderTwoTriangles],
     ['showcase-ladder.psyuml', renderLadder],
+    ['showcase-three-circles.psyuml', renderThreeCircles],
   ];
 
-  it('covers all 13 diagram types', () => {
-    expect(showcases.length).toBe(13);
+  it('covers all 14 diagram types', () => {
+    expect(showcases.length).toBe(14);
   });
 
   it.each(showcases)('%s renders and matches its committed golden', (file, renderFn) => {
