@@ -19,7 +19,16 @@
   invariant-clean + manifest-registered (**45 non-showcase examples now**). REQ-CATALOG-COVERAGE →
   implemented. A standalone *composite* example is out of scope as a single file (renderComposite takes
   an array — demoed live in the editor); wiring the new examples into the editor gallery is optional
-  (REQ-EXAMPLE-LIBRARY). The grades below are the *original* audit; #4 and #2 are now addressed.
+  (REQ-EXAMPLE-LIBRARY) — now **done**: all 18 are browsable in the editor's family-grouped picker (57
+  items), loaded via a Vite glob.
+- **#3 metadata + #5 structure — partly addressed (REQ-CATALOG-METADATA, in progress).** The catalog
+  gained the **picture** audience profile in the key, a consolidated **Safety & cultural caveats**
+  section (those caveats were woven into evidence/limits unevenly), a **References** section, a Contents
+  overview + "see also" cross-refs, and items 52–59 folded into their families. Remaining: the full
+  per-row caveat/citation **columns** across all 59 rows — best generated from an enriched manifest so
+  prose + manifest can't drift.
+
+The grades below are the *original* audit; #2/#4 are addressed and #3/#5 are moving.
 
 ## Rubric (what a reviewer marks, and what full marks means)
 

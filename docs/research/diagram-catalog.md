@@ -17,7 +17,17 @@ and a **renderer** (or flags a renderer PsyUML doesn't have yet). Build status:
 - **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. 2×2 sorter, Venn/overlapping circles,
   tree/branching, ranked ladder, radial bullseye, hub/hexagon); catalogued, not yet an example.
 
-Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-created).
+Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-created) — these map to
+PsyUML's three **audience profiles** (ADR-0016): **clinician** (the full analytic surface), **client**
+(plain language, the analytic surface hidden), and **picture** (the simplest visual). Rule of thumb: a
+**client-facing (L / B)** diagram has a sensible *picture* rendering; a **clinician-only (C)** one
+usually does not — and every picture symbol stays comprehension-test-gated (M14, finding 8).
+
+**Contents:** Notation & syntax · Cross-cutting evidence findings · the eight families (Cycle · Pattern ·
+Parts · Field · Journey · Change · Ritual · Composite) · Build plan · Showcase examples · Additional
+catalogued diagrams · [Safety & cultural caveats](#safety--cultural-caveats-consolidated) ·
+Excluded-by-design · [References](#references). Cross-references ("see also") and the safety/cultural
+caveats are consolidated near the end.
 
 ---
 
@@ -285,6 +295,14 @@ overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by
 
 ## Additional catalogued diagrams (surfaced by the deep research)
 
+These belong to the families above (kept in one block because they surfaced later in the research, not
+because they're a separate family): **52 / 55 (process-loop)** → Cycle; **53 (decision-nav)** → Change;
+**54 (process-loop hub)** → Cycle; **56 (◇ circle/hands)** → Field; **57 / 59 (relational-field)** →
+Field; **58 (process-loop reciprocal)** → Pattern. **See also** (related clusters): safety plans
+**41 ↔ 53** (Stanley–Brown vs the RCT-supported Crisis Response Plan); roles **18 ↔ 19** (drama vs
+empowerment triangle); functional analysis **43 ↔ 44 ↔ 55** (SORC / ABC / ARC); relational procedures
+**9 / 13 ↔ 58** (CAT reciprocal roles ↔ CCRT).
+
 | # | Diagram | School | What it shows | Evidence / limits | PsyUML | Aud. |
 |---|---|---|---|---|---|---|
 | 52 | **Stages of Change wheel (TTM)** | transtheoretical (Prochaska–DiClemente) | precontemplation → contemplation → preparation → action → maintenance (↺ relapse) | **Contested as a *stage* model** (West 2005: arbitrary boundaries); popular + intuitive as a cycle | ◐ process-loop | B |
@@ -310,6 +328,41 @@ meaning?* If it is fundamentally fill-in / score-it / list-it / ask-these-questi
 
 The genuinely-diagrammatic ◇ rows (2×2 sorter, Venn, three-circles, tree/branching, ranked ladder, radial
 bullseye, hub/hexagon, circle-of-security) are candidate **new renderers** — catalogued, not mis-rendered.
+
+## Safety & cultural caveats (consolidated)
+
+The per-row "Evidence / limits" weave caveats in unevenly; the **safety-** and **culture-critical** ones
+are gathered here so none is missed (each still appears on its row). Treat these as gating, not optional:
+
+- **Suicide / crisis (41, 53):** a safety plan is a **collaborative intervention, never a no-suicide
+  contract and never a risk-prediction tool**; the **Crisis Response Plan (Bryan–Rudd)** is the
+  RCT-supported one; Stanley–Brown's evidence is **SPI+ (plan + follow-up)**, a cohort comparison.
+- **Trauma / dissociation (17, 26, 29, 34):** reifying parts or pushing a trauma timeline can
+  destabilise dissociative clients — **resource and consent first, titrate, keep it the client's**;
+  structural dissociation is a high-stakes, specialist map.
+- **Psychosis (Morrison cycle):** a shared, **non-judgemental** account of experience — not a label.
+- **Sharing harm (all):** sharing a formulation distresses a **meaningful minority** (Chadwick 2003;
+  finding 4), with a clinician–client asymmetry — the paced, collaborative relationship is the safeguard.
+- **Cultural (21, 24, 57):** genograms/sociograms carry **family-reading, privacy, and labelling**
+  risks; the cultural genogram needs **cultural humility** (the client is the expert on their culture);
+  never expose individual sociometric (negative-nomination) results.
+- **Contested theory (14, 27, 29, 51, 52, 56):** flag, don't echo — polyvagal, IFS-popularity-≫-evidence,
+  PTMF, TTM-as-stages, Circle-of-Security-program-vs-graphic (see findings 5 + the rows).
+
+## References
+
+Author–year anchors used across the rows (corroborated via secondary sources where the primary was
+paywalled). Reliability: **Flinn 2015**; **Bieling & Kuyken 2003**. Alliance: **Flückiger 2018**. CAT
+diagram-vs-relationship: **Tyrer & Masterson 2019**. Sharing harms: **Chadwick 2003**, **Redhead 2015**,
+**Halpin 2016**, **Thrower 2024**. Polyvagal critique: **Grossman 2023** (38-author). IFS: **2025 scoping
+review**. Genogram: **Rogers & Rohrbaugh 1991** (SAGE-PAGE). TTM critique: **West 2005**. Safety:
+**Stanley & Brown 2018** (SPI+), **Bryan 2017** (CRP RCT). Models: **Clark 1986** (panic), **Clark &
+Wells 1995** (social anxiety), **Salkovskis 1991** (safety behaviours), **Ehlers & Clark 2000** (PTSD),
+**Wells** (MCT/CAS), **Fairburn** (CBT-E transdiagnostic), **Morrison** (psychosis), **Moorey 2010**
+(vicious flower / depression), **Lewinsohn / Martell** (behavioural activation), **Dimidjian / COBRA**
+(BA evidence). Attribution: **Padesky & Mooney 1990** (hot cross bun), **Weerasekera 1993** (4/5 Ps),
+**Menninger / Ezriel → Malan** (two triangles). Frameworks: **BPS DCP 2011**, **Engel 1977**,
+**Johnstone & Boyle 2018** (PTMF). Accessibility: **Chinn & Homeyard 2016**.
 
 ## Sources & method
 
