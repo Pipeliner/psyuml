@@ -187,6 +187,9 @@ demands before any 1.0.
 ### M21 · Phase 10 — Product depth *(planned)*
 - Persisted multi-document **case file** + editor composite authoring (ADR-0019 was in-memory/render-only); **live profile + cultural-pack loading** in the editor (ADR-0009/0019); real **i18n localization** content + RTL (the architecture exists; only `en` packs do); a **provenance-disagreement narrative** (⚖ names which schools, not how; ADR-0007); **raster/print export** (PNG/PDF). **REQ:** REQ-CASE-FILE, REQ-LIVE-PROFILES, REQ-I18N-LOCALIZATION, REQ-PROVENANCE-NARRATIVE, REQ-EXPORT-RASTER.
 
+### M22 · Phase 9 — Diagram-catalog completeness + auditability *(planned)*
+- Raise the diagram catalog's audit marks (`research/diagram-catalog-audit.md`). Graded honestly: evidence-honesty **A**, coverage **A−**, but **metadata-consistency B−** and **catalog↔product fidelity C** — the Build plan over-claims (~14 named ✅/◐ examples absent; nothing machine-checks the catalog vs the shipped corpus). **REQ:** REQ-CATALOG-CONFORMANCE (a manifest + a conformance test so a build claim can never again be untrue of the corpus — the catalog becomes a *verified* artifact like the goldens), REQ-CATALOG-COVERAGE (ship the absent examples + add the missing disorder-specific maintenance formulations — PTSD/Ehlers–Clark, ED/Fairburn, psychosis, metacognitive/Wells, health-anxiety — and the narrative externalising map), REQ-CATALOG-METADATA (one consistent per-row schema: a dedicated safety/cultural-caveat field, per-row citations + a References section, the **picture** audience profile, TOC + anchors + "see also" cross-refs, and fold items 52–59 into their families).
+
 > **Deliberately out of scope (boundaries, not gaps):** autonomous diagnosis, live-care CDS,
 > outcome/treatment recommendations, safeguard-bypass; and FHIR/interop **import & round-trip**
 > (export-only by design — an importer pulls toward regulated CDS; revisit only behind a governance

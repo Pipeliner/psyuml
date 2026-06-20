@@ -111,6 +111,11 @@
       "id": "M21",
       "phase": 10,
       "title": "Product depth — persisted case file, live profiles, real i18n, provenance narrative, raster export"
+    },
+    {
+      "id": "M22",
+      "phase": 9,
+      "title": "Diagram-catalog completeness + auditability — verified catalog↔corpus fidelity, full coverage, consistent metadata"
     }
   ],
   "requirements": [
@@ -1076,6 +1081,33 @@
       "milestone": "M20",
       "status": "planned",
       "notes": "The picture audience profile is today 'client layer + a flag' (ADR-0016); comprehension-tested pictographic symbols do not exist, and the topology glyphs remain placeholders (ADR-0015). GATED ON REQ-STUDY-PREREG: a pictograph MUST pass the ISO-9186 threshold before shipping; until then picture stays client+flag. Failures drive a documented symbol revision, never a shipped symbol."
+    },
+    {
+      "id": "REQ-CATALOG-CONFORMANCE",
+      "title": "Machine-checked catalog↔corpus fidelity — the diagram catalog can never over-claim",
+      "spec": ["§E", "§J"],
+      "source": "docs/research/diagram-catalog-audit.md",
+      "milestone": "M22",
+      "status": "planned",
+      "notes": "Catalog audit dimension #4 (auditability) graded C: the catalog's Build plan promises '≈34 example models now' + names specific instances, but only 27 non-showcase examples ship and ~14 named ✅/◐ rows are ABSENT (safety-behaviour, generic vicious-flower, standalone reciprocal-roles, trap/dilemma/snag exemplars, structural-dissociation, empowerment-triangle, ecomap, social-atom, cultural-genogram, trauma-timeline, SORC, ABC, grief-ritual, standalone composite) — most realizable NOW on shipped renderers, not blocked by a missing ◇ renderer — and NOTHING machine-checks the catalog against the corpus, so it can silently drift. PLAN: a small structured manifest (`catalog.json` or parseable front-matter) carrying each row's id/name/family/status(✅|◐|◇)/mappedType/example(s); a conformance test (conformance/ or apps/web) asserting (i) every ✅/◐ row's example exists in examples/ and is of mappedType; (ii) every shipped examples/*.psyuml is catalogued; (iii) ◇ rows have no example; (iv) the prose build-count equals the manifest. Turns the catalog into a VERIFIED artifact like the goldens. The single highest-value change for the audit mark; bounds REQ-CATALOG-COVERAGE."
+    },
+    {
+      "id": "REQ-CATALOG-COVERAGE",
+      "title": "Close the catalog drift + the canonical coverage gaps",
+      "spec": ["§E"],
+      "source": "docs/research/diagram-catalog-audit.md",
+      "milestone": "M22",
+      "status": "planned",
+      "notes": "Catalog audit dimensions #2 (coverage A−) + #4 (the drift). PLAN: (a) ship the ~14 named-but-absent ✅/◐ examples from Finding 4a (most are quick instances on the shipped renderers) + a standalone composite example; (b) add the missing DISORDER-SPECIFIC MAINTENANCE FORMULATIONS — the bread-and-butter of UK CBT, currently absent: PTSD (Ehlers–Clark), eating-disorder transdiagnostic (Fairburn), psychosis (Morrison), metacognitive CAS (Wells), a standalone health-anxiety cycle — and the NARRATIVE EXTERNALISING map (White) — each with its honest evidence note (worksheet-vs-instrument, therapy-vs-diagram). Every new row is bound by REQ-CATALOG-CONFORMANCE (a verified, rendered, golden-pinned example), so coverage cannot be claimed without shipping. More coverage = more honest evidence notes, never fewer caveats."
+    },
+    {
+      "id": "REQ-CATALOG-METADATA",
+      "title": "Consistent per-item catalog schema + navigation (safety/cultural caveat, citations, picture audience, cross-refs)",
+      "spec": ["§E", "§L"],
+      "source": "docs/research/diagram-catalog-audit.md",
+      "milestone": "M22",
+      "status": "planned",
+      "notes": "Catalog audit dimensions #3 (metadata consistency B−) + #5 (structure B). PLAN: one per-row schema with EVERY field filled — a dedicated SAFETY/CULTURAL CAVEAT column (`—` when none; today it's woven into 'evidence/limits' unevenly), a PRIMARY CITATION (author+year) per row anchored to a consolidated References section (today sourcing lives only at the bottom), and the audience taxonomy aligned to the product's THREE profiles (clinician/client/PICTURE; the key is currently C/L/B and omits picture, ADR-0016) with per-row picture-suitability; plus a 'how widely taught/used' signal. STRUCTURE: a table of contents + per-item anchors + 'see also' cross-refs (safety plans #41/#42/#53; drama/empowerment #18/#19; ABC/SORC/ARC #43/#44/#55; reciprocal-roles/CCRT #13/#58), and integrate items 52–59 ('Additional') into their families (or state why held separate); cross-link each notation glyph to the M14 comprehension-test set. The metadata schema is what REQ-CATALOG-CONFORMANCE's manifest serialises, so the two land together."
     },
     {
       "id": "REQ-CASE-FILE",
