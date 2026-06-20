@@ -24,6 +24,9 @@ import {
   type DiagramFamily,
 } from '@psyuml/profiles';
 import { diffModels, isEmptyDiff, summarizeDiff } from '@psyuml/diff';
+// The catalog manifest (examples/catalog.json, ADR-0027/0028) is the SINGLE SOURCE for the
+// non-showcase gallery items — school + honest note live there, not duplicated here.
+import catalogManifest from '../../examples/catalog.json';
 // Example sources are loaded in bulk by a Vite glob (see `EXAMPLES` below), so shipping a new
 // examples/*.psyuml makes it available to the editor automatically — no per-file import to add.
 import {
@@ -153,204 +156,7 @@ interface GalleryItem {
   school: string;
   note: string;
 }
-const EXAMPLE_CATALOG: GalleryItem[] = [
-  // — Cycle: what maintaining loop keeps this going? —
-  {
-    key: 'state-map',
-    label: 'State Map',
-    family: 'cycle',
-    school: 'polyvagal-informed / cross-school',
-    note: 'Bands of nervous-system states + what shifts between them, and a way back. A useful map; over-physiologised versions inherit the contested polyvagal theory — use as metaphor.',
-  },
-  {
-    key: 'process-loop',
-    label: 'Process / Loop (hot-cross-bun)',
-    family: 'cycle',
-    school: 'CBT (Padesky & Mooney)',
-    note: 'A generic maintaining cycle. The model underpins evidenced CBT; the diagram itself is a co-drawn heuristic, not a measure.',
-  },
-  {
-    key: 'panic-cycle',
-    label: 'Panic cycle',
-    family: 'cycle',
-    school: 'CBT (Clark 1986)',
-    note: 'The fear-of-fear loop: sensation → catastrophic thought → panic → safety behaviour → more sensations. A well-evidenced cognitive model.',
-  },
-  {
-    key: 'ocd-cycle',
-    label: 'OCD maintenance cycle',
-    family: 'cycle',
-    school: 'CBT',
-    note: 'Intrusion → appraisal → distress → compulsion → relief → more intrusions. Underpins evidenced ERP; the exit is response prevention.',
-  },
-  {
-    key: 'depression-flower',
-    label: 'Low-mood cycle (vicious flower)',
-    family: 'cycle',
-    school: 'CBT (Moorey 2010)',
-    note: 'A low-mood maintaining cycle. A formulation, not an outcome measure; the way out is behavioural activation.',
-  },
-  {
-    key: 'stages-of-change',
-    label: 'Stages of change (TTM)',
-    family: 'cycle',
-    school: 'transtheoretical (Prochaska–DiClemente)',
-    note: 'The change cycle. Popular but genuinely contested as a *stage* model (West 2005) — treat the stages as a heuristic.',
-  },
-  {
-    key: 'social-anxiety-loop',
-    label: 'Social-anxiety loop',
-    family: 'cycle',
-    school: 'CBT (Clark–Wells 1995)',
-    note: 'Self-focused attention + safety behaviours maintain the fear. A well-evidenced model; the cycle is the formulation.',
-  },
-  // — Pattern: what recurring procedure repeats, and where is the exit? —
-  {
-    key: 'cat-sdr',
-    label: 'CAT reformulation (SDR)',
-    family: 'pattern',
-    school: 'CAT (Ryle)',
-    note: 'Reciprocal roles, traps/dilemmas/snags and exits. CAT works *through the alliance*; the map is a co-drawn heuristic — its one dismantling trial found the reformulation letter redundant.',
-  },
-  // — Parts: what internal multiplicity is in play? —
-  {
-    key: 'parts-map',
-    label: 'Parts / Agents Map (IFS)',
-    family: 'parts',
-    school: 'IFS (Schwartz)',
-    note: 'Self + protective/wounded parts. IFS is popular but thinly evidenced (~2 RCTs); "parts" is a metaphor — avoid reifying it, especially with dissociation.',
-  },
-  {
-    key: 'mode-map',
-    label: 'Schema Mode Map',
-    family: 'parts',
-    school: 'Schema Therapy (Young)',
-    note: 'Modes + Healthy Adult "in the driver’s seat". Among the better-evidenced models here (RCTs for personality disorder).',
-  },
-  {
-    key: 'perfectionism-parts',
-    label: 'Perfectionism parts',
-    family: 'parts',
-    school: 'IFS / schema',
-    note: 'A worked parts map with a contested-origin marker where schools disagree about a part — a formulation, not a measure.',
-  },
-  // — Field: who/what is in the person's world? —
-  {
-    key: 'relational-field',
-    label: 'Relational Field',
-    family: 'field',
-    school: 'systemic',
-    note: 'People and ties in the person’s world. A practice tool, not a validated instrument.',
-  },
-  {
-    key: 'family-genogram',
-    label: 'Family genogram',
-    family: 'field',
-    school: 'systemic (McGoldrick)',
-    note: 'Three-generation family map. Widely used but weakly evidenced as an instrument (SAGE-PAGE found no clinical effect); privacy/family-reading caveats.',
-  },
-  {
-    key: 'drama-triangle',
-    label: 'Drama triangle (TA)',
-    family: 'field',
-    school: 'TA (Karpman)',
-    note: 'Persecutor/Rescuer/Victim role-switching. A widely-taught heuristic; "Victim" means a *stance*, not an actual victim of harm — never use it to dismiss real harm.',
-  },
-  {
-    key: 'resource-anchor',
-    label: 'Resource / Anchor map',
-    family: 'field',
-    school: 'strengths-based',
-    note: 'Strengths, safe people/places, values — the "path of hope". Co-created.',
-  },
-  {
-    key: 'body-map',
-    label: 'Body Map',
-    family: 'field',
-    school: 'somatic (Nummenmaa)',
-    note: 'Where emotions are felt in the body. The descriptive maps replicate cross-culturally; body-mapping-as-treatment is thinner; can be triggering for trauma.',
-  },
-  // — Journey: what is the trajectory / story over time? —
-  {
-    key: 'timeline',
-    label: 'Timeline / Trajectory',
-    family: 'journey',
-    school: 'cross-school',
-    note: 'Events and turning points over time. A narrative organiser, not a measure.',
-  },
-  {
-    key: 'longitudinal-formulation',
-    label: 'Longitudinal formulation',
-    family: 'journey',
-    school: 'CBT (Beck)',
-    note: 'How early experiences → beliefs → rules → current triggers. Belief links are tentative hypotheses — the least-reliable part of any formulation.',
-  },
-  {
-    key: 'five-ps',
-    label: 'The 5 Ps',
-    family: 'journey',
-    school: 'integrative (Weerasekera)',
-    note: 'Predisposing/precipitating/perpetuating/protective factors. By nature a grid, not really a diagram; shown here as a factor timeline. (Not coined by Macneil 2012.)',
-  },
-  // — Change: what is the treatment direction / what to do? —
-  {
-    key: 'intervention-sequence',
-    label: 'Intervention Sequence',
-    family: 'change',
-    school: 'cross-school',
-    note: 'Ordered steps/skills toward a goal. A plan, not a measure.',
-  },
-  {
-    key: 'dbt-chain',
-    label: 'DBT chain analysis',
-    family: 'change',
-    school: 'DBT (Linehan)',
-    note: 'Vulnerability → prompt → links → behaviour, with a skill to interrupt it. DBT is strongly evidenced; do it with kindness, not blame.',
-  },
-  {
-    key: 'act-choice-point',
-    label: 'ACT choice point',
-    family: 'change',
-    school: 'ACT (Harris)',
-    note: 'A moment’s fork: toward-moves vs away-moves, with hooks and values. ACT is evidenced; the format is a delivery tool.',
-  },
-  {
-    key: 'goal-ladder',
-    label: 'Goal ladder (SFBT)',
-    family: 'change',
-    school: 'solution-focused',
-    note: 'Small steps toward a preferred future. A practice tool.',
-  },
-  {
-    key: 'two-triangles',
-    label: 'Two Triangles (Malan)',
-    family: 'change',
-    school: 'psychodynamic (Malan)',
-    note: 'Conflict (defence/anxiety/feeling) + Person (therapist/other/parent). The therapy is moderately evidenced; the diagram itself is untested as a mechanism.',
-  },
-  {
-    key: 'relapse-prevention',
-    label: 'Staying-well plan',
-    family: 'change',
-    school: 'CBT/MBCT (Marlatt)',
-    note: 'Triggers → early signs → coping → support. The approach is evidenced; the worksheet isn’t. A wellness plan, NOT a crisis plan.',
-  },
-  {
-    key: 'decision-nav',
-    label: 'Crisis chart',
-    family: 'change',
-    school: 'suicide-prevention (Stanley–Brown)',
-    note: 'One decision per step, resources on every screen, no dead-ends. A collaborative plan — never a no-suicide contract or a risk-prediction tool.',
-  },
-  // — Ritual: what symbolic / ceremonial process? —
-  {
-    key: 'ritual',
-    label: 'Ritual Structure',
-    family: 'ritual',
-    school: 'cross-cultural / therapeutic ritual',
-    note: 'Van Gennep phases with a secular variant. Rituals reliably affect *subjective* anxiety/meaning, not objective disease markers (§F).',
-  },
-  // — Showcase set: one feature-dense model per diagram type (the catalogue's "what can it do") —
+const SHOWCASE_ITEMS: GalleryItem[] = [
   {
     key: 'showcase-state-map',
     label: '★ State Map — full showcase',
@@ -435,134 +241,20 @@ const EXAMPLE_CATALOG: GalleryItem[] = [
     school: 'capability demo',
     note: 'Malan in full: the Triangle of Conflict (defence / anxiety / hidden feeling) and the Triangle of Person (current / therapist / past) linked by transference — with confidence and clinician-inferred depth flagged.',
   },
-  // — Coverage examples (REQ-CATALOG-COVERAGE / ADR-0027): the catalogued diagrams now shipped as
-  //   real, rendered, verified models. Grouped by family via the `family` field below. —
-  {
-    key: 'safety-behaviour',
-    label: 'Safety-behaviour cycle',
-    family: 'cycle',
-    school: 'CBT (Salkovskis 1991)',
-    note: 'Threat belief → anxiety → safety behaviour → disconfirmation blocked → the belief survives. Mechanism shown experimentally; the safety-behaviour vs adaptive-coping line is contested (Telch).',
-  },
-  {
-    key: 'health-anxiety',
-    label: 'Health-anxiety loop',
-    family: 'cycle',
-    school: 'CBT',
-    note: 'Body sensation → "something is wrong" → checking / reassurance → more noticing. A maintaining cycle; the way out is dropping the safety behaviour and tolerating uncertainty.',
-  },
-  {
-    key: 'ptsd-cycle',
-    label: 'PTSD maintenance (Ehlers–Clark)',
-    family: 'cycle',
-    school: 'CBT (Ehlers & Clark 2000)',
-    note: 'A sense of current threat kept alive by intrusions + avoidance / suppression / hypervigilance. Underpins evidenced trauma-focused CBT; pace the work and resource first.',
-  },
-  {
-    key: 'metacognitive-cas',
-    label: 'Metacognitive CAS (Wells)',
-    family: 'cycle',
-    school: 'MCT (Wells)',
-    note: 'Worry / rumination + threat-monitoring + thought-control (the Cognitive-Attentional Syndrome) maintain distress. The way out is detached mindfulness, not more thinking.',
-  },
-  {
-    key: 'eating-disorder',
-    label: 'Eating disorder — transdiagnostic (Fairburn)',
-    family: 'cycle',
-    school: 'CBT-E (Fairburn)',
-    note: 'Over-evaluation of shape / weight / control → strict dieting → binge → compensation → confirms the over-evaluation. Underpins evidenced CBT-E; the diagram is the formulation, not the measure.',
-  },
-  {
-    key: 'psychosis-cycle',
-    label: 'Psychosis — cognitive model (Morrison)',
-    family: 'cycle',
-    school: 'CBT for psychosis (Morrison)',
-    note: 'An unusual experience → a threatening interpretation → distress + safety behaviours → the meaning goes unchallenged. A shared, non-judgemental account of experience.',
-  },
-  {
-    key: 'reciprocal-roles',
-    label: 'Reciprocal roles (CAT)',
-    family: 'pattern',
-    school: 'CAT (Ryle)',
-    note: 'criticising ⇄ criticised, and the procedure that follows from the role. The core CAT construct; co-created and owned by the client.',
-  },
-  {
-    key: 'dilemma',
-    label: 'Dilemma (CAT)',
-    family: 'pattern',
-    school: 'CAT (Ryle)',
-    note: 'A false either/or ("comply or be rejected") that traps. A school-agnostic loop shape; the way out is naming the false binary and finding a third option.',
-  },
-  {
-    key: 'snag',
-    label: 'Snag (CAT)',
-    family: 'pattern',
-    school: 'CAT (Ryle)',
-    note: 'Legitimate goals undone by guilt ("I don\'t deserve it" / others will lose out). A self-sabotage pattern; the way out is allowing the good thing and tolerating the guilt.',
-  },
-  {
-    key: 'structural-dissociation',
-    label: 'Structural dissociation (ANP/EP)',
-    family: 'parts',
-    school: 'structural dissociation theory',
-    note: 'An Apparently-Normal Part that runs daily life, dissociated by a barrier from trauma-fixed Emotional Parts. Influential in complex trauma; supporting neuroimaging is small-n — a high-stakes map, pace it.',
-  },
-  {
-    key: 'empowerment-triangle',
-    label: "Empowerment (winner's) triangle",
-    family: 'field',
-    school: 'TA (Choy)',
-    note: 'The hopeful reframe of the drama triangle: Creator / Challenger / Coach. A heuristic, not an outcome measure — the counterpart to Karpman.',
-  },
-  {
-    key: 'ecomap',
-    label: 'Ecomap',
-    family: 'field',
-    school: 'systemic (Hartman)',
-    note: 'The person / family and their external systems — supports and strains, by tie quality. A widely used practice tool, not a validated measure.',
-  },
-  {
-    key: 'social-atom',
-    label: 'Social atom',
-    family: 'field',
-    school: 'psychodrama (Moreno)',
-    note: 'Significant others mapped by closeness and tie quality (close / distant / fused / cut-off). A practice tool for the relational field.',
-  },
-  {
-    key: 'cultural-genogram',
-    label: 'Cultural genogram',
-    family: 'field',
-    school: 'systemic + DSM-5 CFI',
-    note: 'Family plus heritage, faith, identity and migration. An assessment aid — hold it with cultural humility; the client is the expert on their own culture.',
-  },
-  {
-    key: 'narrative-externalising',
-    label: 'Externalising map (narrative)',
-    family: 'field',
-    school: 'narrative (White)',
-    note: 'The person is never the problem — "the Worry" is mapped as a separate entity, alongside unique outcomes and allies who know the real person. A co-authored, client-led tool.',
-  },
-  {
-    key: 'trauma-timeline',
-    label: 'Trauma timeline (titrated)',
-    family: 'journey',
-    school: 'trauma therapies',
-    note: 'Events + meanings + resources across time, paced. Distress caveat — consent, resourcing and grounding first; titrate exposure.',
-  },
-  {
-    key: 'sorc',
-    label: 'SORC functional analysis',
-    family: 'change',
-    school: 'behavioural (Kanfer–Saslow)',
-    note: 'Stimulus → Organism → Response → Consequence — a shared map of one episode and where to intervene. An influential clinician heuristic, hard to standardise.',
-  },
-  {
-    key: 'abc',
-    label: 'ABC(DE) disputation (REBT)',
-    family: 'change',
-    school: 'REBT (Ellis)',
-    note: 'Activating event → Beliefs → Consequence, then Dispute → Effect. A teaching / self-monitoring tool; belief-mediation is the REBT differentiator.',
-  },
+];
+
+// The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note
+// come from examples/catalog.json — the single source, ADR-0028) + the ★ showcase set. So a new
+// example's gallery entry is its manifest row; the two cannot drift (conformance enforces the schema).
+const EXAMPLE_CATALOG: GalleryItem[] = [
+  ...catalogManifest.diagrams.map((d) => ({
+    key: d.file.replace('.psyuml', ''),
+    label: d.name,
+    family: d.family.toLowerCase() as DiagramFamily,
+    school: d.school,
+    note: d.note,
+  })),
+  ...SHOWCASE_ITEMS,
 ];
 const GALLERY_BY_KEY: Record<string, GalleryItem> = Object.fromEntries(
   EXAMPLE_CATALOG.map((x) => [x.key, x]),

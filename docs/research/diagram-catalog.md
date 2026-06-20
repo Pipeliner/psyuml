@@ -268,6 +268,101 @@ help site must teach them, not just the pictures:
 
 ---
 
+## Shipped example library (generated)
+
+The table below is **generated from `examples/catalog.json`** (the manifest is the single source of
+truth, ADR-0028) and **verified against the rendered corpus** by `conformance/catalog.test.ts`, so it
+can never drift from what actually ships. To change it, edit the manifest and run
+`node scripts/build-catalog.mjs`.
+
+<!-- BEGIN catalog:generated -->
+
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 45 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+
+### Cycle
+
+| Diagram | School | Aud. | What it shows (honest note) | Example |
+| --- | --- | --- | --- | --- |
+| CBT 5-part (hot cross bun) | CBT (Padesky & Mooney) | B | A generic maintaining cycle. The model underpins evidenced CBT; the diagram itself is a co-drawn heuristic, not a measure. | `process-loop.psyuml` |
+| Vicious flower (depression) | CBT (Moorey 2010) | B | A low-mood maintaining cycle. A formulation, not an outcome measure; the way out is behavioural activation. | `depression-flower.psyuml` |
+| Panic vicious cycle | CBT (Clark 1986) | B | The fear-of-fear loop: sensation → catastrophic thought → panic → safety behaviour → more sensations. A well-evidenced cognitive model. | `panic-cycle.psyuml` |
+| Social-anxiety cycle | CBT (Clark–Wells 1995) | B | Self-focused attention + safety behaviours maintain the fear. A well-evidenced model; the cycle is the formulation. | `social-anxiety-loop.psyuml` |
+| OCD maintenance cycle | CBT | B | Intrusion → appraisal → distress → compulsion → relief → more intrusions. Underpins evidenced ERP; the exit is response prevention. | `ocd-cycle.psyuml` |
+| Nervous-system state ladder / window of tolerance | polyvagal-informed / cross-school | B | Bands of nervous-system states + what shifts between them, and a way back. A useful map; over-physiologised versions inherit the contested polyvagal theory — use as metaphor. | `state-map.psyuml` |
+| Safety-behaviour maintenance cycle | CBT (Salkovskis 1991) | B | Threat belief → anxiety → safety behaviour → disconfirmation blocked → the belief survives. Mechanism shown experimentally; the safety-behaviour vs adaptive-coping line is contested (Telch). | `safety-behaviour.psyuml` |
+| Health-anxiety loop (disorder-specific) | CBT | B | Body sensation → "something is wrong" → checking / reassurance → more noticing. A maintaining cycle; the way out is dropping the safety behaviour and tolerating uncertainty. | `health-anxiety.psyuml` |
+| PTSD maintenance — Ehlers–Clark (disorder-specific) | CBT (Ehlers & Clark 2000) | B | A sense of current threat kept alive by intrusions + avoidance / suppression / hypervigilance. Underpins evidenced trauma-focused CBT; pace the work and resource first. | `ptsd-cycle.psyuml` |
+| Metacognitive CAS — Wells (disorder-specific) | MCT (Wells) | B | Worry / rumination + threat-monitoring + thought-control (the Cognitive-Attentional Syndrome) maintain distress. The way out is detached mindfulness, not more thinking. | `metacognitive-cas.psyuml` |
+| Eating disorder — transdiagnostic, Fairburn (disorder-specific) | CBT-E (Fairburn) | B | Over-evaluation of shape / weight / control → strict dieting → binge → compensation → confirms the over-evaluation. Underpins evidenced CBT-E; the diagram is the formulation, not the measure. | `eating-disorder.psyuml` |
+| Psychosis — cognitive maintenance, Morrison (disorder-specific) | CBT for psychosis (Morrison) | B | An unusual experience → a threatening interpretation → distress + safety behaviours → the meaning goes unchallenged. A shared, non-judgemental account of experience. | `psychosis-cycle.psyuml` |
+
+### Pattern
+
+| Diagram | School | Aud. | What it shows (honest note) | Example |
+| --- | --- | --- | --- | --- |
+| CAT SDR — reciprocal roles + trap | CAT (Ryle) | B | Reciprocal roles, traps/dilemmas/snags and exits. CAT works *through the alliance*; the map is a co-drawn heuristic — its one dismantling trial found the reformulation letter redundant. | `cat-sdr.psyuml` |
+| Reciprocal-roles diagram (CAT) | CAT (Ryle) | B | criticising ⇄ criticised, and the procedure that follows from the role. The core CAT construct; co-created and owned by the client. | `reciprocal-roles.psyuml` |
+| Dilemma — a false either/or (CAT) | CAT (Ryle) | B | A false either/or ("comply or be rejected") that traps. A school-agnostic loop shape; the way out is naming the false binary and finding a third option. | `dilemma.psyuml` |
+| Snag — success undone (CAT) | CAT (Ryle) | B | Legitimate goals undone by guilt ("I don't deserve it" / others will lose out). A self-sabotage pattern; the way out is allowing the good thing and tolerating the guilt. | `snag.psyuml` |
+
+### Parts
+
+| Diagram | School | Aud. | What it shows (honest note) | Example |
+| --- | --- | --- | --- | --- |
+| IFS parts map | IFS (Schwartz) | B | Self + protective/wounded parts. IFS is popular but thinly evidenced (~2 RCTs); "parts" is a metaphor — avoid reifying it, especially with dissociation. | `parts-map.psyuml` |
+| Parts map — perfectionism | IFS / schema | B | A worked parts map with a contested-origin marker where schools disagree about a part — a formulation, not a measure. | `perfectionism-parts.psyuml` |
+| Schema mode map | Schema Therapy (Young) | B | Modes + Healthy Adult "in the driver’s seat". Among the better-evidenced models here (RCTs for personality disorder). | `mode-map.psyuml` |
+| Structural dissociation (ANP/EP) | structural dissociation theory | C | An Apparently-Normal Part that runs daily life, dissociated by a barrier from trauma-fixed Emotional Parts. Influential in complex trauma; supporting neuroimaging is small-n — a high-stakes map, pace it. | `structural-dissociation.psyuml` |
+
+### Field
+
+| Diagram | School | Aud. | What it shows (honest note) | Example |
+| --- | --- | --- | --- | --- |
+| Karpman drama triangle | TA (Karpman) | B | Persecutor/Rescuer/Victim role-switching. A widely-taught heuristic; "Victim" means a *stance*, not an actual victim of harm — never use it to dismiss real harm. | `drama-triangle.psyuml` |
+| Genogram (3-generation) | systemic (McGoldrick) | B | Three-generation family map. Widely used but weakly evidenced as an instrument (SAGE-PAGE found no clinical effect); privacy/family-reading caveats. | `family-genogram.psyuml` |
+| Relational field | systemic | B | People and ties in the person’s world. A practice tool, not a validated instrument. | `relational-field.psyuml` |
+| Resource / anchor map | strengths-based | B | Strengths, safe people/places, values — the "path of hope". Co-created. | `resource-anchor.psyuml` |
+| Body / sensation map | somatic (Nummenmaa) | B | Where emotions are felt in the body. The descriptive maps replicate cross-culturally; body-mapping-as-treatment is thinner; can be triggering for trauma. | `body-map.psyuml` |
+| Empowerment (winner's) triangle | TA (Choy) | B | The hopeful reframe of the drama triangle: Creator / Challenger / Coach. A heuristic, not an outcome measure — the counterpart to Karpman. | `empowerment-triangle.psyuml` |
+| Ecomap — person in their systems | systemic (Hartman) | B | The person / family and their external systems — supports and strains, by tie quality. A widely used practice tool, not a validated measure. | `ecomap.psyuml` |
+| Social atom / sociogram | psychodrama (Moreno) | B | Significant others mapped by closeness and tie quality (close / distant / fused / cut-off). A practice tool for the relational field. | `social-atom.psyuml` |
+| Externalising map — narrative (disorder-agnostic) | narrative (White) | L | The person is never the problem — "the Worry" is mapped as a separate entity, alongside unique outcomes and allies who know the real person. A co-authored, client-led tool. | `narrative-externalising.psyuml` |
+| Cultural genogram — heritage & identity | systemic + DSM-5 CFI | C | Family plus heritage, faith, identity and migration. An assessment aid — hold it with cultural humility; the client is the expert on their own culture. | `cultural-genogram.psyuml` |
+
+### Journey
+
+| Diagram | School | Aud. | What it shows (honest note) | Example |
+| --- | --- | --- | --- | --- |
+| Life timeline / lifeline | cross-school | B | Events and turning points over time. A narrative organiser, not a measure. | `timeline.psyuml` |
+| Longitudinal CBT formulation | CBT (Beck) | B | How early experiences → beliefs → rules → current triggers. Belief links are tentative hypotheses — the least-reliable part of any formulation. | `longitudinal-formulation.psyuml` |
+| 5 Ps timeline | integrative (Weerasekera) | B | Predisposing/precipitating/perpetuating/protective factors. By nature a grid, not really a diagram; shown here as a factor timeline. (Not coined by Macneil 2012.) | `five-ps.psyuml` |
+| Trauma timeline (titrated) | trauma therapies | B | Events + meanings + resources across time, paced. Distress caveat — consent, resourcing and grounding first; titrate exposure. | `trauma-timeline.psyuml` |
+
+### Change
+
+| Diagram | School | Aud. | What it shows (honest note) | Example |
+| --- | --- | --- | --- | --- |
+| Malan two triangles | psychodynamic (Malan) | C | Conflict (defence/anxiety/feeling) + Person (therapist/other/parent). The therapy is moderately evidenced; the diagram itself is untested as a mechanism. | `two-triangles.psyuml` |
+| Intervention sequence | cross-school | B | Ordered steps/skills toward a goal. A plan, not a measure. | `intervention-sequence.psyuml` |
+| DBT chain analysis | DBT (Linehan) | B | Vulnerability → prompt → links → behaviour, with a skill to interrupt it. DBT is strongly evidenced; do it with kindness, not blame. | `dbt-chain.psyuml` |
+| ACT Choice Point | ACT (Harris) | L | A moment’s fork: toward-moves vs away-moves, with hooks and values. ACT is evidenced; the format is a delivery tool. | `act-choice-point.psyuml` |
+| Crisis / safety plan | suicide-prevention (Stanley–Brown) | B | One decision per step, resources on every screen, no dead-ends. A collaborative plan — never a no-suicide contract or a risk-prediction tool. | `decision-nav.psyuml` |
+| Relapse-prevention plan | CBT/MBCT (Marlatt) | B | Triggers → early signs → coping → support. The approach is evidenced; the worksheet isn’t. A wellness plan, NOT a crisis plan. | `relapse-prevention.psyuml` |
+| Goal ladder / scaling | solution-focused | B | Small steps toward a preferred future. A practice tool. | `goal-ladder.psyuml` |
+| Stages of Change wheel (TTM) | transtheoretical (Prochaska–DiClemente) | B | The change cycle. Popular but genuinely contested as a *stage* model (West 2005) — treat the stages as a heuristic. | `stages-of-change.psyuml` |
+| SORC functional analysis | behavioural (Kanfer–Saslow) | C | Stimulus → Organism → Response → Consequence — a shared map of one episode and where to intervene. An influential clinician heuristic, hard to standardise. | `sorc.psyuml` |
+| ABC(DE) functional analysis | REBT (Ellis) | B | Activating event → Beliefs → Consequence, then Dispute → Effect. A teaching / self-monitoring tool; belief-mediation is the REBT differentiator. | `abc.psyuml` |
+
+### Ritual
+
+| Diagram | School | Aud. | What it shows (honest note) | Example |
+| --- | --- | --- | --- | --- |
+| Ritual structure (van Gennep) | cross-cultural / therapeutic ritual | B | Van Gennep phases with a secular variant. Rituals reliably affect *subjective* anxiety/meaning, not objective disease markers (§F). | `ritual.psyuml` |
+
+<!-- END catalog:generated -->
+
+---
+
 ## Showcase examples — one feature-dense model per diagram type
 
 Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the

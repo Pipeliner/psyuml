@@ -1129,9 +1129,15 @@
       "spec": ["§E", "§L"],
       "source": "docs/research/diagram-catalog-audit.md",
       "milestone": "M22",
-      "status": "in-progress",
-      "impl": ["docs/research/diagram-catalog.md"],
-      "notes": "Catalog audit dimensions #3 (metadata consistency B−) + #5 (structure B). LANDED: (a) the audience KEY now defines the product's THREE profiles (clinician/client/PICTURE, ADR-0016) + a picture-suitability rule of thumb (was C/L/B, omitting picture); (b) a consolidated SAFETY & CULTURAL CAVEATS section gathers the safety-/culture-critical caveats that were woven into 'evidence/limits' unevenly (suicide/crisis, trauma/dissociation, psychosis, sharing-harm, cultural, contested-theory) — each still on its row but now un-missable; (c) a proper REFERENCES section consolidates the author-year anchors (was only a prose 'Sources & method' paragraph); (d) a Contents overview + 'see also' cross-ref clusters (safety plans 41↔53; drama↔empowerment 18↔19; SORC/ABC/ARC 43↔44↔55; reciprocal-roles↔CCRT 9/13↔58) + folded items 52–59 into their families. REMAINING (keeps this in-progress): the FULL per-row schema — a dedicated safety/cultural-caveat COLUMN + a primary-citation cell on every one of the 59 rows + a 'how widely taught' signal — which is best done by making the prose tables GENERATED from an enriched examples/catalog.json (the manifest serialises the schema; REQ-CATALOG-CONFORMANCE), so prose and manifest can't drift; deferred to avoid a fragile 59-row hand edit. Cross-linking each notation glyph to the M14 comprehension set also remains."
+      "status": "implemented",
+      "impl": [
+        "docs/research/diagram-catalog.md",
+        "examples/catalog.json",
+        "scripts/build-catalog.mjs",
+        "apps/web/App.tsx"
+      ],
+      "tests": ["conformance/catalog.test.ts"],
+      "notes": "Catalog audit dimensions #3 (metadata consistency) + #5 (structure). PASS 1 (prose): the audience KEY now defines the product's THREE profiles (clinician/client/PICTURE, ADR-0016) + a picture-suitability rule; a consolidated SAFETY & CULTURAL CAVEATS section (suicide/crisis, trauma/dissociation, psychosis, sharing-harm, cultural, contested-theory); a REFERENCES section; a Contents overview + 'see also' cross-refs (41↔53, 18↔19, 43↔44↔55, 9/13↔58) + items 52–59 folded into families. PASS 2 (SINGLE SOURCE, ADR-0028): examples/catalog.json is now the single source for the shipped library — each `diagrams` row carries the full schema {file,type,family,name,school,note,audience∈C|L|B}; `scripts/build-catalog.mjs` GENERATES the catalog's per-family 'Shipped example library' table from it (drift-checked by conformance/catalog.test.ts — the committed table is parsed back and asserted equal to the manifest, content-compared so Prettier alignment is irrelevant); the editor gallery (App.tsx) DERIVES its non-showcase items from the same manifest (removed ~250 hand-written entries; ★ showcase stays a small list); conformance enforces the schema (school/note non-empty, audience valid). So the prose table, the gallery, and the corpus cannot drift — all flow from one checked manifest. REMAINING (deferred, not blocking): generating the rich 59-row FAMILY tables too (they include non-shipped ◇ rows + survey prose — a larger model change) and cross-linking each notation glyph to the M14 set."
     },
     {
       "id": "REQ-CASE-FILE",

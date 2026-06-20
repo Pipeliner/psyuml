@@ -1,61 +1,501 @@
 {
-  "_note": "Machine-checked catalog manifest (REQ-CATALOG-CONFORMANCE, ADR-0027). The source of truth that keeps docs/research/diagram-catalog.md honest: every shipped examples/*.psyuml is a real, catalogued, rendered diagram, and no catalog 'ships now' claim can be untrue of the corpus. conformance/catalog.test.ts enforces: every `diagrams[].file` exists + parses + its model.diagram === `type`; every non-showcase examples/*.psyuml is listed here exactly once; showcase-<type>.psyuml is the per-type feature-dense demo (validated by its own goldens). `newTypes` are the catalogued ◇ shapes with no renderer yet — they MUST NOT appear as an example.",
-  "families": ["Cycle", "Pattern", "Parts", "Field", "Journey", "Change", "Ritual", "Composite"],
+  "_note": "Machine-checked catalog manifest + the SINGLE SOURCE for the shipped example library (REQ-CATALOG-CONFORMANCE / REQ-CATALOG-METADATA, ADR-0027/0028). Each `diagrams` row carries the full per-row schema {file,type,family,name,catalogId?,school,note,audience}; audience ∈ C(clinician)|L(client)|B(both); a client-facing (L/B) diagram has a sensible picture rendering. `conformance/catalog.test.ts` enforces the schema + catalog↔corpus fidelity; `scripts/build-catalog.mjs` GENERATES the catalog's example-library table from this file (drift-checked); the editor gallery derives its non-showcase items from it. `newTypes` are the catalogued ◇ shapes with no renderer yet.",
+  "families": [
+    "Cycle",
+    "Pattern",
+    "Parts",
+    "Field",
+    "Journey",
+    "Change",
+    "Ritual",
+    "Composite"
+  ],
   "diagrams": [
-    { "file": "process-loop.psyuml", "type": "process-loop", "family": "Cycle", "name": "CBT 5-part (hot cross bun)", "catalogId": 1 },
-    { "file": "depression-flower.psyuml", "type": "process-loop", "family": "Cycle", "name": "Vicious flower (depression)", "catalogId": 2 },
-    { "file": "panic-cycle.psyuml", "type": "process-loop", "family": "Cycle", "name": "Panic vicious cycle", "catalogId": 3 },
-    { "file": "social-anxiety-loop.psyuml", "type": "process-loop", "family": "Cycle", "name": "Social-anxiety cycle", "catalogId": 4 },
-    { "file": "ocd-cycle.psyuml", "type": "process-loop", "family": "Cycle", "name": "OCD maintenance cycle", "catalogId": 6 },
-    { "file": "state-map.psyuml", "type": "state-map", "family": "Cycle", "name": "Nervous-system state ladder / window of tolerance", "catalogId": 7 },
-    { "file": "cat-sdr.psyuml", "type": "process-loop", "family": "Pattern", "name": "CAT SDR — reciprocal roles + trap", "catalogId": 9 },
-    { "file": "parts-map.psyuml", "type": "parts-map", "family": "Parts", "name": "IFS parts map", "catalogId": 14 },
-    { "file": "perfectionism-parts.psyuml", "type": "parts-map", "family": "Parts", "name": "Parts map — perfectionism", "catalogId": 14 },
-    { "file": "mode-map.psyuml", "type": "mode-map", "family": "Parts", "name": "Schema mode map", "catalogId": 15 },
-    { "file": "drama-triangle.psyuml", "type": "relational-field", "family": "Field", "name": "Karpman drama triangle", "catalogId": 18 },
-    { "file": "family-genogram.psyuml", "type": "relational-field", "family": "Field", "name": "Genogram (3-generation)", "catalogId": 21 },
-    { "file": "relational-field.psyuml", "type": "relational-field", "family": "Field", "name": "Relational field", "catalogId": 21 },
-    { "file": "resource-anchor.psyuml", "type": "resource-anchor", "family": "Field", "name": "Resource / anchor map", "catalogId": 25 },
-    { "file": "body-map.psyuml", "type": "body-map", "family": "Field", "name": "Body / sensation map", "catalogId": 26 },
-    { "file": "timeline.psyuml", "type": "timeline", "family": "Journey", "name": "Life timeline / lifeline", "catalogId": 30 },
-    { "file": "longitudinal-formulation.psyuml", "type": "timeline", "family": "Journey", "name": "Longitudinal CBT formulation", "catalogId": 31 },
-    { "file": "five-ps.psyuml", "type": "timeline", "family": "Journey", "name": "5 Ps timeline", "catalogId": 32 },
-    { "file": "two-triangles.psyuml", "type": "two-triangles", "family": "Change", "name": "Malan two triangles", "catalogId": 35 },
-    { "file": "intervention-sequence.psyuml", "type": "intervention-sequence", "family": "Change", "name": "Intervention sequence", "catalogId": 36 },
-    { "file": "dbt-chain.psyuml", "type": "intervention-sequence", "family": "Change", "name": "DBT chain analysis", "catalogId": 37 },
-    { "file": "act-choice-point.psyuml", "type": "decision-nav", "family": "Change", "name": "ACT Choice Point", "catalogId": 38 },
-    { "file": "decision-nav.psyuml", "type": "decision-nav", "family": "Change", "name": "Crisis / safety plan", "catalogId": 41 },
-    { "file": "relapse-prevention.psyuml", "type": "decision-nav", "family": "Change", "name": "Relapse-prevention plan", "catalogId": 42 },
-    { "file": "goal-ladder.psyuml", "type": "intervention-sequence", "family": "Change", "name": "Goal ladder / scaling", "catalogId": 47 },
-    { "file": "ritual.psyuml", "type": "ritual", "family": "Ritual", "name": "Ritual structure (van Gennep)", "catalogId": 48 },
-    { "file": "stages-of-change.psyuml", "type": "process-loop", "family": "Change", "name": "Stages of Change wheel (TTM)", "catalogId": 52 },
-    { "file": "safety-behaviour.psyuml", "type": "process-loop", "family": "Cycle", "name": "Safety-behaviour maintenance cycle", "catalogId": 5 },
-    { "file": "reciprocal-roles.psyuml", "type": "process-loop", "family": "Pattern", "name": "Reciprocal-roles diagram (CAT)", "catalogId": 13 },
-    { "file": "dilemma.psyuml", "type": "process-loop", "family": "Pattern", "name": "Dilemma — a false either/or (CAT)", "catalogId": 11 },
-    { "file": "snag.psyuml", "type": "process-loop", "family": "Pattern", "name": "Snag — success undone (CAT)", "catalogId": 12 },
-    { "file": "sorc.psyuml", "type": "intervention-sequence", "family": "Change", "name": "SORC functional analysis", "catalogId": 43 },
-    { "file": "abc.psyuml", "type": "intervention-sequence", "family": "Change", "name": "ABC(DE) functional analysis", "catalogId": 44 },
-    { "file": "trauma-timeline.psyuml", "type": "timeline", "family": "Journey", "name": "Trauma timeline (titrated)", "catalogId": 34 },
-    { "file": "health-anxiety.psyuml", "type": "process-loop", "family": "Cycle", "name": "Health-anxiety loop (disorder-specific)" },
-    { "file": "ptsd-cycle.psyuml", "type": "process-loop", "family": "Cycle", "name": "PTSD maintenance — Ehlers–Clark (disorder-specific)" },
-    { "file": "metacognitive-cas.psyuml", "type": "process-loop", "family": "Cycle", "name": "Metacognitive CAS — Wells (disorder-specific)" },
-    { "file": "eating-disorder.psyuml", "type": "process-loop", "family": "Cycle", "name": "Eating disorder — transdiagnostic, Fairburn (disorder-specific)" },
-    { "file": "psychosis-cycle.psyuml", "type": "process-loop", "family": "Cycle", "name": "Psychosis — cognitive maintenance, Morrison (disorder-specific)" },
-    { "file": "empowerment-triangle.psyuml", "type": "relational-field", "family": "Field", "name": "Empowerment (winner's) triangle", "catalogId": 19 },
-    { "file": "structural-dissociation.psyuml", "type": "parts-map", "family": "Parts", "name": "Structural dissociation (ANP/EP)", "catalogId": 17 },
-    { "file": "ecomap.psyuml", "type": "relational-field", "family": "Field", "name": "Ecomap — person in their systems", "catalogId": 22 },
-    { "file": "social-atom.psyuml", "type": "relational-field", "family": "Field", "name": "Social atom / sociogram", "catalogId": 23 },
-    { "file": "narrative-externalising.psyuml", "type": "relational-field", "family": "Field", "name": "Externalising map — narrative (disorder-agnostic)" },
-    { "file": "cultural-genogram.psyuml", "type": "relational-field", "family": "Field", "name": "Cultural genogram — heritage & identity", "catalogId": 24 }
+    {
+      "file": "process-loop.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "CBT 5-part (hot cross bun)",
+      "catalogId": 1,
+      "school": "CBT (Padesky & Mooney)",
+      "note": "A generic maintaining cycle. The model underpins evidenced CBT; the diagram itself is a co-drawn heuristic, not a measure.",
+      "audience": "B"
+    },
+    {
+      "file": "depression-flower.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Vicious flower (depression)",
+      "catalogId": 2,
+      "school": "CBT (Moorey 2010)",
+      "note": "A low-mood maintaining cycle. A formulation, not an outcome measure; the way out is behavioural activation.",
+      "audience": "B"
+    },
+    {
+      "file": "panic-cycle.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Panic vicious cycle",
+      "catalogId": 3,
+      "school": "CBT (Clark 1986)",
+      "note": "The fear-of-fear loop: sensation → catastrophic thought → panic → safety behaviour → more sensations. A well-evidenced cognitive model.",
+      "audience": "B"
+    },
+    {
+      "file": "social-anxiety-loop.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Social-anxiety cycle",
+      "catalogId": 4,
+      "school": "CBT (Clark–Wells 1995)",
+      "note": "Self-focused attention + safety behaviours maintain the fear. A well-evidenced model; the cycle is the formulation.",
+      "audience": "B"
+    },
+    {
+      "file": "ocd-cycle.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "OCD maintenance cycle",
+      "catalogId": 6,
+      "school": "CBT",
+      "note": "Intrusion → appraisal → distress → compulsion → relief → more intrusions. Underpins evidenced ERP; the exit is response prevention.",
+      "audience": "B"
+    },
+    {
+      "file": "state-map.psyuml",
+      "type": "state-map",
+      "family": "Cycle",
+      "name": "Nervous-system state ladder / window of tolerance",
+      "catalogId": 7,
+      "school": "polyvagal-informed / cross-school",
+      "note": "Bands of nervous-system states + what shifts between them, and a way back. A useful map; over-physiologised versions inherit the contested polyvagal theory — use as metaphor.",
+      "audience": "B"
+    },
+    {
+      "file": "cat-sdr.psyuml",
+      "type": "process-loop",
+      "family": "Pattern",
+      "name": "CAT SDR — reciprocal roles + trap",
+      "catalogId": 9,
+      "school": "CAT (Ryle)",
+      "note": "Reciprocal roles, traps/dilemmas/snags and exits. CAT works *through the alliance*; the map is a co-drawn heuristic — its one dismantling trial found the reformulation letter redundant.",
+      "audience": "B"
+    },
+    {
+      "file": "parts-map.psyuml",
+      "type": "parts-map",
+      "family": "Parts",
+      "name": "IFS parts map",
+      "catalogId": 14,
+      "school": "IFS (Schwartz)",
+      "note": "Self + protective/wounded parts. IFS is popular but thinly evidenced (~2 RCTs); \"parts\" is a metaphor — avoid reifying it, especially with dissociation.",
+      "audience": "B"
+    },
+    {
+      "file": "perfectionism-parts.psyuml",
+      "type": "parts-map",
+      "family": "Parts",
+      "name": "Parts map — perfectionism",
+      "catalogId": 14,
+      "school": "IFS / schema",
+      "note": "A worked parts map with a contested-origin marker where schools disagree about a part — a formulation, not a measure.",
+      "audience": "B"
+    },
+    {
+      "file": "mode-map.psyuml",
+      "type": "mode-map",
+      "family": "Parts",
+      "name": "Schema mode map",
+      "catalogId": 15,
+      "school": "Schema Therapy (Young)",
+      "note": "Modes + Healthy Adult \"in the driver’s seat\". Among the better-evidenced models here (RCTs for personality disorder).",
+      "audience": "B"
+    },
+    {
+      "file": "drama-triangle.psyuml",
+      "type": "relational-field",
+      "family": "Field",
+      "name": "Karpman drama triangle",
+      "catalogId": 18,
+      "school": "TA (Karpman)",
+      "note": "Persecutor/Rescuer/Victim role-switching. A widely-taught heuristic; \"Victim\" means a *stance*, not an actual victim of harm — never use it to dismiss real harm.",
+      "audience": "B"
+    },
+    {
+      "file": "family-genogram.psyuml",
+      "type": "relational-field",
+      "family": "Field",
+      "name": "Genogram (3-generation)",
+      "catalogId": 21,
+      "school": "systemic (McGoldrick)",
+      "note": "Three-generation family map. Widely used but weakly evidenced as an instrument (SAGE-PAGE found no clinical effect); privacy/family-reading caveats.",
+      "audience": "B"
+    },
+    {
+      "file": "relational-field.psyuml",
+      "type": "relational-field",
+      "family": "Field",
+      "name": "Relational field",
+      "catalogId": 21,
+      "school": "systemic",
+      "note": "People and ties in the person’s world. A practice tool, not a validated instrument.",
+      "audience": "B"
+    },
+    {
+      "file": "resource-anchor.psyuml",
+      "type": "resource-anchor",
+      "family": "Field",
+      "name": "Resource / anchor map",
+      "catalogId": 25,
+      "school": "strengths-based",
+      "note": "Strengths, safe people/places, values — the \"path of hope\". Co-created.",
+      "audience": "B"
+    },
+    {
+      "file": "body-map.psyuml",
+      "type": "body-map",
+      "family": "Field",
+      "name": "Body / sensation map",
+      "catalogId": 26,
+      "school": "somatic (Nummenmaa)",
+      "note": "Where emotions are felt in the body. The descriptive maps replicate cross-culturally; body-mapping-as-treatment is thinner; can be triggering for trauma.",
+      "audience": "B"
+    },
+    {
+      "file": "timeline.psyuml",
+      "type": "timeline",
+      "family": "Journey",
+      "name": "Life timeline / lifeline",
+      "catalogId": 30,
+      "school": "cross-school",
+      "note": "Events and turning points over time. A narrative organiser, not a measure.",
+      "audience": "B"
+    },
+    {
+      "file": "longitudinal-formulation.psyuml",
+      "type": "timeline",
+      "family": "Journey",
+      "name": "Longitudinal CBT formulation",
+      "catalogId": 31,
+      "school": "CBT (Beck)",
+      "note": "How early experiences → beliefs → rules → current triggers. Belief links are tentative hypotheses — the least-reliable part of any formulation.",
+      "audience": "B"
+    },
+    {
+      "file": "five-ps.psyuml",
+      "type": "timeline",
+      "family": "Journey",
+      "name": "5 Ps timeline",
+      "catalogId": 32,
+      "school": "integrative (Weerasekera)",
+      "note": "Predisposing/precipitating/perpetuating/protective factors. By nature a grid, not really a diagram; shown here as a factor timeline. (Not coined by Macneil 2012.)",
+      "audience": "B"
+    },
+    {
+      "file": "two-triangles.psyuml",
+      "type": "two-triangles",
+      "family": "Change",
+      "name": "Malan two triangles",
+      "catalogId": 35,
+      "school": "psychodynamic (Malan)",
+      "note": "Conflict (defence/anxiety/feeling) + Person (therapist/other/parent). The therapy is moderately evidenced; the diagram itself is untested as a mechanism.",
+      "audience": "C"
+    },
+    {
+      "file": "intervention-sequence.psyuml",
+      "type": "intervention-sequence",
+      "family": "Change",
+      "name": "Intervention sequence",
+      "catalogId": 36,
+      "school": "cross-school",
+      "note": "Ordered steps/skills toward a goal. A plan, not a measure.",
+      "audience": "B"
+    },
+    {
+      "file": "dbt-chain.psyuml",
+      "type": "intervention-sequence",
+      "family": "Change",
+      "name": "DBT chain analysis",
+      "catalogId": 37,
+      "school": "DBT (Linehan)",
+      "note": "Vulnerability → prompt → links → behaviour, with a skill to interrupt it. DBT is strongly evidenced; do it with kindness, not blame.",
+      "audience": "B"
+    },
+    {
+      "file": "act-choice-point.psyuml",
+      "type": "decision-nav",
+      "family": "Change",
+      "name": "ACT Choice Point",
+      "catalogId": 38,
+      "school": "ACT (Harris)",
+      "note": "A moment’s fork: toward-moves vs away-moves, with hooks and values. ACT is evidenced; the format is a delivery tool.",
+      "audience": "L"
+    },
+    {
+      "file": "decision-nav.psyuml",
+      "type": "decision-nav",
+      "family": "Change",
+      "name": "Crisis / safety plan",
+      "catalogId": 41,
+      "school": "suicide-prevention (Stanley–Brown)",
+      "note": "One decision per step, resources on every screen, no dead-ends. A collaborative plan — never a no-suicide contract or a risk-prediction tool.",
+      "audience": "B"
+    },
+    {
+      "file": "relapse-prevention.psyuml",
+      "type": "decision-nav",
+      "family": "Change",
+      "name": "Relapse-prevention plan",
+      "catalogId": 42,
+      "school": "CBT/MBCT (Marlatt)",
+      "note": "Triggers → early signs → coping → support. The approach is evidenced; the worksheet isn’t. A wellness plan, NOT a crisis plan.",
+      "audience": "B"
+    },
+    {
+      "file": "goal-ladder.psyuml",
+      "type": "intervention-sequence",
+      "family": "Change",
+      "name": "Goal ladder / scaling",
+      "catalogId": 47,
+      "school": "solution-focused",
+      "note": "Small steps toward a preferred future. A practice tool.",
+      "audience": "B"
+    },
+    {
+      "file": "ritual.psyuml",
+      "type": "ritual",
+      "family": "Ritual",
+      "name": "Ritual structure (van Gennep)",
+      "catalogId": 48,
+      "school": "cross-cultural / therapeutic ritual",
+      "note": "Van Gennep phases with a secular variant. Rituals reliably affect *subjective* anxiety/meaning, not objective disease markers (§F).",
+      "audience": "B"
+    },
+    {
+      "file": "stages-of-change.psyuml",
+      "type": "process-loop",
+      "family": "Change",
+      "name": "Stages of Change wheel (TTM)",
+      "catalogId": 52,
+      "school": "transtheoretical (Prochaska–DiClemente)",
+      "note": "The change cycle. Popular but genuinely contested as a *stage* model (West 2005) — treat the stages as a heuristic.",
+      "audience": "B"
+    },
+    {
+      "file": "safety-behaviour.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Safety-behaviour maintenance cycle",
+      "catalogId": 5,
+      "school": "CBT (Salkovskis 1991)",
+      "note": "Threat belief → anxiety → safety behaviour → disconfirmation blocked → the belief survives. Mechanism shown experimentally; the safety-behaviour vs adaptive-coping line is contested (Telch).",
+      "audience": "B"
+    },
+    {
+      "file": "reciprocal-roles.psyuml",
+      "type": "process-loop",
+      "family": "Pattern",
+      "name": "Reciprocal-roles diagram (CAT)",
+      "catalogId": 13,
+      "school": "CAT (Ryle)",
+      "note": "criticising ⇄ criticised, and the procedure that follows from the role. The core CAT construct; co-created and owned by the client.",
+      "audience": "B"
+    },
+    {
+      "file": "dilemma.psyuml",
+      "type": "process-loop",
+      "family": "Pattern",
+      "name": "Dilemma — a false either/or (CAT)",
+      "catalogId": 11,
+      "school": "CAT (Ryle)",
+      "note": "A false either/or (\"comply or be rejected\") that traps. A school-agnostic loop shape; the way out is naming the false binary and finding a third option.",
+      "audience": "B"
+    },
+    {
+      "file": "snag.psyuml",
+      "type": "process-loop",
+      "family": "Pattern",
+      "name": "Snag — success undone (CAT)",
+      "catalogId": 12,
+      "school": "CAT (Ryle)",
+      "note": "Legitimate goals undone by guilt (\"I don't deserve it\" / others will lose out). A self-sabotage pattern; the way out is allowing the good thing and tolerating the guilt.",
+      "audience": "B"
+    },
+    {
+      "file": "sorc.psyuml",
+      "type": "intervention-sequence",
+      "family": "Change",
+      "name": "SORC functional analysis",
+      "catalogId": 43,
+      "school": "behavioural (Kanfer–Saslow)",
+      "note": "Stimulus → Organism → Response → Consequence — a shared map of one episode and where to intervene. An influential clinician heuristic, hard to standardise.",
+      "audience": "C"
+    },
+    {
+      "file": "abc.psyuml",
+      "type": "intervention-sequence",
+      "family": "Change",
+      "name": "ABC(DE) functional analysis",
+      "catalogId": 44,
+      "school": "REBT (Ellis)",
+      "note": "Activating event → Beliefs → Consequence, then Dispute → Effect. A teaching / self-monitoring tool; belief-mediation is the REBT differentiator.",
+      "audience": "B"
+    },
+    {
+      "file": "trauma-timeline.psyuml",
+      "type": "timeline",
+      "family": "Journey",
+      "name": "Trauma timeline (titrated)",
+      "catalogId": 34,
+      "school": "trauma therapies",
+      "note": "Events + meanings + resources across time, paced. Distress caveat — consent, resourcing and grounding first; titrate exposure.",
+      "audience": "B"
+    },
+    {
+      "file": "health-anxiety.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Health-anxiety loop (disorder-specific)",
+      "school": "CBT",
+      "note": "Body sensation → \"something is wrong\" → checking / reassurance → more noticing. A maintaining cycle; the way out is dropping the safety behaviour and tolerating uncertainty.",
+      "audience": "B"
+    },
+    {
+      "file": "ptsd-cycle.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "PTSD maintenance — Ehlers–Clark (disorder-specific)",
+      "school": "CBT (Ehlers & Clark 2000)",
+      "note": "A sense of current threat kept alive by intrusions + avoidance / suppression / hypervigilance. Underpins evidenced trauma-focused CBT; pace the work and resource first.",
+      "audience": "B"
+    },
+    {
+      "file": "metacognitive-cas.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Metacognitive CAS — Wells (disorder-specific)",
+      "school": "MCT (Wells)",
+      "note": "Worry / rumination + threat-monitoring + thought-control (the Cognitive-Attentional Syndrome) maintain distress. The way out is detached mindfulness, not more thinking.",
+      "audience": "B"
+    },
+    {
+      "file": "eating-disorder.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Eating disorder — transdiagnostic, Fairburn (disorder-specific)",
+      "school": "CBT-E (Fairburn)",
+      "note": "Over-evaluation of shape / weight / control → strict dieting → binge → compensation → confirms the over-evaluation. Underpins evidenced CBT-E; the diagram is the formulation, not the measure.",
+      "audience": "B"
+    },
+    {
+      "file": "psychosis-cycle.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Psychosis — cognitive maintenance, Morrison (disorder-specific)",
+      "school": "CBT for psychosis (Morrison)",
+      "note": "An unusual experience → a threatening interpretation → distress + safety behaviours → the meaning goes unchallenged. A shared, non-judgemental account of experience.",
+      "audience": "B"
+    },
+    {
+      "file": "empowerment-triangle.psyuml",
+      "type": "relational-field",
+      "family": "Field",
+      "name": "Empowerment (winner's) triangle",
+      "catalogId": 19,
+      "school": "TA (Choy)",
+      "note": "The hopeful reframe of the drama triangle: Creator / Challenger / Coach. A heuristic, not an outcome measure — the counterpart to Karpman.",
+      "audience": "B"
+    },
+    {
+      "file": "structural-dissociation.psyuml",
+      "type": "parts-map",
+      "family": "Parts",
+      "name": "Structural dissociation (ANP/EP)",
+      "catalogId": 17,
+      "school": "structural dissociation theory",
+      "note": "An Apparently-Normal Part that runs daily life, dissociated by a barrier from trauma-fixed Emotional Parts. Influential in complex trauma; supporting neuroimaging is small-n — a high-stakes map, pace it.",
+      "audience": "C"
+    },
+    {
+      "file": "ecomap.psyuml",
+      "type": "relational-field",
+      "family": "Field",
+      "name": "Ecomap — person in their systems",
+      "catalogId": 22,
+      "school": "systemic (Hartman)",
+      "note": "The person / family and their external systems — supports and strains, by tie quality. A widely used practice tool, not a validated measure.",
+      "audience": "B"
+    },
+    {
+      "file": "social-atom.psyuml",
+      "type": "relational-field",
+      "family": "Field",
+      "name": "Social atom / sociogram",
+      "catalogId": 23,
+      "school": "psychodrama (Moreno)",
+      "note": "Significant others mapped by closeness and tie quality (close / distant / fused / cut-off). A practice tool for the relational field.",
+      "audience": "B"
+    },
+    {
+      "file": "narrative-externalising.psyuml",
+      "type": "relational-field",
+      "family": "Field",
+      "name": "Externalising map — narrative (disorder-agnostic)",
+      "school": "narrative (White)",
+      "note": "The person is never the problem — \"the Worry\" is mapped as a separate entity, alongside unique outcomes and allies who know the real person. A co-authored, client-led tool.",
+      "audience": "L"
+    },
+    {
+      "file": "cultural-genogram.psyuml",
+      "type": "relational-field",
+      "family": "Field",
+      "name": "Cultural genogram — heritage & identity",
+      "catalogId": 24,
+      "school": "systemic + DSM-5 CFI",
+      "note": "Family plus heritage, faith, identity and migration. An assessment aid — hold it with cultural humility; the client is the expert on their own culture.",
+      "audience": "C"
+    }
   ],
   "newTypes": [
-    { "name": "Schema 18-EMS / 5-domains sorter", "shape": "sorter/grid", "catalogId": 16 },
-    { "name": "DBT states of mind", "shape": "Venn", "catalogId": 20 },
-    { "name": "CFT three circles", "shape": "three-circles", "catalogId": 27 },
-    { "name": "River / Tree of Life", "shape": "tree/branching", "catalogId": 33 },
-    { "name": "Exposure / fear ladder", "shape": "ranked-ladder", "catalogId": 39 },
-    { "name": "Values bullseye", "shape": "radial-bullseye", "catalogId": 45 },
-    { "name": "Decisional balance", "shape": "2x2-sorter", "catalogId": 46 },
-    { "name": "Circle of Security", "shape": "circle/hands", "catalogId": 56 }
+    {
+      "name": "Schema 18-EMS / 5-domains sorter",
+      "shape": "sorter/grid",
+      "catalogId": 16
+    },
+    {
+      "name": "DBT states of mind",
+      "shape": "Venn",
+      "catalogId": 20
+    },
+    {
+      "name": "CFT three circles",
+      "shape": "three-circles",
+      "catalogId": 27
+    },
+    {
+      "name": "River / Tree of Life",
+      "shape": "tree/branching",
+      "catalogId": 33
+    },
+    {
+      "name": "Exposure / fear ladder",
+      "shape": "ranked-ladder",
+      "catalogId": 39
+    },
+    {
+      "name": "Values bullseye",
+      "shape": "radial-bullseye",
+      "catalogId": 45
+    },
+    {
+      "name": "Decisional balance",
+      "shape": "2x2-sorter",
+      "catalogId": 46
+    },
+    {
+      "name": "Circle of Security",
+      "shape": "circle/hands",
+      "catalogId": 56
+    }
   ]
 }

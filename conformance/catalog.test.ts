@@ -38,6 +38,9 @@ interface CatalogEntry {
   family: string;
   name: string;
   catalogId?: number;
+  school?: string;
+  note?: string;
+  audience?: string;
 }
 interface Manifest {
   families: string[];
@@ -101,5 +104,59 @@ describe('catalog ↔ corpus conformance (ADR-0027)', () => {
       expect(nt.name.length, 'a new-type needs a name').toBeGreaterThan(0);
       expect(nt.shape.length, `${nt.name} needs a shape`).toBeGreaterThan(0);
     }
+  });
+
+  // REQ-CATALOG-METADATA: every shipped row carries the full display schema, so the generated
+  // example-library table (and the editor gallery, derived from the same manifest) is complete.
+  it('every diagram row has the full metadata schema (school, note, audience)', () => {
+    for (const d of manifest.diagrams) {
+      expect(typeof d.school === 'string' && d.school.length > 0, `${d.file}: missing school`).toBe(
+        true,
+      );
+      expect(typeof d.note === 'string' && d.note.length > 0, `${d.file}: missing note`).toBe(true);
+      expect(['C', 'L', 'B'], `${d.file}: audience must be C|L|B`).toContain(d.audience);
+    }
+  });
+
+  // The catalog's "Shipped example library" table is GENERATED from this manifest (ADR-0028,
+  // scripts/build-catalog.mjs); assert the committed prose still matches the manifest, row-for-row,
+  // so the two can never drift. (Content compare — immune to Prettier's table re-alignment.)
+  it('the generated catalog table matches the manifest (no drift; run build-catalog.mjs)', () => {
+    const md = readFileSync(
+      new URL('../docs/research/diagram-catalog.md', import.meta.url),
+      'utf8',
+    );
+    const block = md.slice(md.indexOf('<!-- BEGIN catalog:generated'), md.indexOf('<!-- END'));
+    const tableRows = block
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith('|') && l.includes('.psyuml`'))
+      .map((l) =>
+        l
+          .split('|')
+          .slice(1, -1)
+          .map((c) => c.trim().replace(/\\\|/g, '|')),
+      )
+      .map(([name, school, audience, note, file]) => ({
+        name,
+        school,
+        audience,
+        note,
+        file: file.replace(/`/g, ''),
+      }));
+    const expected = manifest.families.flatMap((fam) =>
+      manifest.diagrams
+        .filter((d) => d.family === fam)
+        .map((d) => ({
+          name: d.name,
+          school: d.school,
+          audience: d.audience!,
+          note: d.note!,
+          file: d.file,
+        })),
+    );
+    expect(tableRows, 'catalog table is stale — run `node scripts/build-catalog.mjs`').toEqual(
+      expected,
+    );
   });
 });

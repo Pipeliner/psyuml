@@ -11,6 +11,7 @@
     "dev": "node scripts/build-docs.mjs && vite",
     "build": "node scripts/build-docs.mjs && vite build",
     "build:cli": "node scripts/build-cli.mjs",
+    "catalog": "node scripts/build-catalog.mjs",
     "e2e": "playwright test",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

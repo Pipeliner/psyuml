@@ -21,14 +21,17 @@
   an array — demoed live in the editor); wiring the new examples into the editor gallery is optional
   (REQ-EXAMPLE-LIBRARY) — now **done**: all 18 are browsable in the editor's family-grouped picker (57
   items), loaded via a Vite glob.
-- **#3 metadata + #5 structure — partly addressed (REQ-CATALOG-METADATA, in progress).** The catalog
-  gained the **picture** audience profile in the key, a consolidated **Safety & cultural caveats**
-  section (those caveats were woven into evidence/limits unevenly), a **References** section, a Contents
-  overview + "see also" cross-refs, and items 52–59 folded into their families. Remaining: the full
-  per-row caveat/citation **columns** across all 59 rows — best generated from an enriched manifest so
-  prose + manifest can't drift.
+- **#3 metadata + #5 structure — addressed (REQ-CATALOG-METADATA implemented; ADR-0028).** Pass 1
+  (prose): the **picture** audience profile in the key, a consolidated **Safety & cultural caveats**
+  section, a **References** section, a Contents overview + "see also" cross-refs, items 52–59 folded.
+  Pass 2 (single source): `examples/catalog.json` now carries the full per-row schema {school, note,
+  audience C/L/B}; the catalog's "Shipped example library" table is **generated** from it (drift-checked)
+  and the **editor gallery derives** from the same manifest — so prose, gallery and corpus can't drift,
+  and the schema is conformance-enforced. (Residual: generating the rich 59-row *survey* tables too,
+  which include non-shipped ◇ rows — a larger model change, not blocking.)
 
-The grades below are the *original* audit; #2/#4 are addressed and #3/#5 are moving.
+The grades below are the *original* audit; **#2/#4 closed; #3/#5 addressed** (shipped set verified +
+single-source). The catalog is no longer the doc that loses marks — it's machine-checked end to end.
 
 ## Rubric (what a reviewer marks, and what full marks means)
 
