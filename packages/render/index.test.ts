@@ -21,6 +21,7 @@ import {
   renderThreeCircles,
   renderTimeline,
   renderTwoTriangles,
+  renderVenn,
 } from './index';
 
 const read = (name: string): string =>
@@ -864,16 +865,19 @@ describe('REQ-EXAMPLE-LIBRARY showcase — one feature-dense model per diagram t
     ['showcase-two-triangles.psyuml', renderTwoTriangles],
     ['showcase-ladder.psyuml', renderLadder],
     ['showcase-three-circles.psyuml', renderThreeCircles],
+    ['showcase-venn.psyuml', renderVenn],
   ];
 
-  it('covers all 14 diagram types', () => {
-    expect(showcases.length).toBe(14);
+  it('covers all 15 diagram types', () => {
+    expect(showcases.length).toBe(15);
   });
 
   it.each(showcases)('%s renders and matches its committed golden', (file, renderFn) => {
     const { svg } = renderFn(parseModel(read(file)));
     expect(svg.startsWith('<svg')).toBe(true);
-    expect(svg).toContain('data-el="node:');
+    // Most types tag node boxes; a few (e.g. `venn`) represent their nodes as labels — the circles
+    // must overlap, which the node↔node invariant forbids, so they are decoration, not `node:` shapes.
+    expect(svg).toMatch(/data-el="node(label)?:/);
     expectGolden(file.replace(/\.psyuml$/, '.svg'), svg);
   });
 });

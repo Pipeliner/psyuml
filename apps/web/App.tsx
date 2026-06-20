@@ -255,6 +255,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: 'The CFT threat / drive / soothing systems sized by balance (an over-active threat, a depleted soothing), each with its contents and client labels — grow the soothing system.',
   },
+  {
+    key: 'showcase-venn',
+    label: '★ Venn — full showcase',
+    family: 'parts',
+    school: 'capability demo',
+    note: 'DBT states of mind: two overlapping circles with the lens (Wise Mind = both) labelled, each region carrying its contents and client labels.',
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

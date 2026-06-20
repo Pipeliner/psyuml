@@ -195,7 +195,8 @@ describe('diagram families + audience profiles (v0.2 §2)', () => {
     expect(familyOf('relational-field')).toBe('field');
     expect(familyOf('timeline')).toBe('journey');
     expect(familyOf('decision-nav')).toBe('change');
-    expect(diagramsInFamily('parts').sort()).toEqual(['mode-map', 'parts-map']);
+    // `venn` (DBT states of mind, ADR-0031) maps to Parts, matching the catalogue family
+    expect(diagramsInFamily('parts').sort()).toEqual(['mode-map', 'parts-map', 'venn']);
     // pattern + composite have no dedicated type yet (Pattern is realized via process-loop today)
     expect(diagramsInFamily('pattern')).toEqual([]);
     expect(diagramsInFamily('composite')).toEqual([]);

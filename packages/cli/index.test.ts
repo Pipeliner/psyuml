@@ -177,6 +177,7 @@ describe('psyuml cli', () => {
                 'two-triangles',
                 'ladder',
                 'three-circles',
+                'venn',
               ].map((t) => [t, 'ok']),
             ),
           },

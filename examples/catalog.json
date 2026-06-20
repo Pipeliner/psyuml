@@ -474,6 +474,16 @@
       "school": "CFT (Gilbert)",
       "note": "Three emotion-regulation systems sized by balance — grow the soothing system. CFT has systematic-review support for self-criticism/shame; \"three systems\" is a neuroscientific simplification, not a brain map.",
       "audience": "B"
+    },
+    {
+      "file": "dbt-states-of-mind.psyuml",
+      "type": "venn",
+      "family": "Parts",
+      "name": "DBT states of mind",
+      "catalogId": 20,
+      "school": "DBT (Linehan)",
+      "note": "Reasonable ∩ Emotion = Wise Mind. Core DBT psychoeducation — a heuristic (not a brain model) inside an evidenced programme.",
+      "audience": "B"
     }
   ],
   "newTypes": [
@@ -481,11 +491,6 @@
       "name": "Schema 18-EMS / 5-domains sorter",
       "shape": "sorter/grid",
       "catalogId": 16
-    },
-    {
-      "name": "DBT states of mind",
-      "shape": "Venn",
-      "catalogId": 20
     },
     {
       "name": "River / Tree of Life",

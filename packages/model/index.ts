@@ -190,6 +190,7 @@ export const DiagramType = z.enum([
   'two-triangles',
   'ladder',
   'three-circles',
+  'venn',
 ]);
 export type DiagramType = z.infer<typeof DiagramType>;
 

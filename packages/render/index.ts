@@ -237,6 +237,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderLadder(model, o);
     case 'three-circles':
       return renderThreeCircles(model, o);
+    case 'venn':
+      return renderVenn(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -246,6 +248,7 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
 const WIDTH = 680;
 const LADDER_W = 560;
 const TC_W = 620;
+const VENN_W = 600;
 const NODE_W = 220;
 const NODE_H = 40;
 const BAND_H = 96;
@@ -3176,6 +3179,94 @@ export function renderThreeCircles(model: PsyumlModel, options: RenderOptions = 
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${TC_W} ${height}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Three circles (CFT)')}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${TC_W}" height="${height}" fill="#fff" />` +
+    title +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
+
+/**
+ * Venn / overlapping circles (REQ-NEW-DIAGRAM-TYPES, ADR-0031) — two regions whose OVERLAP carries
+ * the meaning, e.g. DBT's states of mind: Reasonable ∩ Emotion = Wise Mind. The three model nodes are
+ * identified by `stereotype` (left | overlap | right; or reasonable | wise | emotion); the renderer
+ * draws two overlapping circles as DECORATION (not `data-el` nodes — they must overlap, which the
+ * node↔node invariant forbids) and places each region's label (the actual `data-el` content) in its
+ * zone: left-only, the lens, right-only. Each carries a haloed one-line descriptor. Monochrome;
+ * alt-text states the two circles, their overlap, and what each region holds.
+ */
+export function renderVenn(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  // Identify the three regions; fall back to document order if the canonical stereotypes are absent.
+  const pick = (...keys: string[]): (typeof model.nodes)[number] | undefined =>
+    model.nodes.find((n) => keys.includes(n.stereotype ?? ''));
+  const left = pick('left', 'reasonable') ?? model.nodes[0];
+  const right = pick('right', 'emotion') ?? model.nodes[1];
+  const overlap = pick('overlap', 'wise', 'both') ?? model.nodes[2];
+
+  const cy = 245;
+  const r = 140;
+  const lcx = 230;
+  const rcx = 370;
+  const ZONES: { node?: (typeof model.nodes)[number]; x: number }[] = [
+    { node: left, x: 160 },
+    { node: overlap, x: 300 },
+    { node: right, x: 440 },
+  ];
+
+  const parts: string[] = [
+    `<circle cx="${lcx}" cy="${cy}" r="${r}" fill="none" stroke="#000" stroke-width="2" />`,
+    `<circle cx="${rcx}" cy="${cy}" r="${r}" fill="none" stroke="#000" stroke-width="2" />`,
+  ];
+  const altZones: string[] = [];
+
+  for (const z of ZONES) {
+    if (!z.node) continue;
+    const name = getText(z.node.label, layer, lang);
+    parts.push(
+      `<text data-el="nodelabel:${esc(z.node.id)}" x="${z.x}" y="${cy - 4}" font-family="sans-serif" font-size="14" font-weight="700" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(name)}</text>`,
+    );
+    // Descriptor = the region's contents (containment items), e.g. Reasonable Mind: "facts · logic".
+    const items = model.nodes
+      .filter((n) =>
+        model.edges.some(
+          (e) => e.kind === 'containment' && e.source === z.node!.id && e.target === n.id,
+        ),
+      )
+      .map((n) => getText(n.label, layer, lang));
+    if (items.length) {
+      parts.push(
+        `<text x="${z.x}" y="${cy + 15}" font-family="sans-serif" font-size="10" text-anchor="middle" fill="#333" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(items.join(' · '))}</text>`,
+      );
+    }
+    altZones.push(items.length ? `${name} (${items.join(', ')})` : name);
+  }
+
+  const height = 470;
+  parts.push(
+    `<text x="20" y="${height - 26}" font-family="sans-serif" font-size="11">Two circles, one overlap: the middle region is what both share.</text>`,
+  );
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="20" y="${height - 10}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+  }
+
+  const altText =
+    `Two overlapping circles${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Left — ${altZones[0] ?? '—'}; overlap (what both share) — ${altZones[1] ?? '—'}; right — ${altZones[2] ?? '—'}.`;
+
+  const title = model.meta.title
+    ? `<text x="20" y="24" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VENN_W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Overlapping circles')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${VENN_W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
     '</svg>';

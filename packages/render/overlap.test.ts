@@ -98,6 +98,7 @@ const RENDERERS: Record<string, Renderer> = {
   'two-triangles': render.renderTwoTriangles,
   ladder: render.renderLadder,
   'three-circles': render.renderThreeCircles,
+  venn: render.renderVenn,
 };
 
 const load = (f: string): PsyumlModel =>
