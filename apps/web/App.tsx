@@ -24,46 +24,8 @@ import {
   type DiagramFamily,
 } from '@psyuml/profiles';
 import { diffModels, isEmptyDiff, summarizeDiff } from '@psyuml/diff';
-import stateRaw from '../../examples/state-map.psyuml?raw';
-import partsRaw from '../../examples/parts-map.psyuml?raw';
-import decisionRaw from '../../examples/decision-nav.psyuml?raw';
-import resourceRaw from '../../examples/resource-anchor.psyuml?raw';
-import loopRaw from '../../examples/process-loop.psyuml?raw';
-import timelineRaw from '../../examples/timeline.psyuml?raw';
-import seqRaw from '../../examples/intervention-sequence.psyuml?raw';
-import ritualRaw from '../../examples/ritual.psyuml?raw';
-import relRaw from '../../examples/relational-field.psyuml?raw';
-import modeRaw from '../../examples/mode-map.psyuml?raw';
-import bodyRaw from '../../examples/body-map.psyuml?raw';
-import dramaRaw from '../../examples/drama-triangle.psyuml?raw';
-import twoTriRaw from '../../examples/two-triangles.psyuml?raw';
-import catSdrRaw from '../../examples/cat-sdr.psyuml?raw';
-import socialAnxRaw from '../../examples/social-anxiety-loop.psyuml?raw';
-import perfectionismRaw from '../../examples/perfectionism-parts.psyuml?raw';
-import familyGenogramRaw from '../../examples/family-genogram.psyuml?raw';
-import panicRaw from '../../examples/panic-cycle.psyuml?raw';
-import ocdRaw from '../../examples/ocd-cycle.psyuml?raw';
-import depressionFlowerRaw from '../../examples/depression-flower.psyuml?raw';
-import stagesRaw from '../../examples/stages-of-change.psyuml?raw';
-import longitudinalRaw from '../../examples/longitudinal-formulation.psyuml?raw';
-import fivePsRaw from '../../examples/five-ps.psyuml?raw';
-import dbtChainRaw from '../../examples/dbt-chain.psyuml?raw';
-import goalLadderRaw from '../../examples/goal-ladder.psyuml?raw';
-import choicePointRaw from '../../examples/act-choice-point.psyuml?raw';
-import relapseRaw from '../../examples/relapse-prevention.psyuml?raw';
-// Showcase set: one feature-dense model per diagram type (full notation), for the catalogue.
-import scStateRaw from '../../examples/showcase-state-map.psyuml?raw';
-import scLoopRaw from '../../examples/showcase-process-loop.psyuml?raw';
-import scPartsRaw from '../../examples/showcase-parts-map.psyuml?raw';
-import scModeRaw from '../../examples/showcase-mode-map.psyuml?raw';
-import scFieldRaw from '../../examples/showcase-relational-field.psyuml?raw';
-import scBodyRaw from '../../examples/showcase-body-map.psyuml?raw';
-import scTimelineRaw from '../../examples/showcase-timeline.psyuml?raw';
-import scSeqRaw from '../../examples/showcase-intervention-sequence.psyuml?raw';
-import scRitualRaw from '../../examples/showcase-ritual.psyuml?raw';
-import scDecisionRaw from '../../examples/showcase-decision-nav.psyuml?raw';
-import scResourceRaw from '../../examples/showcase-resource-anchor.psyuml?raw';
-import scTwoTriRaw from '../../examples/showcase-two-triangles.psyuml?raw';
+// Example sources are loaded in bulk by a Vite glob (see `EXAMPLES` below), so shipping a new
+// examples/*.psyuml makes it available to the editor automatically — no per-file import to add.
 import {
   addEdge,
   addNode,
@@ -165,47 +127,18 @@ const EPISTEMIC_OPTIONS: { value: string; label: string }[] = [
 // Keyed by example, not by diagram type, so school-specific profiles (e.g. the Karpman
 // drama triangle, which is a Relational Field instance, spec §E.3) can sit alongside the
 // base type without colliding on the type key.
-const EXAMPLES: Record<string, string> = {
-  'state-map': stateRaw,
-  'parts-map': partsRaw,
-  'mode-map': modeRaw,
-  'relational-field': relRaw,
-  'drama-triangle': dramaRaw,
-  'body-map': bodyRaw,
-  'decision-nav': decisionRaw,
-  'resource-anchor': resourceRaw,
-  'process-loop': loopRaw,
-  'cat-sdr': catSdrRaw,
-  timeline: timelineRaw,
-  'intervention-sequence': seqRaw,
-  ritual: ritualRaw,
-  'two-triangles': twoTriRaw,
-  'social-anxiety-loop': socialAnxRaw,
-  'perfectionism-parts': perfectionismRaw,
-  'family-genogram': familyGenogramRaw,
-  'panic-cycle': panicRaw,
-  'ocd-cycle': ocdRaw,
-  'depression-flower': depressionFlowerRaw,
-  'stages-of-change': stagesRaw,
-  'longitudinal-formulation': longitudinalRaw,
-  'five-ps': fivePsRaw,
-  'dbt-chain': dbtChainRaw,
-  'goal-ladder': goalLadderRaw,
-  'act-choice-point': choicePointRaw,
-  'relapse-prevention': relapseRaw,
-  'showcase-state-map': scStateRaw,
-  'showcase-process-loop': scLoopRaw,
-  'showcase-parts-map': scPartsRaw,
-  'showcase-mode-map': scModeRaw,
-  'showcase-relational-field': scFieldRaw,
-  'showcase-body-map': scBodyRaw,
-  'showcase-timeline': scTimelineRaw,
-  'showcase-intervention-sequence': scSeqRaw,
-  'showcase-ritual': scRitualRaw,
-  'showcase-decision-nav': scDecisionRaw,
-  'showcase-resource-anchor': scResourceRaw,
-  'showcase-two-triangles': scTwoTriRaw,
-};
+// Every `examples/*.psyuml` source, loaded at build time (Vite glob), keyed by slug. A new example
+// file is picked up automatically; the conformance suite (ADR-0027) keeps the corpus catalogued, and
+// the gallery item with its honest note is added to EXAMPLE_CATALOG below.
+const EXAMPLES: Record<string, string> = Object.fromEntries(
+  Object.entries(
+    import.meta.glob('../../examples/*.psyuml', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }) as Record<string, string>,
+  ).map(([path, raw]) => [path.split('/').pop()!.replace('.psyuml', ''), raw]),
+);
 
 // The picker, grouped by the v0.2 family each example exemplifies (spec §2). Order within a
 // family is preserved; `cat-sdr` sits under **Pattern** (its dedicated pattern-map type is
@@ -502,6 +435,134 @@ const EXAMPLE_CATALOG: GalleryItem[] = [
     school: 'capability demo',
     note: 'Malan in full: the Triangle of Conflict (defence / anxiety / hidden feeling) and the Triangle of Person (current / therapist / past) linked by transference — with confidence and clinician-inferred depth flagged.',
   },
+  // — Coverage examples (REQ-CATALOG-COVERAGE / ADR-0027): the catalogued diagrams now shipped as
+  //   real, rendered, verified models. Grouped by family via the `family` field below. —
+  {
+    key: 'safety-behaviour',
+    label: 'Safety-behaviour cycle',
+    family: 'cycle',
+    school: 'CBT (Salkovskis 1991)',
+    note: 'Threat belief → anxiety → safety behaviour → disconfirmation blocked → the belief survives. Mechanism shown experimentally; the safety-behaviour vs adaptive-coping line is contested (Telch).',
+  },
+  {
+    key: 'health-anxiety',
+    label: 'Health-anxiety loop',
+    family: 'cycle',
+    school: 'CBT',
+    note: 'Body sensation → "something is wrong" → checking / reassurance → more noticing. A maintaining cycle; the way out is dropping the safety behaviour and tolerating uncertainty.',
+  },
+  {
+    key: 'ptsd-cycle',
+    label: 'PTSD maintenance (Ehlers–Clark)',
+    family: 'cycle',
+    school: 'CBT (Ehlers & Clark 2000)',
+    note: 'A sense of current threat kept alive by intrusions + avoidance / suppression / hypervigilance. Underpins evidenced trauma-focused CBT; pace the work and resource first.',
+  },
+  {
+    key: 'metacognitive-cas',
+    label: 'Metacognitive CAS (Wells)',
+    family: 'cycle',
+    school: 'MCT (Wells)',
+    note: 'Worry / rumination + threat-monitoring + thought-control (the Cognitive-Attentional Syndrome) maintain distress. The way out is detached mindfulness, not more thinking.',
+  },
+  {
+    key: 'eating-disorder',
+    label: 'Eating disorder — transdiagnostic (Fairburn)',
+    family: 'cycle',
+    school: 'CBT-E (Fairburn)',
+    note: 'Over-evaluation of shape / weight / control → strict dieting → binge → compensation → confirms the over-evaluation. Underpins evidenced CBT-E; the diagram is the formulation, not the measure.',
+  },
+  {
+    key: 'psychosis-cycle',
+    label: 'Psychosis — cognitive model (Morrison)',
+    family: 'cycle',
+    school: 'CBT for psychosis (Morrison)',
+    note: 'An unusual experience → a threatening interpretation → distress + safety behaviours → the meaning goes unchallenged. A shared, non-judgemental account of experience.',
+  },
+  {
+    key: 'reciprocal-roles',
+    label: 'Reciprocal roles (CAT)',
+    family: 'pattern',
+    school: 'CAT (Ryle)',
+    note: 'criticising ⇄ criticised, and the procedure that follows from the role. The core CAT construct; co-created and owned by the client.',
+  },
+  {
+    key: 'dilemma',
+    label: 'Dilemma (CAT)',
+    family: 'pattern',
+    school: 'CAT (Ryle)',
+    note: 'A false either/or ("comply or be rejected") that traps. A school-agnostic loop shape; the way out is naming the false binary and finding a third option.',
+  },
+  {
+    key: 'snag',
+    label: 'Snag (CAT)',
+    family: 'pattern',
+    school: 'CAT (Ryle)',
+    note: 'Legitimate goals undone by guilt ("I don\'t deserve it" / others will lose out). A self-sabotage pattern; the way out is allowing the good thing and tolerating the guilt.',
+  },
+  {
+    key: 'structural-dissociation',
+    label: 'Structural dissociation (ANP/EP)',
+    family: 'parts',
+    school: 'structural dissociation theory',
+    note: 'An Apparently-Normal Part that runs daily life, dissociated by a barrier from trauma-fixed Emotional Parts. Influential in complex trauma; supporting neuroimaging is small-n — a high-stakes map, pace it.',
+  },
+  {
+    key: 'empowerment-triangle',
+    label: "Empowerment (winner's) triangle",
+    family: 'field',
+    school: 'TA (Choy)',
+    note: 'The hopeful reframe of the drama triangle: Creator / Challenger / Coach. A heuristic, not an outcome measure — the counterpart to Karpman.',
+  },
+  {
+    key: 'ecomap',
+    label: 'Ecomap',
+    family: 'field',
+    school: 'systemic (Hartman)',
+    note: 'The person / family and their external systems — supports and strains, by tie quality. A widely used practice tool, not a validated measure.',
+  },
+  {
+    key: 'social-atom',
+    label: 'Social atom',
+    family: 'field',
+    school: 'psychodrama (Moreno)',
+    note: 'Significant others mapped by closeness and tie quality (close / distant / fused / cut-off). A practice tool for the relational field.',
+  },
+  {
+    key: 'cultural-genogram',
+    label: 'Cultural genogram',
+    family: 'field',
+    school: 'systemic + DSM-5 CFI',
+    note: 'Family plus heritage, faith, identity and migration. An assessment aid — hold it with cultural humility; the client is the expert on their own culture.',
+  },
+  {
+    key: 'narrative-externalising',
+    label: 'Externalising map (narrative)',
+    family: 'field',
+    school: 'narrative (White)',
+    note: 'The person is never the problem — "the Worry" is mapped as a separate entity, alongside unique outcomes and allies who know the real person. A co-authored, client-led tool.',
+  },
+  {
+    key: 'trauma-timeline',
+    label: 'Trauma timeline (titrated)',
+    family: 'journey',
+    school: 'trauma therapies',
+    note: 'Events + meanings + resources across time, paced. Distress caveat — consent, resourcing and grounding first; titrate exposure.',
+  },
+  {
+    key: 'sorc',
+    label: 'SORC functional analysis',
+    family: 'change',
+    school: 'behavioural (Kanfer–Saslow)',
+    note: 'Stimulus → Organism → Response → Consequence — a shared map of one episode and where to intervene. An influential clinician heuristic, hard to standardise.',
+  },
+  {
+    key: 'abc',
+    label: 'ABC(DE) disputation (REBT)',
+    family: 'change',
+    school: 'REBT (Ellis)',
+    note: 'Activating event → Beliefs → Consequence, then Dispute → Effect. A teaching / self-monitoring tool; belief-mediation is the REBT differentiator.',
+  },
 ];
 const GALLERY_BY_KEY: Record<string, GalleryItem> = Object.fromEntries(
   EXAMPLE_CATALOG.map((x) => [x.key, x]),
@@ -522,11 +583,13 @@ function downloadText(filename: string, text: string, type: string): void {
  * local-first save/export. Built against docs/ux (UX-M1/M2/M3/M4/M5/M8).
  */
 export function App() {
-  const [model, setModel] = useState<PsyumlModel>(() => parseModel(stateRaw));
+  const [model, setModel] = useState<PsyumlModel>(() => parseModel(EXAMPLES['state-map']!));
   const [example, setExample] = useState('state-map');
   // Serialized model as last loaded (sample switch / New / Open / Restore), to detect unsaved
   // edits so switching away can confirm before discarding work (eval finding).
-  const [loadedJson, setLoadedJson] = useState<string>(() => serializeModel(parseModel(stateRaw)));
+  const [loadedJson, setLoadedJson] = useState<string>(() =>
+    serializeModel(parseModel(EXAMPLES['state-map']!)),
+  );
   // v0.2 §2 audience profile drives both the label layer and the interpretive surface; `layer`
   // is derived from it for validate/diff (clinician → clinician labels; client/picture → client).
   const [audience, setAudience] = useState<AudienceProfile>('clinician');
@@ -732,7 +795,8 @@ export function App() {
             onChange={(e) => {
               const key = e.target.value;
               // Confirm before discarding unsaved edits; revert the <select> if the user cancels.
-              if (!loadModel(parseModel(EXAMPLES[key] ?? stateRaw), key)) e.target.value = example;
+              if (!loadModel(parseModel(EXAMPLES[key] ?? EXAMPLES['state-map']!), key))
+                e.target.value = example;
             }}
           >
             {/* Grouped by v0.2 family (the question each answers, §2). */}
