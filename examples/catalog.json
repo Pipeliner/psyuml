@@ -494,6 +494,16 @@
       "school": "ACT (Lundgren)",
       "note": "Life domains plotted as on-/off-target to chosen values; the spread of darts shows where to close the gap. A client values-clarification reflection — a teaching aid, not a measure of a good life.",
       "audience": "L"
+    },
+    {
+      "file": "tree-of-life.psyuml",
+      "type": "tree-of-life",
+      "family": "Journey",
+      "name": "Tree of Life",
+      "catalogId": 33,
+      "school": "narrative (Ncube)",
+      "note": "A strengths-forward life portrait by botanical zone — roots (origins), ground (present), trunk (skills/values), branches (hopes), leaves (people), fruits (gifts). A widely-used, culturally-adaptable, client-led practice tool — co-created, not an assessment.",
+      "audience": "L"
     }
   ],
   "newTypes": [
@@ -501,11 +511,6 @@
       "name": "Schema 18-EMS / 5-domains sorter",
       "shape": "sorter/grid",
       "catalogId": 16
-    },
-    {
-      "name": "River / Tree of Life",
-      "shape": "tree/branching",
-      "catalogId": 33
     },
     {
       "name": "Decisional balance",

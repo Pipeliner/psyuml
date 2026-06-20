@@ -241,6 +241,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderVenn(model, o);
     case 'bullseye':
       return renderBullseye(model, o);
+    case 'tree-of-life':
+      return renderTreeOfLife(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -252,6 +254,7 @@ const LADDER_W = 560;
 const TC_W = 620;
 const VENN_W = 600;
 const BULLSEYE_W = 640;
+const TREE_W = 760;
 const NODE_W = 220;
 const NODE_H = 40;
 const BAND_H = 96;
@@ -3372,6 +3375,151 @@ export function renderBullseye(model: PsyumlModel, options: RenderOptions = {}):
     `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
+
+/**
+ * Tree of Life (REQ-NEW-DIAGRAM-TYPES, ADR-0033) — the narrative-therapy practice (Ncube; Dulwich
+ * Centre). A strengths-forward life portrait whose meaning is the botanical METAPHOR: each item is
+ * placed in a zone by `stereotype` — `roots` (where I come from), `ground` (my present, day to day),
+ * `trunk` (my skills & values), `branches` (my hopes, dreams & wishes), `leaves` (the important
+ * people), `fruits` (gifts I've been given). The renderer buckets the nodes by zone and lays each
+ * zone as a labelled band of separated item-labels (`separate1D`), with a canopy / trunk / roots
+ * silhouette drawn behind (decoration, no `data-el`). Edge-free + no schema growth (reuses
+ * `stereotype`); monochrome; the alt-text reads each zone and its contents. The metaphor is
+ * intentionally strengths-based — it is a co-created reflection, not an assessment.
+ */
+export function renderTreeOfLife(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const W = TREE_W;
+  const cx = Math.round(W / 2);
+
+  const ZONES: { key: string; header: string; canopy: boolean }[] = [
+    { key: 'branches', header: 'Branches — my hopes, dreams & wishes', canopy: true },
+    { key: 'leaves', header: 'Leaves — the important people in my life', canopy: true },
+    { key: 'fruits', header: "Fruits — gifts I've been given", canopy: true },
+    { key: 'trunk', header: 'Trunk — my skills & values', canopy: false },
+    { key: 'ground', header: 'Ground — my present, day to day', canopy: false },
+    { key: 'roots', header: 'Roots — where I come from', canopy: false },
+  ];
+
+  const inZone = (key: string): typeof model.nodes =>
+    model.nodes.filter((n) => (n.stereotype ?? '') === key);
+
+  const titleH = model.meta.title ? 36 : 14;
+  let y = titleH + 8;
+
+  const body: string[] = [];
+  const altZones: string[] = [];
+  const bands: { key: string; top: number; itemsY: number; bottom: number; canopy: boolean }[] = [];
+
+  for (const z of ZONES) {
+    const items = inZone(z.key);
+    if (!items.length) continue;
+    const headerY = y + 13;
+    const itemsY = y + 38;
+    body.push(
+      `<text x="22" y="${headerY}" font-family="sans-serif" font-size="11" font-weight="700" fill="#444">${esc(z.header)}</text>`,
+    );
+
+    const size = 12;
+    const leftPad = 44;
+    const rightPad = 26;
+    const avail = W - leftPad - rightPad;
+    const spans = items.map((n, i) => {
+      const label = getText(n.label, layer, lang);
+      return {
+        center: leftPad + (avail * (i + 0.5)) / items.length,
+        half: textWidth(label, size) / 2 + 8,
+        label,
+        id: n.id,
+      };
+    });
+    const centers = separate1D(spans, 16);
+    spans.forEach((s, i) => {
+      body.push(
+        `<text data-el="nodelabel:${esc(s.id)}" x="${r1(centers[i])}" y="${itemsY}" font-family="sans-serif" font-size="${size}" text-anchor="middle" stroke="#fff" stroke-width="3.5" paint-order="stroke">${esc(s.label)}</text>`,
+      );
+    });
+
+    bands.push({ key: z.key, top: y, itemsY, bottom: itemsY + 10, canopy: z.canopy });
+    altZones.push(
+      `${z.header.split(' — ')[0]} (${z.header.split(' — ')[1] ?? ''}): ${items.map((n) => getText(n.label, layer, lang)).join(', ')}`,
+    );
+    y = itemsY + 22;
+  }
+
+  // Tree silhouette (decoration; drawn BEFORE the labels so the haloed text sits on top).
+  const deco: string[] = [];
+  if (bands.length) {
+    const topY = bands[0].top;
+    const canopyBands = bands.filter((b) => b.canopy);
+    const rootsBand = bands.find((b) => b.key === 'roots');
+    const groundBand = bands.find((b) => b.key === 'ground');
+    const soilY = rootsBand ? rootsBand.top - 8 : bands[bands.length - 1].bottom;
+    const canopyBot = canopyBands.length ? canopyBands[canopyBands.length - 1].bottom : topY;
+
+    // Canopy: a soft ellipse behind the hopes/people/gifts bands.
+    if (canopyBands.length) {
+      const cyc = (topY + canopyBot) / 2;
+      deco.push(
+        `<ellipse cx="${cx}" cy="${r1(cyc)}" rx="${Math.round(W * 0.44)}" ry="${r1((canopyBot - topY) / 2 + 18)}" fill="#eef3ec" stroke="#cfd8cb" stroke-width="1.5" />`,
+      );
+    }
+    // Trunk: from the canopy base down to the soil.
+    const trunkTop = canopyBands.length ? canopyBot - 6 : topY;
+    deco.push(
+      `<rect x="${cx - 60}" y="${r1(trunkTop)}" width="120" height="${r1(Math.max(0, soilY - trunkTop))}" fill="#efe7da" stroke="#d8cdb8" stroke-width="1.5" />`,
+    );
+    // Soil line.
+    deco.push(
+      `<line x1="30" y1="${r1(soilY)}" x2="${W - 26}" y2="${r1(soilY)}" stroke="#b9a988" stroke-width="2" />`,
+    );
+    // Roots: a fan from the trunk base down into the roots band.
+    if (rootsBand) {
+      const ry = rootsBand.itemsY - 6;
+      for (const fx of [0.18, 0.4, 0.6, 0.82]) {
+        deco.push(
+          `<line x1="${cx}" y1="${r1(soilY)}" x2="${r1(30 + (W - 56) * fx)}" y2="${r1(ry)}" stroke="#b9a988" stroke-width="1.5" stroke-opacity="0.7" />`,
+        );
+      }
+    }
+    void groundBand;
+  }
+
+  let h = (bands.length ? bands[bands.length - 1].bottom : y) + 14;
+  body.push(
+    `<text x="22" y="${h}" font-family="sans-serif" font-size="11">A strengths-based life portrait, co-created — what's here is what you chose to put here.</text>`,
+  );
+  h += 16;
+  if (model.meta.disclaimer) {
+    body.push(
+      `<text x="22" y="${h}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+    h += 14;
+  }
+  const height = h + 6;
+
+  const altText =
+    `Tree of Life${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `A narrative life portrait by zone — ${altZones.join('; ') || 'no zones yet'}.`;
+
+  const title = model.meta.title
+    ? `<text x="22" y="26" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Tree of Life')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
+    title +
+    deco.join('') +
+    body.join('') +
     '</svg>';
 
   return { svg, altText };

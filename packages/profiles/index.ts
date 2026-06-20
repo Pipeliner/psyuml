@@ -486,6 +486,7 @@ export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
   'three-circles': 'field',
   venn: 'parts',
   bullseye: 'change',
+  'tree-of-life': 'journey',
   ritual: 'ritual',
 };
 

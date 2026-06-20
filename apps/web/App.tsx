@@ -269,6 +269,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: "The ACT values bull's-eye: six life domains plotted by how on-/off-target they're being lived (radius = the gap), with perimeter labels, leaders and client labels — closer to the centre is more value-consistent.",
   },
+  {
+    key: 'showcase-tree-of-life',
+    label: '★ Tree of Life — full showcase',
+    family: 'journey',
+    school: 'capability demo',
+    note: 'The narrative Tree of Life: six botanical zones (roots/ground/trunk/branches/leaves/fruits) holding a strengths-forward life portrait, with a canopy/trunk/roots silhouette and client labels — co-created, not an assessment.',
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

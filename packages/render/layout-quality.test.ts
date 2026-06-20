@@ -47,6 +47,7 @@ const RENDERERS: Record<string, Renderer> = {
   'three-circles': render.renderThreeCircles,
   venn: render.renderVenn,
   bullseye: render.renderBullseye,
+  'tree-of-life': render.renderTreeOfLife,
 };
 const load = (f: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${f}`, import.meta.url), 'utf8'));

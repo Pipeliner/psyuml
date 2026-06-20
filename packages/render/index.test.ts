@@ -23,6 +23,7 @@ import {
   renderTwoTriangles,
   renderVenn,
   renderBullseye,
+  renderTreeOfLife,
 } from './index';
 
 const read = (name: string): string =>
@@ -868,10 +869,11 @@ describe('REQ-EXAMPLE-LIBRARY showcase — one feature-dense model per diagram t
     ['showcase-three-circles.psyuml', renderThreeCircles],
     ['showcase-venn.psyuml', renderVenn],
     ['showcase-bullseye.psyuml', renderBullseye],
+    ['showcase-tree-of-life.psyuml', renderTreeOfLife],
   ];
 
-  it('covers all 16 diagram types', () => {
-    expect(showcases.length).toBe(16);
+  it('covers all 17 diagram types', () => {
+    expect(showcases.length).toBe(17);
   });
 
   it.each(showcases)('%s renders and matches its committed golden', (file, renderFn) => {

@@ -14,8 +14,8 @@ This catalog drives the help-site **example library**. Each row maps a diagram t
 and a **renderer** (or flags a renderer PsyUML doesn't have yet). Build status:
 - **✅ existing** — realizable now on a shipped renderer (becomes an example `.psyuml`).
 - **◐ approx** — expressible on a shipped renderer with some loss (becomes an example, noted).
-- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. sorter/grid, tree/branching,
-  decisional-balance 2×2, circle-of-security); catalogued, not yet an example.
+- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. sorter/grid, decisional-balance 2×2,
+  circle-of-security); catalogued, not yet an example.
 
 Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-created) — these map to
 PsyUML's three **audience profiles** (ADR-0016): **clinician** (the full analytic surface), **client**
@@ -203,7 +203,7 @@ help site must teach them, not just the pictures:
 | 30 | **Life timeline / lifeline** | cross-school | key events, transitions, turning points over time | A narrative organiser; not a measure | ✅ timeline | B |
 | 31 | **Longitudinal CBT formulation** | CBT (Beck) | early experiences → core beliefs → assumptions → triggers → maintenance | Standard CBT formulation; clinician-led, shareable | ◐ timeline | B |
 | 32 | **5 Ps timeline** | integrative | Predisposing → Precipitating → Perpetuating → Protective (over time) | A widely taught formulation scaffold; not an instrument | ◐ timeline | B |
-| 33 | **River of life / Tree-of-Life roots** | narrative (Ncube) | the journey/origins as a river or tree roots; strengths-forward | Practice tool; strongly client-led, culturally adaptable | ◇ new (tree/branching) / ◐ timeline | L |
+| 33 | **River of life / Tree-of-Life roots** | narrative (Ncube) | the journey/origins as a river or tree roots; strengths-forward | Practice tool; strongly client-led, culturally adaptable | ✅ tree-of-life | L |
 | 34 | **Trauma timeline (titrated)** | trauma therapies | events + triggers + resources across time, paced | Distress caveat — pace, consent, resourcing first | ◐ timeline | C(+shared) |
 
 ## CHANGE — "what is the treatment direction / what to do?" (→ `intervention-sequence`, `two-triangles`, `decision-nav`)
@@ -244,7 +244,7 @@ help site must teach them, not just the pictures:
 
 - **The shipped example set is the machine-verified manifest `examples/catalog.json`** (the source of
   truth; `conformance/catalog.test.ts` asserts every row is a real, catalogued, correctly-typed
-  `.psyuml` and no example is un-catalogued — ADR-0027). **49 non-showcase examples ship today** on the
+  `.psyuml` and no example is un-catalogued — ADR-0027). **50 non-showcase examples ship today** on the
   shipped renderers, spanning all 8 families — each real and rendered, golden-stable under the overlap
   / legibility / layout-quality / edge↔edge invariants. Reused base examples (state-map, parts-map,
   mode-map, relational-field, drama-triangle, body-map, decision-nav, resource-anchor, process-loop,
@@ -258,8 +258,8 @@ help site must teach them, not just the pictures:
   narrative-externalising** (White). The catalogued **composite** board is rendered live
   (`renderComposite` over several views) rather than a single `.psyuml`; the ◇ new-type rows stay
   catalogued-not-faked pending their renderers.
-- **◇ new-type rows are catalogued, not faked** (schema-domains sorter, tree/branching (Tree of
-  Life), decisional-balance 2×2, circle-of-security). Each is a candidate
+- **◇ new-type rows are catalogued, not faked** (schema-domains sorter, decisional-balance 2×2,
+  circle-of-security). Each is a candidate
   **new renderer** — a future milestone, recorded here so the help site can show them as "planned"
   rather than mis-render them on a renderer that distorts their meaning.
 - Every shipped example carries its **honest evidence note** (the table above) in the help-site
@@ -277,7 +277,7 @@ can never drift from what actually ships. To change it, edit the manifest and ru
 
 <!-- BEGIN catalog:generated -->
 
-_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 49 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 50 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
 
 ### Cycle
 
@@ -339,6 +339,7 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 | Longitudinal CBT formulation | CBT (Beck) | B | How early experiences → beliefs → rules → current triggers. Belief links are tentative hypotheses — the least-reliable part of any formulation. | `longitudinal-formulation.psyuml` |
 | 5 Ps timeline | integrative (Weerasekera) | B | Predisposing/precipitating/perpetuating/protective factors. By nature a grid, not really a diagram; shown here as a factor timeline. (Not coined by Macneil 2012.) | `five-ps.psyuml` |
 | Trauma timeline (titrated) | trauma therapies | B | Events + meanings + resources across time, paced. Distress caveat — consent, resourcing and grounding first; titrate exposure. | `trauma-timeline.psyuml` |
+| Tree of Life | narrative (Ncube) | L | A strengths-forward life portrait by botanical zone — roots (origins), ground (present), trunk (skills/values), branches (hopes), leaves (people), fruits (gifts). A widely-used, culturally-adaptable, client-led practice tool — co-created, not an assessment. | `tree-of-life.psyuml` |
 
 ### Change
 
@@ -370,9 +371,9 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 ## Showcase examples — one feature-dense model per diagram type
 
 Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the
-16 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
+17 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
 dense, validated model that exercises as much of the notation as that type sensibly carries — so you
-can see, and live-edit, the system's full range in one place. All sixteen are corpus-lint clean,
+can see, and live-edit, the system's full range in one place. All seventeen are corpus-lint clean,
 overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by a golden render.
 
 | Type (★ showcase) | Capabilities it exercises |
@@ -393,6 +394,7 @@ overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by
 | **Three Circles (CFT)** | threat / drive / soothing sized by `weight` (an over-active threat, a depleted soothing) · per-system contents (containment) · client labels · "grow the soothing system" note |
 | **Venn (DBT states of mind)** | two overlapping circles · the lens labelled (Wise Mind = both) · per-region contents (containment) · haloed labels · client labels |
 | **Bull's-eye (ACT values)** | 6 life domains plotted by `intensity` (on-/off-target radius) · evenly-spaced angles · perimeter labels + leaders · decorative concentric rings · edge-free model · client labels |
+| **Tree of Life (narrative)** | 6 botanical zones by `stereotype` (roots/ground/trunk/branches/leaves/fruits) · canopy + trunk + soil + root-fan silhouette · `separate1D` item rows · edge-free model · client labels |
 
 ---
 
@@ -429,11 +431,11 @@ meaning?* If it is fundamentally fill-in / score-it / list-it / ask-these-questi
   (2×2 pros/cons table) · **Readiness ruler** (0–10 scale) · **5 Ps** & **biopsychosocial grid** (matrices) ·
   activity/mood/gratitude **logs**.
 
-The remaining ◇ rows (schema-domains sorter, tree/branching (Tree of Life), decisional-balance 2×2,
-circle-of-security) are candidate **new renderers** — catalogued, not mis-rendered. (Shipped so far:
-the **ranked ladder** as `ladder` (ADR-0029), the **CFT three circles** as `three-circles` (ADR-0030),
-**DBT states of mind** as `venn` (ADR-0031), and the **ACT values bull's-eye** as `bullseye`
-(ADR-0032).)
+The remaining ◇ rows (schema-domains sorter, decisional-balance 2×2, circle-of-security) are candidate
+**new renderers** — catalogued, not mis-rendered. (Shipped so far: the **ranked ladder** as `ladder`
+(ADR-0029), the **CFT three circles** as `three-circles` (ADR-0030), **DBT states of mind** as `venn`
+(ADR-0031), the **ACT values bull's-eye** as `bullseye` (ADR-0032), and the narrative **Tree of Life**
+as `tree-of-life` (ADR-0033).)
 
 ## Safety & cultural caveats (consolidated)
 
