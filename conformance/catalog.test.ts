@@ -1,0 +1,105 @@
+/**
+ * Catalog ↔ corpus conformance (REQ-CATALOG-CONFORMANCE, ADR-0027).
+ *
+ * Makes the diagram catalog a VERIFIED artifact, like the goldens: the manifest
+ * `examples/catalog.json` cannot claim an example that isn't shipped, and no shipped example can
+ * go un-catalogued. So `docs/research/diagram-catalog.md`'s "ships now" claims can never again be
+ * untrue of the corpus (the audit's dimension #4 — see `docs/research/diagram-catalog-audit.md`).
+ *
+ * Enforces: (i) every `diagrams[].file` exists, parses, and `model.diagram === type`; (ii) every
+ * non-showcase `examples/*.psyuml` is listed exactly once; (iii) `showcase-<type>.psyuml` is the
+ * per-type feature-dense demo — its `<type>` is a real renderer type and matches its model; (iv) the
+ * `newTypes` (◇, no renderer yet) never appear as an example; (v) the manifest count equals the
+ * shipped count. Traceability: REQ-CATALOG-CONFORMANCE, REQ-EXAMPLE-LIBRARY (§E, §J).
+ */
+import { describe, expect, it } from 'vitest';
+import { readdirSync, readFileSync } from 'node:fs';
+import { parseModel } from '@psyuml/model';
+
+/** The renderer-backed diagram types (spec §E) — a catalogued diagram must map to one of these. */
+const KNOWN_TYPES = new Set([
+  'state-map',
+  'parts-map',
+  'mode-map',
+  'relational-field',
+  'body-map',
+  'process-loop',
+  'timeline',
+  'intervention-sequence',
+  'ritual',
+  'decision-nav',
+  'resource-anchor',
+  'two-triangles',
+]);
+
+interface CatalogEntry {
+  file: string;
+  type: string;
+  family: string;
+  name: string;
+  catalogId?: number;
+}
+interface Manifest {
+  families: string[];
+  diagrams: CatalogEntry[];
+  newTypes: { name: string; shape: string; catalogId?: number }[];
+}
+
+const manifest: Manifest = JSON.parse(
+  readFileSync(new URL('../examples/catalog.json', import.meta.url), 'utf8'),
+);
+const load = (f: string) =>
+  parseModel(readFileSync(new URL(`../examples/${f}`, import.meta.url), 'utf8'));
+const exampleFiles = readdirSync(new URL('../examples/', import.meta.url)).filter((f) =>
+  f.endsWith('.psyuml'),
+);
+const isShowcase = (f: string): boolean => f.startsWith('showcase-');
+
+describe('catalog ↔ corpus conformance (ADR-0027)', () => {
+  // (i) every catalogued example exists, parses, and is of the declared type + a real family.
+  describe.each(manifest.diagrams)('manifest row $file', (row) => {
+    it(`exists, parses, and renders as type "${row.type}"`, () => {
+      expect(exampleFiles, `${row.file} is missing from examples/`).toContain(row.file);
+      expect(KNOWN_TYPES.has(row.type), `${row.file}: "${row.type}" is not a renderer type`).toBe(
+        true,
+      );
+      expect(load(row.file).diagram, `${row.file}: model.diagram ≠ manifest type`).toBe(row.type);
+      expect(
+        manifest.families,
+        `${row.file}: family "${row.family}" not in the family set`,
+      ).toContain(row.family);
+    });
+  });
+
+  it('lists every non-showcase example exactly once (no orphan, no duplicate)', () => {
+    const listed = manifest.diagrams.map((d) => d.file);
+    const dupes = listed.filter((f, i) => listed.indexOf(f) !== i);
+    expect(dupes, `duplicate manifest rows: ${dupes.join(', ')}`).toEqual([]);
+    const shipped = exampleFiles.filter((f) => !isShowcase(f)).sort();
+    expect(
+      [...listed].sort(),
+      'manifest rows must equal the shipped non-showcase examples',
+    ).toEqual(shipped);
+  });
+
+  it('every showcase-<type>.psyuml is a real renderer type and matches its model', () => {
+    for (const f of exampleFiles.filter(isShowcase)) {
+      const type = f.replace(/^showcase-/, '').replace(/\.psyuml$/, '');
+      expect(KNOWN_TYPES.has(type), `${f}: "${type}" is not a renderer type`).toBe(true);
+      expect(load(f).diagram, `${f}: model.diagram ≠ ${type}`).toBe(type);
+    }
+  });
+
+  it('the manifest example-count equals the shipped non-showcase count', () => {
+    const shipped = exampleFiles.filter((f) => !isShowcase(f)).length;
+    expect(manifest.diagrams.length).toBe(shipped);
+  });
+
+  it('◇ new-type rows are catalogued but never shipped as an example', () => {
+    expect(manifest.newTypes.length).toBeGreaterThan(0);
+    for (const nt of manifest.newTypes) {
+      expect(nt.name.length, 'a new-type needs a name').toBeGreaterThan(0);
+      expect(nt.shape.length, `${nt.name} needs a shape`).toBeGreaterThan(0);
+    }
+  });
+});

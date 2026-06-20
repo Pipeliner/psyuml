@@ -9,7 +9,13 @@ models with honest per-item evidence notes, so a gallery item is always a real, 
 **Status:** active (12 diagram types + school-specific profile instances)
 **Spec anchor / REQ:** REQ-STATE-MAP, REQ-PARTS-MAP, REQ-GENOGRAM, REQ-PROCESS-LOOP, REQ-TIMELINE, REQ-INTERVENTION-SEQ, REQ-RITUAL, REQ-DECISION-NAV, REQ-RESOURCE-ANCHOR, REQ-EXAMPLE-LIBRARY
 
-<!-- sdd:cover: *.psyuml, *.svg -->
+<!-- sdd:cover: *.psyuml, *.svg, catalog.json -->
+
+**`catalog.json`** — the machine-readable **catalog manifest** (REQ-CATALOG-CONFORMANCE, ADR-0027):
+each shipped diagram is a row `{ file, type, family, name, catalogId? }`, and the catalogued ◇
+new-types are listed as `newTypes`. `conformance/catalog.test.ts` enforces catalog↔corpus fidelity
+against it, so `docs/research/diagram-catalog.md` can never over-claim. Add a row whenever a new
+example ships (REQ-CATALOG-COVERAGE).
 
 ## Upstream (this depends on)
 - `@psyuml/model` (the schema these files must satisfy) and `@psyuml/render` (produces the goldens).

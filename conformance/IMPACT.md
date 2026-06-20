@@ -20,6 +20,7 @@ diagram type. Runs under `pnpm test` / CI.
 |---|---|---|---|---|---|
 | `package.json` | Workspace member manifest (`@psyuml/conformance`) declaring the packages it checks | — | pnpm resolution | — | low |
 | `conformance.test.ts` | Per-example: round-trip, validation (both layers), accessible-SVG, monochrome; + type coverage; + §K extension invariants (CFT profile clean; `CORE_BASES` == model elements; the four rules fire) | model, render, validate, profiles, `examples/*.psyuml` | CI `test` | §J, §K / REQ-CONFORMANCE, REQ-EXTENSION-MECH | low |
+| `catalog.test.ts` | **Catalog ↔ corpus conformance (ADR-0027)** — validates the `../examples/catalog.json` manifest against the shipped corpus: every `diagrams[].file` exists, parses, and `model.diagram === type` (a real renderer type); every non-showcase `examples/*.psyuml` is listed exactly once; each `showcase-<type>` matches its model; manifest count == shipped count; ◇ `newTypes` documented + never shipped. Makes `docs/research/diagram-catalog.md` a VERIFIED artifact that can't over-claim | model, `../examples/catalog.json`, `../examples/*.psyuml` | CI `test` | §E, §J / REQ-CATALOG-CONFORMANCE, REQ-EXAMPLE-LIBRARY | low |
 | `README.md` | What the suite checks and how it maps to §J; the v1.0 gate | spec §J | readers | §J | low |
 
 ## Change checklist

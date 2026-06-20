@@ -1,0 +1,27 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "intervention-sequence",
+  "meta": {
+    "title": "ABC(DE) — REBT disputation",
+    "disclaimer": "This map supports, and does not replace, professional care.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "bands": [
+    { "id": "chain", "order": 0, "label": { "clinician": { "en": "What happened" } } },
+    { "id": "dispute", "order": 1, "label": { "clinician": { "en": "Dispute & effect" } } }
+  ],
+  "nodes": [
+    { "id": "a", "kind": "intervention", "bandId": "chain", "label": { "clinician": { "en": "A — Activating event" }, "client": { "en": "What happened" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "b", "kind": "intervention", "bandId": "chain", "label": { "clinician": { "en": "B — Belief: \"I must… / it's awful\" (rigid)" }, "client": { "en": "What I told myself" } }, "properties": { "epistemicStatus": "reported" } },
+    { "id": "c", "kind": "intervention", "bandId": "chain", "label": { "clinician": { "en": "C — Consequence: emotion + behaviour" }, "client": { "en": "How I felt and acted" } }, "properties": { "epistemicStatus": "observed" } },
+    { "id": "d", "kind": "intervention", "bandId": "dispute", "label": { "clinician": { "en": "D — Dispute: is it true, helpful, flexible?" }, "client": { "en": "Question it" } }, "properties": { "epistemicStatus": "planned" } },
+    { "id": "e", "kind": "intervention", "bandId": "dispute", "label": { "clinician": { "en": "E — Effect: a flexible belief, calmer response" }, "client": { "en": "A kinder, truer thought" } }, "properties": { "epistemicStatus": "planned" } }
+  ],
+  "edges": [
+    { "id": "e1", "kind": "sequential", "source": "a", "target": "b" },
+    { "id": "e2", "kind": "sequential", "source": "b", "target": "c" },
+    { "id": "x1", "kind": "sequential", "source": "b", "target": "d", "label": { "clinician": { "en": "dispute the belief" } } },
+    { "id": "e3", "kind": "sequential", "source": "d", "target": "e" }
+  ]
+}

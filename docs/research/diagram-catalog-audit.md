@@ -5,6 +5,18 @@
 > the marks. Inherits the catalog's own honesty clause (unvalidated v0.x; supports, never replaces,
 > care). This doc is the `source` for REQ-CATALOG-CONFORMANCE / -COVERAGE / -METADATA (M22, planned).
 
+## Progress (2026-06-20)
+
+- **#4 auditability — addressed (ADR-0027).** A machine-readable manifest `examples/catalog.json` +
+  `conformance/catalog.test.ts` now enforce catalog↔corpus fidelity in CI: the catalog can no longer
+  claim an example that isn't shipped, nor leave a shipped example un-catalogued. REQ-CATALOG-CONFORMANCE
+  → implemented.
+- **#2 coverage — first batch shipped.** 10 named-but-absent / disorder-specific examples landed
+  (safety-behaviour, reciprocal-roles, dilemma, snag, health-anxiety, ptsd-cycle, metacognitive-cas,
+  sorc, abc, trauma-timeline), each invariant-clean + manifest-registered (37 non-showcase examples
+  now). REQ-CATALOG-COVERAGE → in-progress (remaining: relational-field instances, ED/psychosis,
+  narrative externalising, composite). The grades below are the *original* audit; #4 and #2 are moving.
+
 ## Rubric (what a reviewer marks, and what full marks means)
 
 | # | Dimension | Full marks = | Weight |

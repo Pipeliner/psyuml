@@ -1088,8 +1088,10 @@
       "spec": ["§E", "§J"],
       "source": "docs/research/diagram-catalog-audit.md",
       "milestone": "M22",
-      "status": "planned",
-      "notes": "Catalog audit dimension #4 (auditability) graded C: the catalog's Build plan promises '≈34 example models now' + names specific instances, but only 27 non-showcase examples ship and ~14 named ✅/◐ rows are ABSENT (safety-behaviour, generic vicious-flower, standalone reciprocal-roles, trap/dilemma/snag exemplars, structural-dissociation, empowerment-triangle, ecomap, social-atom, cultural-genogram, trauma-timeline, SORC, ABC, grief-ritual, standalone composite) — most realizable NOW on shipped renderers, not blocked by a missing ◇ renderer — and NOTHING machine-checks the catalog against the corpus, so it can silently drift. PLAN: a small structured manifest (`catalog.json` or parseable front-matter) carrying each row's id/name/family/status(✅|◐|◇)/mappedType/example(s); a conformance test (conformance/ or apps/web) asserting (i) every ✅/◐ row's example exists in examples/ and is of mappedType; (ii) every shipped examples/*.psyuml is catalogued; (iii) ◇ rows have no example; (iv) the prose build-count equals the manifest. Turns the catalog into a VERIFIED artifact like the goldens. The single highest-value change for the audit mark; bounds REQ-CATALOG-COVERAGE."
+      "status": "implemented",
+      "impl": ["examples/catalog.json"],
+      "tests": ["conformance/catalog.test.ts"],
+      "notes": "Catalog audit dimension #4 (auditability) graded C: the Build plan promised '≈34 example models now' but only 27 non-showcase examples shipped, ~14 named ✅/◐ rows were ABSENT, and NOTHING machine-checked the catalog vs the corpus. IMPLEMENTED by ADR-0027: a structured manifest `examples/catalog.json` (each shipped diagram = a row {file,type,family,name,catalogId?}; the ◇ new-types listed separately as newTypes with no example) + `conformance/catalog.test.ts` asserting (i) every diagrams[].file exists, parses, and model.diagram===type (a real renderer type); (ii) every non-showcase examples/*.psyuml is listed EXACTLY ONCE (no orphan/dup); (iii) each showcase-<type>.psyuml is a real type matching its model; (iv) manifest count===shipped count; (v) newTypes documented + never shipped. So a 'ships now' claim can never again be untrue of the corpus — the catalog joins the goldens/invariants as CHECKED. Green over the now-37 non-showcase + 12 showcase corpus. The prose diagram-catalog.md build-count is corrected to point at the manifest; full prose↔manifest unification is REQ-CATALOG-METADATA."
     },
     {
       "id": "REQ-CATALOG-COVERAGE",
@@ -1097,8 +1099,21 @@
       "spec": ["§E"],
       "source": "docs/research/diagram-catalog-audit.md",
       "milestone": "M22",
-      "status": "planned",
-      "notes": "Catalog audit dimensions #2 (coverage A−) + #4 (the drift). PLAN: (a) ship the ~14 named-but-absent ✅/◐ examples from Finding 4a (most are quick instances on the shipped renderers) + a standalone composite example; (b) add the missing DISORDER-SPECIFIC MAINTENANCE FORMULATIONS — the bread-and-butter of UK CBT, currently absent: PTSD (Ehlers–Clark), eating-disorder transdiagnostic (Fairburn), psychosis (Morrison), metacognitive CAS (Wells), a standalone health-anxiety cycle — and the NARRATIVE EXTERNALISING map (White) — each with its honest evidence note (worksheet-vs-instrument, therapy-vs-diagram). Every new row is bound by REQ-CATALOG-CONFORMANCE (a verified, rendered, golden-pinned example), so coverage cannot be claimed without shipping. More coverage = more honest evidence notes, never fewer caveats."
+      "status": "in-progress",
+      "impl": [
+        "examples/safety-behaviour.psyuml",
+        "examples/reciprocal-roles.psyuml",
+        "examples/dilemma.psyuml",
+        "examples/snag.psyuml",
+        "examples/health-anxiety.psyuml",
+        "examples/ptsd-cycle.psyuml",
+        "examples/metacognitive-cas.psyuml",
+        "examples/sorc.psyuml",
+        "examples/abc.psyuml",
+        "examples/trauma-timeline.psyuml"
+      ],
+      "tests": ["conformance/catalog.test.ts", "conformance/conformance.test.ts"],
+      "notes": "Catalog audit dimensions #2 (coverage A−) + #4 (the drift). FIRST BATCH SHIPPED (ADR-0027): 10 new examples, each authored to pass EVERY existing invariant (validate both layers, overlap ADR-0012, legibility, layout-quality ADR-0021, edge↔edge ADR-0025) and registered in examples/catalog.json — safety-behaviour (#5), reciprocal-roles (#13), dilemma (#11), snag (#12) [CAT pattern]; health-anxiety, ptsd-cycle/Ehlers–Clark, metacognitive-cas/Wells [the disorder-specific maintenance models the audit flagged]; sorc (#43), abc (#44) [functional analysis]; trauma-timeline (#34). Authoring rule learned: a loop's EXIT must leave the same node the loop-closing edge does (cf panic-cycle), else the exit chord crosses the closing chord — keeps the new loops crossing-free without growing the ADR-0025 baseline. Also confirmed ritual.psyuml IS the grief ritual (#48+#49 — not drift). REMAINING (still in-progress): the relational-field instances (ecomap #22, social-atom #23, cultural-genogram #24, empowerment-triangle #19, structural-dissociation #17 — higher layout risk), ED-transdiagnostic/Fairburn + psychosis/Morrison loops, the NARRATIVE EXTERNALISING map (White), a standalone composite example, and wiring the new examples into the curated editor gallery (apps/web). Each lands as a verified manifest row. More coverage = more honest evidence notes, never fewer caveats."
     },
     {
       "id": "REQ-CATALOG-METADATA",
