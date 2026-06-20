@@ -484,6 +484,16 @@
       "school": "DBT (Linehan)",
       "note": "Reasonable ∩ Emotion = Wise Mind. Core DBT psychoeducation — a heuristic (not a brain model) inside an evidenced programme.",
       "audience": "B"
+    },
+    {
+      "file": "values-bullseye.psyuml",
+      "type": "bullseye",
+      "family": "Change",
+      "name": "Values bullseye",
+      "catalogId": 45,
+      "school": "ACT (Lundgren)",
+      "note": "Life domains plotted as on-/off-target to chosen values; the spread of darts shows where to close the gap. A client values-clarification reflection — a teaching aid, not a measure of a good life.",
+      "audience": "L"
     }
   ],
   "newTypes": [
@@ -496,11 +506,6 @@
       "name": "River / Tree of Life",
       "shape": "tree/branching",
       "catalogId": 33
-    },
-    {
-      "name": "Values bullseye",
-      "shape": "radial-bullseye",
-      "catalogId": 45
     },
     {
       "name": "Decisional balance",

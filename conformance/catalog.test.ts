@@ -33,6 +33,7 @@ const KNOWN_TYPES = new Set([
   'ladder',
   'three-circles',
   'venn',
+  'bullseye',
 ]);
 
 interface CatalogEntry {

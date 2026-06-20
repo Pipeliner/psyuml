@@ -262,6 +262,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: 'DBT states of mind: two overlapping circles with the lens (Wise Mind = both) labelled, each region carrying its contents and client labels.',
   },
+  {
+    key: 'showcase-bullseye',
+    label: "★ Bull's-eye — full showcase",
+    family: 'change',
+    school: 'capability demo',
+    note: "The ACT values bull's-eye: six life domains plotted by how on-/off-target they're being lived (radius = the gap), with perimeter labels, leaders and client labels — closer to the centre is more value-consistent.",
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

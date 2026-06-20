@@ -239,6 +239,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderThreeCircles(model, o);
     case 'venn':
       return renderVenn(model, o);
+    case 'bullseye':
+      return renderBullseye(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -249,6 +251,7 @@ const WIDTH = 680;
 const LADDER_W = 560;
 const TC_W = 620;
 const VENN_W = 600;
+const BULLSEYE_W = 640;
 const NODE_W = 220;
 const NODE_H = 40;
 const BAND_H = 96;
@@ -3267,6 +3270,106 @@ export function renderVenn(model: PsyumlModel, options: RenderOptions = {}): Ren
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VENN_W} ${height}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Overlapping circles')}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${VENN_W}" height="${height}" fill="#fff" />` +
+    title +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
+
+/**
+ * Values bull's-eye (REQ-NEW-DIAGRAM-TYPES, ADR-0032) — the ACT (Lundgren) values-clarification
+ * target, and the wider family of concentric "circles of control / influence / concern". Each node
+ * is a life DOMAIN plotted as a dot whose RADIUS is set by `properties.intensity` (0–1 = how closely
+ * the person is currently living by that value; 1 = dead-centre / on target, 0 = the rim / off
+ * target) — so the SPREAD of darts is the picture (a tight cluster near the centre vs darts scattered
+ * to the edge). Domains sit at evenly-spaced angles and the label rides the perimeter (always well
+ * separated) with a thin leader to its dot. The radial distance is the load-bearing channel — no
+ * schema growth (reuses `intensity`, like the ladder's SUDS). Monochrome; the alt-text reads each
+ * domain's on-/off-target standing and its rating.
+ */
+export function renderBullseye(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const W = BULLSEYE_W;
+  const cx = 325;
+  const cy = 252;
+  const R = 148;
+  const innerPad = 26;
+  const labelGap = 16;
+  const labelMax = 150;
+
+  const domains = model.nodes;
+  const N = Math.max(1, domains.length);
+
+  const parts: string[] = [];
+  // Concentric rings + bull's-eye centre — DECORATION (no data-el; the plotted dots are the nodes).
+  for (const f of [1, 0.72, 0.46, 0.22]) {
+    const op = f === 1 ? '' : ' stroke-opacity="0.4"';
+    parts.push(
+      `<circle cx="${cx}" cy="${cy}" r="${r1(R * f)}" fill="none" stroke="#000" stroke-width="${f === 1 ? 2 : 1}"${op} />`,
+    );
+  }
+  parts.push(`<circle cx="${cx}" cy="${cy}" r="3" fill="#000" />`);
+
+  const bucket = (i: number): string =>
+    i >= 0.66 ? 'on target' : i <= 0.33 ? 'off target' : 'drifting';
+
+  const altRows: string[] = [];
+  domains.forEach((n, k) => {
+    const ang = -Math.PI / 2 + (k * 2 * Math.PI) / N;
+    const dx = Math.cos(ang);
+    const dy = Math.sin(ang);
+    const i = Math.max(0, Math.min(1, n.properties.intensity ?? 0.5));
+    const dotR = innerPad + (R - innerPad) * (1 - i);
+    const dotX = cx + dotR * dx;
+    const dotY = cy + dotR * dy;
+    const name = getText(n.label, layer, lang);
+
+    // Leader from the dot out to the ring edge (decoration); the label then rides the perimeter.
+    const edgeX = cx + (R + 2) * dx;
+    const edgeY = cy + (R + 2) * dy;
+    const lx = cx + (R + labelGap) * dx;
+    const ly = cy + (R + labelGap) * dy + 4;
+    const anchor = dx > 0.25 ? 'start' : dx < -0.25 ? 'end' : 'middle';
+
+    parts.push(
+      `<line x1="${r1(dotX)}" y1="${r1(dotY)}" x2="${r1(edgeX)}" y2="${r1(edgeY)}" stroke="#000" stroke-width="1" stroke-opacity="0.35" />`,
+      `<circle data-el="node:${esc(n.id)}" cx="${r1(dotX)}" cy="${r1(dotY)}" r="5" fill="#000" />`,
+      fitText(name, lx, ly, {
+        size: 12,
+        maxWidth: labelMax,
+        anchor,
+        dataEl: `nodelabel:${n.id}`,
+      }),
+    );
+    altRows.push(`${name} — ${bucket(i)} (${Math.round(i * 100)})`);
+  });
+
+  const height = cy + R + labelGap + 60;
+  parts.push(
+    `<text x="20" y="${height - 28}" font-family="sans-serif" font-size="11">Each dot is a life area; closer to the centre = living more like that value matters to you.</text>`,
+  );
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="20" y="${height - 12}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+  }
+
+  const altText =
+    `Values bull's-eye${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Centre = on target, rim = off target. Domains: ${altRows.join('; ') || 'none'}.`;
+
+  const title = model.meta.title
+    ? `<text x="20" y="24" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? "Values bull's-eye")}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
     '</svg>';

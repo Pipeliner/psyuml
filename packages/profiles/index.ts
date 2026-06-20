@@ -485,6 +485,7 @@ export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
   ladder: 'change',
   'three-circles': 'field',
   venn: 'parts',
+  bullseye: 'change',
   ritual: 'ritual',
 };
 

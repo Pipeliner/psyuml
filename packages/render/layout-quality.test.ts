@@ -46,6 +46,7 @@ const RENDERERS: Record<string, Renderer> = {
   ladder: render.renderLadder,
   'three-circles': render.renderThreeCircles,
   venn: render.renderVenn,
+  bullseye: render.renderBullseye,
 };
 const load = (f: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${f}`, import.meta.url), 'utf8'));

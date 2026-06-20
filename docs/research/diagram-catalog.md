@@ -14,8 +14,8 @@ This catalog drives the help-site **example library**. Each row maps a diagram t
 and a **renderer** (or flags a renderer PsyUML doesn't have yet). Build status:
 - **✅ existing** — realizable now on a shipped renderer (becomes an example `.psyuml`).
 - **◐ approx** — expressible on a shipped renderer with some loss (becomes an example, noted).
-- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. 2×2 sorter, tree/branching,
-  radial bullseye, hub/hexagon, circle-of-security); catalogued, not yet an example.
+- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. sorter/grid, tree/branching,
+  decisional-balance 2×2, circle-of-security); catalogued, not yet an example.
 
 Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-created) — these map to
 PsyUML's three **audience profiles** (ADR-0016): **clinician** (the full analytic surface), **client**
@@ -220,7 +220,7 @@ help site must teach them, not just the pictures:
 | 42 | **Relapse-prevention / staying-well plan** | CBT/MBCT (Marlatt; Segal) | triggers → early warning signs → coping → support → reasons to stay well | Approach evidenced (incl. MBCT PREVENT — a viable *alternative*, not proven *superior*); the worksheet isn't a measure. **A wellness tool, not a crisis tool** | ◐ decision-nav / intervention-sequence | B |
 | 43 | **SORC/SORCK functional analysis** | behavioural (Kanfer–Saslow) | Stimulus–Organism–Response–Consequence–Contingency | Influential clinician formulation heuristic; hard to standardise | ◐ intervention-sequence | C(+shared) |
 | 44 | **ABC functional analysis** | behavioural (Skinner) / REBT (Ellis) | A→B→C (operant) **or** Activating-event→Beliefs→Consequences→Dispute→Effect (REBT) — two distinct lineages | Both are teaching/self-monitoring tools; REBT's belief-mediation is the key differentiator | ◐ intervention-sequence | B |
-| 45 | **Values bullseye** | ACT (Lundgren) | life domains plotted as on-/off-target to values | Client values-clarification tool | ◇ new (radial bullseye) | L |
+| 45 | **Values bullseye** | ACT (Lundgren) | life domains plotted as on-/off-target to values | Client values-clarification tool | ✅ bullseye | L |
 | 46 | **Decisional balance / pros-cons** | MI (Miller–Rollnick) | costs/benefits of change vs staying the same (2×2) | MI is evidenced; decisional-balance is a tool (and MI now uses it cautiously re ambivalence) | ◇ new (2×2 sorter) | B |
 | 47 | **Goal ladder / scaling** | solution-focused (de Shazer) | scaling 0–10 + steps up; preferred future | SFBT practice tool | ◐ intervention-sequence / timeline | B |
 
@@ -244,7 +244,7 @@ help site must teach them, not just the pictures:
 
 - **The shipped example set is the machine-verified manifest `examples/catalog.json`** (the source of
   truth; `conformance/catalog.test.ts` asserts every row is a real, catalogued, correctly-typed
-  `.psyuml` and no example is un-catalogued — ADR-0027). **45 non-showcase examples ship today** on the
+  `.psyuml` and no example is un-catalogued — ADR-0027). **49 non-showcase examples ship today** on the
   shipped renderers, spanning all 8 families — each real and rendered, golden-stable under the overlap
   / legibility / layout-quality / edge↔edge invariants. Reused base examples (state-map, parts-map,
   mode-map, relational-field, drama-triangle, body-map, decision-nav, resource-anchor, process-loop,
@@ -258,8 +258,8 @@ help site must teach them, not just the pictures:
   narrative-externalising** (White). The catalogued **composite** board is rendered live
   (`renderComposite` over several views) rather than a single `.psyuml`; the ◇ new-type rows stay
   catalogued-not-faked pending their renderers.
-- **◇ new-type rows are catalogued, not faked** (sorter/2×2 grid, Venn/overlapping-circles,
-  three-circles, tree/branching, radial bullseye, hub/hexagon). Each is a candidate
+- **◇ new-type rows are catalogued, not faked** (schema-domains sorter, tree/branching (Tree of
+  Life), decisional-balance 2×2, circle-of-security). Each is a candidate
   **new renderer** — a future milestone, recorded here so the help site can show them as "planned"
   rather than mis-render them on a renderer that distorts their meaning.
 - Every shipped example carries its **honest evidence note** (the table above) in the help-site
@@ -277,7 +277,7 @@ can never drift from what actually ships. To change it, edit the manifest and ru
 
 <!-- BEGIN catalog:generated -->
 
-_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 48 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 49 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
 
 ### Cycle
 
@@ -355,6 +355,7 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 | SORC functional analysis | behavioural (Kanfer–Saslow) | C | Stimulus → Organism → Response → Consequence — a shared map of one episode and where to intervene. An influential clinician heuristic, hard to standardise. | `sorc.psyuml` |
 | ABC(DE) functional analysis | REBT (Ellis) | B | Activating event → Beliefs → Consequence, then Dispute → Effect. A teaching / self-monitoring tool; belief-mediation is the REBT differentiator. | `abc.psyuml` |
 | Exposure / fear ladder | CBT (Wolpe) | B | Feared situations ranked by SUDS, climbed least → most. Exposure therapy is strongly evidenced; the ladder is a planning aid — the inhibitory-learning turn questions strict graded ordering / SUDS-drop stopping rules. | `exposure-ladder.psyuml` |
+| Values bullseye | ACT (Lundgren) | L | Life domains plotted as on-/off-target to chosen values; the spread of darts shows where to close the gap. A client values-clarification reflection — a teaching aid, not a measure of a good life. | `values-bullseye.psyuml` |
 
 ### Ritual
 
@@ -369,9 +370,9 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 ## Showcase examples — one feature-dense model per diagram type
 
 Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the
-15 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
+16 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
 dense, validated model that exercises as much of the notation as that type sensibly carries — so you
-can see, and live-edit, the system's full range in one place. All fifteen are corpus-lint clean,
+can see, and live-edit, the system's full range in one place. All sixteen are corpus-lint clean,
 overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by a golden render.
 
 | Type (★ showcase) | Capabilities it exercises |
@@ -391,6 +392,7 @@ overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by
 | **Ladder** | 7 rungs ranked by SUDS (0–100) · hardest-first ordering · intensity arrow (harder ↑ / easier) · an inferred rung (dashed) · client labels · pacing note |
 | **Three Circles (CFT)** | threat / drive / soothing sized by `weight` (an over-active threat, a depleted soothing) · per-system contents (containment) · client labels · "grow the soothing system" note |
 | **Venn (DBT states of mind)** | two overlapping circles · the lens labelled (Wise Mind = both) · per-region contents (containment) · haloed labels · client labels |
+| **Bull's-eye (ACT values)** | 6 life domains plotted by `intensity` (on-/off-target radius) · evenly-spaced angles · perimeter labels + leaders · decorative concentric rings · edge-free model · client labels |
 
 ---
 
@@ -427,10 +429,11 @@ meaning?* If it is fundamentally fill-in / score-it / list-it / ask-these-questi
   (2×2 pros/cons table) · **Readiness ruler** (0–10 scale) · **5 Ps** & **biopsychosocial grid** (matrices) ·
   activity/mood/gratitude **logs**.
 
-The remaining ◇ rows (2×2 sorter, tree/branching, radial bullseye, hub/hexagon, circle-of-security) are
-candidate **new renderers** — catalogued, not mis-rendered. (Shipped so far: the **ranked ladder** as
-`ladder` (ADR-0029), the **CFT three circles** as `three-circles` (ADR-0030), and **DBT states of
-mind** as `venn` (ADR-0031).)
+The remaining ◇ rows (schema-domains sorter, tree/branching (Tree of Life), decisional-balance 2×2,
+circle-of-security) are candidate **new renderers** — catalogued, not mis-rendered. (Shipped so far:
+the **ranked ladder** as `ladder` (ADR-0029), the **CFT three circles** as `three-circles` (ADR-0030),
+**DBT states of mind** as `venn` (ADR-0031), and the **ACT values bull's-eye** as `bullseye`
+(ADR-0032).)
 
 ## Safety & cultural caveats (consolidated)
 
