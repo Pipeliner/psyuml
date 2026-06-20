@@ -454,6 +454,16 @@
       "school": "systemic + DSM-5 CFI",
       "note": "Family plus heritage, faith, identity and migration. An assessment aid — hold it with cultural humility; the client is the expert on their own culture.",
       "audience": "C"
+    },
+    {
+      "file": "exposure-ladder.psyuml",
+      "type": "ladder",
+      "family": "Change",
+      "name": "Exposure / fear ladder",
+      "catalogId": 39,
+      "school": "CBT (Wolpe)",
+      "note": "Feared situations ranked by SUDS, climbed least → most. Exposure therapy is strongly evidenced; the ladder is a planning aid — the inhibitory-learning turn questions strict graded ordering / SUDS-drop stopping rules.",
+      "audience": "B"
     }
   ],
   "newTypes": [
@@ -476,11 +486,6 @@
       "name": "River / Tree of Life",
       "shape": "tree/branching",
       "catalogId": 33
-    },
-    {
-      "name": "Exposure / fear ladder",
-      "shape": "ranked-ladder",
-      "catalogId": 39
     },
     {
       "name": "Values bullseye",

@@ -233,6 +233,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderBodyMap(model, o);
     case 'two-triangles':
       return renderTwoTriangles(model, o);
+    case 'ladder':
+      return renderLadder(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -240,6 +242,7 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
 }
 
 const WIDTH = 680;
+const LADDER_W = 560;
 const NODE_W = 220;
 const NODE_H = 40;
 const BAND_H = 96;
@@ -2982,5 +2985,97 @@ export function renderComposite(models: PsyumlModel[], options: RenderOptions = 
     `<rect x="0" y="0" width="${COMPOSITE_W}" height="${totalH}" fill="#fff" />` +
     parts.join('') +
     '</svg>';
+  return { svg, altText };
+}
+
+/**
+ * Ranked ladder (REQ-NEW-DIAGRAM-TYPES, ADR-0029) — an exposure / fear hierarchy or a ranked goal
+ * ladder. Every node is a RUNG, ordered top→bottom by `properties.intensity` (the SUDS / distress or
+ * value rating, 0–1). Rendered as a stack of labelled step-boxes with a left intensity arrow
+ * (harder ↑ / easier ↓) and the rating per rung — monochrome; the order is spatial AND echoed in the
+ * alt-text. The "path of hope" is the bottom rung: start small, master a rung before climbing.
+ */
+export function renderLadder(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  // Rungs hardest-first (top). A missing rating sinks to the bottom but keeps input order among ties.
+  const rungs = model.nodes
+    .map((n, i) => ({ n, i, v: n.properties.intensity ?? -1 }))
+    .sort((a, b) => b.v - a.v || a.i - b.i)
+    .map((x) => x.n);
+
+  const titleH = model.meta.title ? 34 : 12;
+  const ROW_H = 46;
+  const GAP = 14;
+  const axisX = 34;
+  const boxX = 70;
+  const boxW = LADDER_W - boxX - 24;
+  const ratingW = 52;
+  const top = titleH + 14;
+
+  const parts: string[] = [];
+  const altRows: string[] = [];
+
+  rungs.forEach((n, r) => {
+    const y = top + r * (ROW_H + GAP);
+    const name = getText(n.label, layer, lang);
+    const dashed = isInterpretive(n.properties.epistemicStatus) ? ' stroke-dasharray="5 4"' : '';
+    parts.push(
+      `<rect data-el="node:${esc(n.id)}" x="${boxX}" y="${y}" width="${boxW}" height="${ROW_H}" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2"${dashed} />`,
+      fitText(name, boxX + 14, y + ROW_H / 2 + 4, {
+        size: 12,
+        maxWidth: boxW - 28 - ratingW,
+        dataEl: `nodelabel:${n.id}`,
+      }),
+    );
+    const rating = n.properties.intensity;
+    if (rating !== undefined) {
+      const rx = boxX + boxW - ratingW / 2 - 8;
+      parts.push(
+        `<circle cx="${rx}" cy="${y + ROW_H / 2}" r="15" fill="none" stroke="#000" stroke-width="1.5" />`,
+        `<text x="${rx}" y="${y + ROW_H / 2 + 4}" font-family="sans-serif" font-size="11" font-weight="700" text-anchor="middle">${Math.round(rating * 100)}</text>`,
+      );
+    }
+    altRows.push(`${name}${rating !== undefined ? ` (${Math.round(rating * 100)})` : ''}`);
+  });
+
+  const bottom = top + Math.max(1, rungs.length) * (ROW_H + GAP);
+  parts.push(
+    `<line x1="${axisX}" y1="${bottom - 6}" x2="${axisX}" y2="${top + 12}" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
+    `<text x="${axisX}" y="${top + 6}" font-family="sans-serif" font-size="9" text-anchor="middle">harder</text>`,
+    `<text x="${axisX}" y="${bottom + 4}" font-family="sans-serif" font-size="9" text-anchor="middle">easier</text>`,
+  );
+
+  const footY = bottom + 22;
+  parts.push(
+    `<text x="${boxX}" y="${footY}" font-family="sans-serif" font-size="11">Climb at your own pace — master a rung before moving up; the bottom rung is where to start.</text>`,
+  );
+  let h = footY + 10;
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="${boxX}" y="${h + 6}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+    h += 16;
+  }
+
+  const altText =
+    `Ranked ladder${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Rungs, hardest first: ${altRows.join('; ') || 'none'}. Start at the bottom; master a rung before climbing.`;
+
+  const title = model.meta.title
+    ? `<text x="${boxX}" y="24" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${LADDER_W} ${h}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Ranked ladder')}</title><desc>${esc(altText)}</desc>` +
+    `<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>` +
+    `<rect x="0" y="0" width="${LADDER_W}" height="${h}" fill="#fff" />` +
+    title +
+    parts.join('') +
+    '</svg>';
+
   return { svg, altText };
 }

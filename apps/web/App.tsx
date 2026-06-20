@@ -241,6 +241,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: 'Malan in full: the Triangle of Conflict (defence / anxiety / hidden feeling) and the Triangle of Person (current / therapist / past) linked by transference — with confidence and clinician-inferred depth flagged.',
   },
+  {
+    key: 'showcase-ladder',
+    label: '★ Ladder — full showcase',
+    family: 'change',
+    school: 'capability demo',
+    note: 'A 7-rung fear ladder ranked by SUDS (0–100), hardest-first, with the intensity arrow, an inferred rung (dashed), client labels and a pacing note.',
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

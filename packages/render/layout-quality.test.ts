@@ -43,6 +43,7 @@ const RENDERERS: Record<string, Renderer> = {
   'decision-nav': render.renderDecisionChart,
   'resource-anchor': render.renderResourceMap,
   'two-triangles': render.renderTwoTriangles,
+  ladder: render.renderLadder,
 };
 const load = (f: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${f}`, import.meta.url), 'utf8'));
@@ -70,6 +71,7 @@ const LABEL_IN_BOX = new Set([
   'two-triangles',
   'decision-nav',
   'process-loop',
+  'ladder',
 ]);
 
 /** Is point (cx,cy) inside box `b`? An INTERIOR label has its centre in its node box; a CAPTION

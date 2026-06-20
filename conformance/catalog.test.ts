@@ -30,6 +30,7 @@ const KNOWN_TYPES = new Set([
   'decision-nav',
   'resource-anchor',
   'two-triangles',
+  'ladder',
 ]);
 
 interface CatalogEntry {

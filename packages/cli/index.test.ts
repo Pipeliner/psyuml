@@ -175,6 +175,7 @@ describe('psyuml cli', () => {
                 'body-map',
                 'mode-map',
                 'two-triangles',
+                'ladder',
               ].map((t) => [t, 'ok']),
             ),
           },

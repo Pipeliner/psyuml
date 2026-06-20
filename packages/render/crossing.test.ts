@@ -35,6 +35,7 @@ const RENDERERS: Record<string, Renderer> = {
   'decision-nav': render.renderDecisionChart,
   'resource-anchor': render.renderResourceMap,
   'two-triangles': render.renderTwoTriangles,
+  ladder: render.renderLadder,
 };
 
 /** Count proper crossings between NON-incident edges (edges sharing a node meet, they don't cross). */

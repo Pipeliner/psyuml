@@ -482,6 +482,7 @@ export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
   'intervention-sequence': 'change',
   'two-triangles': 'change',
   'decision-nav': 'change',
+  ladder: 'change',
   ritual: 'ritual',
 };
 

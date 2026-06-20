@@ -188,6 +188,7 @@ export const DiagramType = z.enum([
   'body-map',
   'mode-map',
   'two-triangles',
+  'ladder',
 ]);
 export type DiagramType = z.infer<typeof DiagramType>;
 

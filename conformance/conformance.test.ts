@@ -32,6 +32,7 @@ const RENDERERS: Record<string, Renderer> = {
   'decision-nav': render.renderDecisionChart,
   'resource-anchor': render.renderResourceMap,
   'two-triangles': render.renderTwoTriangles,
+  ladder: render.renderLadder,
 };
 
 const load = (f: string): PsyumlModel =>

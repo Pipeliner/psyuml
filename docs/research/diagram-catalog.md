@@ -15,7 +15,7 @@ and a **renderer** (or flags a renderer PsyUML doesn't have yet). Build status:
 - **✅ existing** — realizable now on a shipped renderer (becomes an example `.psyuml`).
 - **◐ approx** — expressible on a shipped renderer with some loss (becomes an example, noted).
 - **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. 2×2 sorter, Venn/overlapping circles,
-  tree/branching, ranked ladder, radial bullseye, hub/hexagon); catalogued, not yet an example.
+  tree/branching, radial bullseye, hub/hexagon); catalogued, not yet an example.
 
 Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-created) — these map to
 PsyUML's three **audience profiles** (ADR-0016): **clinician** (the full analytic surface), **client**
@@ -214,7 +214,7 @@ help site must teach them, not just the pictures:
 | 36 | **Intervention sequence** | cross-school | ordered steps/skills toward a goal | A plan, not a measure | ✅ intervention-sequence | B |
 | 37 | **DBT chain analysis** | DBT (Linehan) | vulnerability → prompt → links (thought/emotion/body/urge/act) → behaviour → consequences | The primary DBT assessment procedure; DBT is strongly evidenced. Can feel interrogative — pair with validation + solution analysis | ◐ intervention-sequence (chain) | B |
 | 38 | **ACT Choice Point** | ACT (Harris; Bailey/Ciarrochi) | a present-moment fork: toward-moves vs away-moves, hooks & values | Accessible ACT entry; ACT evidenced (the format is a delivery tool). **Don't run with the Matrix simultaneously** | ◐ decision-nav (fork) | L |
-| 39 | **Exposure hierarchy / fear ladder** | CBT (Wolpe) | feared situations ranked by SUDS, least → most | Exposure therapy has **strong** support; **the ladder is a planning aid**, and the Craske *inhibitory-learning* turn questions strict graded ordering / SUDS-drop stopping rules | ◇ new (ranked ladder) / ◐ intervention-sequence | B |
+| 39 | **Exposure hierarchy / fear ladder** | CBT (Wolpe) | feared situations ranked by SUDS, least → most | Exposure therapy has **strong** support; **the ladder is a planning aid**, and the Craske *inhibitory-learning* turn questions strict graded ordering / SUDS-drop stopping rules | ✅ ladder | B |
 | 40 | **Behavioural-activation activity grid** | CBT (Lewinsohn; Martell) | weekly schedule with Mastery/Pleasure ratings | BA is **strongly evidenced** (COBRA non-inferior to CBT; Dimidjian); the grid worksheet is a tool, not the evidence | ◇ new (week grid) | B |
 | 41 | **Crisis / safety plan** (Stanley–Brown) | suicide prevention | warning signs → internal coping → social distraction → contacts → professionals → means-restriction | SPI+ (plan **+ follow-up**) associated with ~45% fewer suicidal behaviours (2018 **cohort comparison**, not a standalone RCT). **A collaborative intervention — NOT a no-suicide contract, NOT a risk-prediction tool** | ✅ decision-nav | B |
 | 42 | **Relapse-prevention / staying-well plan** | CBT/MBCT (Marlatt; Segal) | triggers → early warning signs → coping → support → reasons to stay well | Approach evidenced (incl. MBCT PREVENT — a viable *alternative*, not proven *superior*); the worksheet isn't a measure. **A wellness tool, not a crisis tool** | ◐ decision-nav / intervention-sequence | B |
@@ -259,7 +259,7 @@ help site must teach them, not just the pictures:
   (`renderComposite` over several views) rather than a single `.psyuml`; the ◇ new-type rows stay
   catalogued-not-faked pending their renderers.
 - **◇ new-type rows are catalogued, not faked** (sorter/2×2 grid, Venn/overlapping-circles,
-  three-circles, tree/branching, ranked ladder, radial bullseye, hub/hexagon). Each is a candidate
+  three-circles, tree/branching, radial bullseye, hub/hexagon). Each is a candidate
   **new renderer** — a future milestone, recorded here so the help site can show them as "planned"
   rather than mis-render them on a renderer that distorts their meaning.
 - Every shipped example carries its **honest evidence note** (the table above) in the help-site
@@ -277,7 +277,7 @@ can never drift from what actually ships. To change it, edit the manifest and ru
 
 <!-- BEGIN catalog:generated -->
 
-_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 45 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 46 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
 
 ### Cycle
 
@@ -352,6 +352,7 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 | Stages of Change wheel (TTM) | transtheoretical (Prochaska–DiClemente) | B | The change cycle. Popular but genuinely contested as a *stage* model (West 2005) — treat the stages as a heuristic. | `stages-of-change.psyuml` |
 | SORC functional analysis | behavioural (Kanfer–Saslow) | C | Stimulus → Organism → Response → Consequence — a shared map of one episode and where to intervene. An influential clinician heuristic, hard to standardise. | `sorc.psyuml` |
 | ABC(DE) functional analysis | REBT (Ellis) | B | Activating event → Beliefs → Consequence, then Dispute → Effect. A teaching / self-monitoring tool; belief-mediation is the REBT differentiator. | `abc.psyuml` |
+| Exposure / fear ladder | CBT (Wolpe) | B | Feared situations ranked by SUDS, climbed least → most. Exposure therapy is strongly evidenced; the ladder is a planning aid — the inhibitory-learning turn questions strict graded ordering / SUDS-drop stopping rules. | `exposure-ladder.psyuml` |
 
 ### Ritual
 
@@ -366,9 +367,9 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 ## Showcase examples — one feature-dense model per diagram type
 
 Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the
-12 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
+13 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
 dense, validated model that exercises as much of the notation as that type sensibly carries — so you
-can see, and live-edit, the system's full range in one place. All twelve are corpus-lint clean,
+can see, and live-edit, the system's full range in one place. All thirteen are corpus-lint clean,
 overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by a golden render.
 
 | Type (★ showcase) | Capabilities it exercises |
@@ -385,6 +386,7 @@ overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by
 | **Decision-Nav (crisis chart)** | branching with no dead-ends · crisis resources on every screen · acute-risk flag · question/crisis/action/safe vocabulary |
 | **Resource / Anchor** | 5 anchor categories holding many strengths — the "path of hope", client-owned |
 | **Two Triangles (Malan)** | Triangle of Conflict (defence/anxiety/hidden feeling) × Triangle of Person (current/therapist/past) linked by transference · confidence + clinician-inferred depth |
+| **Ladder** | 7 rungs ranked by SUDS (0–100) · hardest-first ordering · intensity arrow (harder ↑ / easier) · an inferred rung (dashed) · client labels · pacing note |
 
 ---
 
@@ -421,8 +423,9 @@ meaning?* If it is fundamentally fill-in / score-it / list-it / ask-these-questi
   (2×2 pros/cons table) · **Readiness ruler** (0–10 scale) · **5 Ps** & **biopsychosocial grid** (matrices) ·
   activity/mood/gratitude **logs**.
 
-The genuinely-diagrammatic ◇ rows (2×2 sorter, Venn, three-circles, tree/branching, ranked ladder, radial
-bullseye, hub/hexagon, circle-of-security) are candidate **new renderers** — catalogued, not mis-rendered.
+The genuinely-diagrammatic ◇ rows (2×2 sorter, Venn, three-circles, tree/branching, radial bullseye,
+hub/hexagon, circle-of-security) are candidate **new renderers** — catalogued, not mis-rendered. (The
+**ranked ladder** has now shipped as the `ladder` renderer — exposure / fear hierarchies, ADR-0029.)
 
 ## Safety & cultural caveats (consolidated)
 

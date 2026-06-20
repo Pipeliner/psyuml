@@ -10,6 +10,7 @@ import {
   renderDecisionChart,
   renderDiff,
   renderInterventionSeq,
+  renderLadder,
   renderLoopMap,
   renderModeMap,
   renderPartsMap,
@@ -860,10 +861,11 @@ describe('REQ-EXAMPLE-LIBRARY showcase — one feature-dense model per diagram t
     ['showcase-decision-nav.psyuml', renderDecisionChart],
     ['showcase-resource-anchor.psyuml', renderResourceMap],
     ['showcase-two-triangles.psyuml', renderTwoTriangles],
+    ['showcase-ladder.psyuml', renderLadder],
   ];
 
-  it('covers all 12 diagram types', () => {
-    expect(showcases.length).toBe(12);
+  it('covers all 13 diagram types', () => {
+    expect(showcases.length).toBe(13);
   });
 
   it.each(showcases)('%s renders and matches its committed golden', (file, renderFn) => {
