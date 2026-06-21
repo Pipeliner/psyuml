@@ -1179,8 +1179,10 @@
       "spec": ["§3", "§K", "§6"],
       "source": "docs/specification/roadmap-to-v1.md",
       "milestone": "M21",
-      "status": "planned",
-      "notes": "§K profiles are validated (`validateProfile`/`lint-profile`) but applied in the editor only as `roleLabels` (ADR-0009); cultural-extension packs ship only as a worked example (ADR-0019). Spec loading/applying a validated profile or cultural pack live in the editor's School switcher, with the §6 permission gate (restricted symbols MUST declare permission) enforced in the UI."
+      "status": "implemented",
+      "impl": ["apps/web/App.tsx"],
+      "tests": ["e2e/onboarding.spec.ts", "packages/profiles/index.test.ts"],
+      "notes": "Implemented in the editor (ADR-0040), reusing the existing §K machinery with NO new validation. A Profile (§K) file input + two Try quick-loads (`CFT_PROFILE`/`CULTURAL_PACK_EXAMPLE`); `applyProfile` runs `validateProfile` (the four §K rules + Tier-1 freeze + glyph-collision + the §6 `profile.cultural-permission` rule) and applies the profile's `roleLabelsFromProfile` vocabulary to `render` ONLY IF `ok` — an invalid / un-permitted profile (a `restricted` symbol with no `permission`) is shown with its errors and NEVER applied (the §6 gate enforced in the UI). The applied vocabulary uses the SAME `roleLabels` surface as the built-in `school` selector (disabled while a profile is active). A profile panel surfaces the applied profile + every validation issue + (leading) each cultural stereotype's tradition/RESTRICTED/permission/attribution. HONEST SCOPE: 'apply' = the cross-school VOCABULARY (labels), not per-stereotype custom glyphs (the renderer is glyph-by-type — future); profiles are session-only (not persisted into the model/case file, keeping the permission boundary clean). `validateProfile` itself is already unit-tested in the profiles suite; a Playwright e2e applies the cultural pack + asserts the §6 RESTRICTED permission shows + that reverting restores the built-in path."
     },
     {
       "id": "REQ-I18N-LOCALIZATION",

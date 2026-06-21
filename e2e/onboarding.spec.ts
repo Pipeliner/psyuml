@@ -248,4 +248,23 @@ test.describe('new user: diagramming a partially understood situation', () => {
       page.getByRole('list', { name: 'Views on the board' }).getByRole('listitem'),
     ).toHaveCount(2);
   });
+
+  test('loads + applies a §K profile, surfacing the §6 permission gate (REQ-LIVE-PROFILES)', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const panel = page.getByRole('region', { name: 'Extension profile' });
+    await expect(panel).toHaveCount(0); // hidden until a profile is loaded
+
+    // apply the worked cultural-rite pack — it validates (restricted symbol WITH permission)
+    await page.getByRole('button', { name: 'Try cultural pack' }).click();
+    await expect(panel).toContainText('Applied profile: Cultural rite pack');
+    // the §6 cultural-permission is surfaced, restricted-symbol-first
+    await expect(panel).toContainText('RESTRICTED');
+    await expect(panel).toContainText(/Permission:/);
+
+    // reverting restores the built-in label path
+    await page.getByRole('button', { name: 'Use built-in labels' }).click();
+    await expect(panel).toHaveCount(0);
+  });
 });

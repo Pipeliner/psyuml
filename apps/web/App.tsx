@@ -19,13 +19,19 @@ import { requiresHumanEscalation, validate } from '@psyuml/validate';
 import {
   AUDIENCE_PROFILES,
   audienceProfile,
+  CFT_PROFILE,
+  CULTURAL_PACK_EXAMPLE,
   listFamilies,
   pictographKeySvg,
   roleLabelsFor,
+  roleLabelsFromProfile,
   TRANSLATABLE_SCHOOLS,
+  validateProfile,
   withinSymbolBudget,
   type AudienceProfile,
   type DiagramFamily,
+  type ExtensionProfile,
+  type ProfileIssue,
 } from '@psyuml/profiles';
 import { diffModels, isEmptyDiff, summarizeDiff } from '@psyuml/diff';
 // The catalog manifest (examples/catalog.json, ADR-0027/0028) is the SINGLE SOURCE for the
@@ -395,6 +401,11 @@ export function App() {
   const [monochrome, setMonochrome] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [school, setSchool] = useState('');
+  // v0.2 §K live profiles (REQ-LIVE-PROFILES/ADR-0040): a validated ExtensionProfile / cultural pack
+  // loaded at runtime; its vocabulary (roleLabelsFromProfile) is applied to the render, exactly the
+  // surface the built-in `school` selector uses. An invalid / un-permitted profile is NEVER applied.
+  const [profile, setProfile] = useState<ExtensionProfile | null>(null);
+  const [profileIssues, setProfileIssues] = useState<ProfileIssue[]>([]);
   const [compareWith, setCompareWith] = useState<PsyumlModel | null>(null);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -405,17 +416,34 @@ export function App() {
   const [caseTitle, setCaseTitle] = useState('');
 
   const single = useMemo(() => {
-    const roleLabels = school ? roleLabelsFor(school) : undefined;
+    // A loaded §K profile's vocabulary wins over the built-in school table (same `roleLabels` surface).
+    const roleLabels = profile
+      ? roleLabelsFromProfile(profile)
+      : school
+        ? roleLabelsFor(school)
+        : undefined;
     // One dispatcher resolves the audience profile → layer + interpretive visibility (§2);
     // monochrome applies to every renderer (colour must stay redundant, §D).
     return render(model, { audience, monochrome, roleLabels });
-  }, [model, audience, monochrome, school]);
+  }, [model, audience, monochrome, school, profile]);
   const composite = useMemo(
     () => (board.length ? renderComposite(board, { audience, monochrome }) : null),
     [board, audience, monochrome],
   );
   // What's on screen / exported: the composite board when toggled on, else the single view.
   const { svg, altText } = showBoard && composite ? composite : single;
+
+  // §K live profiles: validate a loaded profile against the §K rules (incl. the §6 cultural-permission
+  // gate) and apply it ONLY if it passes — an invalid / un-permitted profile is shown but never used.
+  const applyProfile = (raw: unknown): void => {
+    const v = validateProfile(raw);
+    setProfileIssues(v.issues);
+    setProfile(v.ok && v.profile ? v.profile : null);
+  };
+  // Cultural-permission disclosures to surface in the UI (§6): the restricted ones lead.
+  const culturalNotes = (profile?.stereotypes ?? [])
+    .filter((s) => s.cultural)
+    .map((s) => ({ id: s.id, ...s.cultural! }));
 
   // v0.2 §2: the client/picture profiles cap distinct symbol kinds for cognitive load. Surface a
   // gentle over-budget nudge (never a block; the full pictographic reduction is M14).
@@ -644,7 +672,7 @@ export function App() {
 
         <label className="control">
           School{' '}
-          <select value={school} onChange={(e) => setSchool(e.target.value)}>
+          <select value={school} onChange={(e) => setSchool(e.target.value)} disabled={!!profile}>
             <option value="">native</option>
             {TRANSLATABLE_SCHOOLS.map((s) => (
               <option key={s} value={s}>
@@ -653,6 +681,49 @@ export function App() {
             ))}
           </select>
         </label>
+
+        <label
+          className="control"
+          title="Load a validated §K extension profile or cultural pack (JSON) to render in its vocabulary"
+        >
+          Profile (§K)
+          <input
+            type="file"
+            accept=".json,application/json"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              f.text()
+                .then((txt) => applyProfile(JSON.parse(txt)))
+                .catch(() =>
+                  setProfileIssues([
+                    {
+                      rule: 'profile.parse',
+                      severity: 'error',
+                      message: 'Could not read that file as a JSON profile.',
+                    },
+                  ]),
+                );
+              e.target.value = '';
+            }}
+          />
+        </label>
+        <button
+          type="button"
+          className="link-like"
+          title="Apply the worked Compassion-Focused Therapy profile"
+          onClick={() => applyProfile(CFT_PROFILE)}
+        >
+          Try CFT
+        </button>
+        <button
+          type="button"
+          className="link-like"
+          title="Apply the worked cultural-rite pack (shows the §6 permission gate)"
+          onClick={() => applyProfile(CULTURAL_PACK_EXAMPLE)}
+        >
+          Try cultural pack
+        </button>
 
         <label
           className="check"
@@ -927,6 +998,64 @@ export function App() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {(profile || profileIssues.length > 0) && (
+        <section aria-label="Extension profile" className="panel panel--info">
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <strong>
+              {profile ? (
+                <>
+                  ✓ Applied profile: {profile.title} v{profile.version}
+                  {profile.school ? ` · ${profile.school}` : ''}
+                </>
+              ) : (
+                'Profile not applied'
+              )}
+            </strong>
+            {profile && (
+              <button
+                type="button"
+                className="link-like"
+                onClick={() => {
+                  setProfile(null);
+                  setProfileIssues([]);
+                }}
+              >
+                Use built-in labels
+              </button>
+            )}
+          </div>
+
+          {culturalNotes.length > 0 && (
+            <ul aria-label="Cultural permission" style={{ marginTop: '0.4rem' }}>
+              {culturalNotes.map((c) => (
+                <li key={c.id}>
+                  <strong>{c.restricted ? '⚠ RESTRICTED' : 'Cultural'}</strong> — {c.tradition}.
+                  {c.permission ? ` Permission: ${c.permission}` : ''}
+                  {c.attribution ? ` ${c.attribution}` : ''}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {profileIssues.length > 0 && (
+            <ul aria-label="Profile validation issues" style={{ marginTop: '0.4rem' }}>
+              {profileIssues.map((iss, i) => (
+                <li key={i} className={iss.severity === 'error' ? 'alert-text' : 'muted'}>
+                  {iss.severity === 'error' ? '✗' : iss.severity === 'warn' ? '!' : 'ℹ'} [{iss.rule}
+                  ] {iss.message}
+                </li>
+              ))}
+            </ul>
+          )}
+          {!profile && profileIssues.some((i) => i.severity === 'error') && (
+            <p className="muted" style={{ margin: '0.3rem 0 0' }}>
+              This profile was rejected by the §K rules (incl. the §6 cultural-permission gate) and
+              is not applied — fix the errors above and reload.
+            </p>
+          )}
         </section>
       )}
 
