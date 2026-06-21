@@ -327,6 +327,49 @@ function downloadText(filename: string, text: string, type: string): void {
 }
 
 /**
+ * Rasterize a (self-contained, deterministic) SVG string to a PNG and download it — for clinicians who
+ * need a flat image to paste into notes (REQ-EXPORT-RASTER). Dependency-free: the SVG is drawn into an
+ * `<Image>` and painted onto a `<canvas>` (at `scale`× for crisp output) over an opaque white ground
+ * (so the transparent SVG doesn't go black in dark viewers), then exported via `canvas.toBlob`. The
+ * SVG carries no external refs, so the canvas isn't tainted. PDF is via the browser's Print → Save as
+ * PDF (the print stylesheet), not a bundled library.
+ */
+function downloadPng(filename: string, svgString: string, scale = 2): void {
+  const vb = svgString.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+  const w = vb ? parseFloat(vb[1]) : 800;
+  const h = vb ? parseFloat(vb[2]) : 600;
+  // Some browsers need explicit width/height to decode an SVG <img> at the right size.
+  const sized = svgString.replace('<svg ', `<svg width="${w}" height="${h}" `);
+  const url = URL.createObjectURL(new Blob([sized], { type: 'image/svg+xml;charset=utf-8' }));
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(w * scale));
+    canvas.height = Math.max(1, Math.round(h * scale));
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    } else {
+      URL.revokeObjectURL(url);
+    }
+  };
+  img.onerror = () => URL.revokeObjectURL(url);
+  img.src = url;
+}
+
+/**
  * PsyUML editor (M2 slice). Live model → render with client/clinician and monochrome
  * layers, a palette that edits the model, a screen-reader text alternative, and
  * local-first save/export. Built against docs/ux (UX-M1/M2/M3/M4/M5/M8).
@@ -680,6 +723,22 @@ export function App() {
             onClick={() => downloadText(`${fileBase}.svg`, svg, 'image/svg+xml')}
           >
             Export SVG
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={exportBlocked}
+            title={blockReason || 'Download a PNG image (for pasting into notes)'}
+            onClick={() => downloadPng(`${fileBase}.png`, svg)}
+          >
+            Export PNG
+          </button>
+          <button
+            type="button"
+            title="Print the diagram (use your browser's Save as PDF for a paper copy)"
+            onClick={() => window.print()}
+          >
+            Print
           </button>
           <button
             type="button"

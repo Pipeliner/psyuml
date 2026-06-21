@@ -1,4 +1,5 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 /**
  * Onboarding journey: a newcomer diagramming a situation they only *partially* understand.
@@ -201,5 +202,20 @@ test.describe('new user: diagramming a partially understood situation', () => {
     if (!after) throw new Error('node vanished after drag');
     // it actually moved on screen (drag-to-reposition wired through to the model + re-render)
     expect(Math.abs(after.x - before.x) + Math.abs(after.y - before.y)).toBeGreaterThan(15);
+  });
+
+  test('exports the diagram as a real PNG (REQ-EXPORT-RASTER)', async ({ page }) => {
+    await page.goto('/');
+    await expect(diagram(page).locator('svg')).toBeVisible();
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Export PNG' }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/\.png$/);
+    const path = await download.path();
+    const buf = readFileSync(path);
+    // a real, non-trivial PNG (the 8-byte signature, then more than a stub of pixels)
+    expect(buf.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+    expect(buf.length).toBeGreaterThan(1000);
   });
 });

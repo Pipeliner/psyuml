@@ -901,3 +901,57 @@ details.disclose-inline > summary {
     border-color: #564a36;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Print / "paper copy" (REQ-EXPORT-RASTER) — a clinician printing the page
+   (or Print → Save as PDF) gets the diagram + its honest "about" caption, not
+   the interactive editor chrome. The diagram SVG already draws the disclaimer,
+   so the humility note travels onto the page. PNG export is the flat-image path;
+   this is the print/PDF path.
+   -------------------------------------------------------------------------- */
+@media print {
+  .toolbar,
+  .card,
+  .editor-section,
+  .panel,
+  .panel--info,
+  .panel--ok,
+  .panel--error,
+  .panel--escalate,
+  details,
+  button,
+  input,
+  select,
+  textarea {
+    display: none !important;
+  }
+  /* keep the honest "about this example" caption (it's a .panel too) */
+  .panel--caption {
+    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  .app,
+  .app__header,
+  .app__title {
+    display: block !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    color: #000 !important;
+  }
+  .diagram {
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  /* full-size, un-zoomed diagram on paper (overrides the inline zoom width) */
+  .diagram__canvas {
+    width: 100% !important;
+    transform: none !important;
+  }
+  @page {
+    margin: 1.4cm;
+  }
+}

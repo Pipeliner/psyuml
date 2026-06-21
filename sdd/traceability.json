@@ -1204,8 +1204,10 @@
       "spec": ["§3"],
       "source": "docs/specification/roadmap-to-v1.md",
       "milestone": "M21",
-      "status": "planned",
-      "notes": "The editor exports `.psyuml` + SVG and FHIR (export-only); there is no PNG/PDF or print path for clinicians who need a paper copy. Spec PNG/PDF export + a print stylesheet, preserving the active audience profile + the standing disclaimer/crisis fields on client-facing exports (§L.2 gating unchanged)."
+      "status": "implemented",
+      "impl": ["apps/web/App.tsx", "apps/web/styles.css"],
+      "tests": ["e2e/onboarding.spec.ts"],
+      "notes": "Implemented dependency-free (ADR-0038). `downloadPng` rasterizes the deterministic SVG IN THE BROWSER — read the viewBox, draw into an <Image>, paint onto a <canvas> at 2× over an opaque white ground, `canvas.toBlob('image/png')` → download (the SVG has no external refs → untainted canvas); an Export PNG button beside Export SVG, behind the same `exportBlocked` health gate, filename from the title slug. A Print button + an `@media print` block (styles.css) hide the editor chrome and print the diagram + its honest 'about' caption — the diagram SVG already draws the disclaimer, so the standing disclaimer/crisis copy travels onto the page (§L.2 gating unchanged); browser Save-as-PDF is the PDF path (NO rasterizer/PDF library bundled — ADR-0013 no-new-dep). The active audience profile is preserved (export uses the on-screen `svg`). HONEST SCOPE: PNG is browser-only (canvas) — the CLI still emits SVG only; 'PDF' is print-to-PDF, not a generated file. A Playwright e2e captures the download + asserts a real PNG (8-byte signature + non-trivial size)."
     }
   ]
 }
