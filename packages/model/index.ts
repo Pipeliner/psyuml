@@ -123,6 +123,13 @@ export const Properties = z.object({
   asIf: z.boolean().optional(),
   /** Provenance tags, e.g. "school:CAT" — preserve opposed origin-claims (spec §G.2). */
   provenance: z.array(z.string()).optional(),
+  /**
+   * The SUBSTANCE of a cross-school disagreement (REQ-PROVENANCE-NARRATIVE): a short narrative of
+   * HOW the schools in `provenance` differ on this element, not only THAT they do (the ⚖ marker
+   * names which; this says how). Rendered on a contested node + in alt-text; never resolves the
+   * disagreement into one view.
+   */
+  provenanceNote: z.string().optional(),
   /** Genogram index person (double border, spec §C). */
   index: z.boolean().optional(),
 });

@@ -232,6 +232,15 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
         `"${getText(n.label, layer)}" carries ${claims.length} opposed origin-claims (${claims.join(', ')}) — show both; do not resolve them into one.`,
         n.id,
       );
+      // REQ-PROVENANCE-NARRATIVE: it names WHICH schools disagree — a `provenanceNote` can say HOW.
+      if (!n.properties.provenanceNote?.trim()) {
+        add(
+          'provenance.narrative-missing',
+          'info',
+          `"${getText(n.label, layer)}" shows THAT schools disagree but not HOW — add a provenanceNote describing the substance of the disagreement.`,
+          n.id,
+        );
+      }
     }
   }
   if (schools.size > 1) {

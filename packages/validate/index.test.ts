@@ -203,6 +203,37 @@ describe('validate', () => {
     expect(r.ok).toBe(true); // info only, never blocks
   });
 
+  it('nudges (info) a contested node to explain HOW schools differ, satisfied by a provenanceNote (REQ-PROVENANCE-NARRATIVE)', () => {
+    const m = read('state-map.psyuml');
+    const contest = (note?: string): PsyumlModel =>
+      parseModel({
+        ...m,
+        nodes: m.nodes.map((n, i) =>
+          i === 0
+            ? {
+                ...n,
+                properties: {
+                  ...n.properties,
+                  provenance: ['school:ifs', 'school:schema'],
+                  ...(note ? { provenanceNote: note } : {}),
+                },
+              }
+            : n,
+        ),
+      });
+    // names which schools but not how → the narrative nudge fires (info, never blocks)
+    const without = validate(contest());
+    expect(
+      without.issues.some(
+        (i) => i.rule === 'provenance.narrative-missing' && i.severity === 'info',
+      ),
+    ).toBe(true);
+    expect(without.ok).toBe(true);
+    // a provenanceNote that says HOW satisfies the nudge
+    const withNote = validate(contest('IFS: a protector; schema: a maladaptive mode.'));
+    expect(withNote.issues.some((i) => i.rule === 'provenance.narrative-missing')).toBe(false);
+  });
+
   it('detects bare (un-prefixed) school tags too — the form the examples use (§G.2)', () => {
     // the parts-map exile carries bare IFS + schema + SD; an earlier rule only saw `school:`
     // prefixes and missed this. Now both node-level and diagram-level info fire on real data.

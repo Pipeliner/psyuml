@@ -1199,8 +1199,10 @@
       "spec": ["§3", "§G"],
       "source": "docs/specification/roadmap-to-v1.md",
       "milestone": "M21",
-      "status": "planned",
-      "notes": "Today `⚖` (contested) names WHICH schools claim a node but not HOW they disagree — the narrative stays out of the diagram (ADR-0007). Spec capturing + rendering the disagreement narrative so a contested element conveys the substance of the disagreement (§G.2 'preserve disagreement' made richer), in alt-text and on demand."
+      "status": "implemented",
+      "impl": ["packages/model/index.ts", "packages/render/index.ts", "packages/validate/index.ts", "packages/grammar/index.ts"],
+      "tests": ["packages/render/index.test.ts", "packages/validate/index.test.ts", "packages/model/index.test.ts", "packages/grammar/index.test.ts"],
+      "notes": "Implemented (ADR-0041), the 'how' behind ADR-0007's ⚖ 'which'. A new optional `Properties.provenanceNote` (ADDITIVE) captures HOW the schools in `provenance` differ on an element. `renderPartsMap` draws it as a footnote above the legend (`⚖ <name>: <note>`, plain text — not `data-el`, so overlap is untouched; the parts-map height content-fits) AND appends it to alt-text (`How they differ — …`), both gated to the clinician/interpretive surface (client/picture hide it); the ⚖ marker (which) is unchanged and nothing is merged (§G.2 upheld). `validate` adds an `info` nudge `provenance.narrative-missing` when a contested node lacks a note (never blocks, mirrors `provenance.node-mixed-school`). Free text (one short narrative), not a structured per-school table — disagreements aren't always a clean A-says-X/B-says-Y split. The showcase parts-map's contested 'inner critic' carries a real note (+golden); covered by a render test (visible footnote + alt-text, gated), a validate test (the nudge, satisfied by a note), + model parse. HONEST SCOPE: the visible footnote is parts-map only (the canonical contested renderer, ADR-0007); the loop-map gets the field + alt-text path, its footnote a follow-up."
     },
     {
       "id": "REQ-EXPORT-RASTER",

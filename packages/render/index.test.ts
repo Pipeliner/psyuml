@@ -273,6 +273,34 @@ describe('renderPartsMap', () => {
     expect(schema).toContain('vulnerable child mode');
   });
 
+  it('renders HOW contested schools differ (provenanceNote) — visible + in alt-text, gated to clinician (REQ-PROVENANCE-NARRATIVE)', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'parts-map',
+      meta: { disclaimer: 'x' },
+      nodes: [
+        { id: 'self', kind: 'self', stereotype: 'Self', label: { clinician: { en: 'Self' } } },
+        {
+          id: 'critic',
+          kind: 'agent',
+          stereotype: 'manager',
+          label: { clinician: { en: 'Inner critic' } },
+          properties: {
+            provenance: ['school:IFS', 'school:schema'],
+            provenanceNote: 'IFS: a protector; schema: a punitive mode.',
+          },
+        },
+      ],
+    });
+    const clin = renderPartsMap(m, { showInterpretive: true });
+    expect(clin.svg).toContain('IFS: a protector; schema: a punitive mode.'); // visible footnote
+    expect(clin.altText).toContain('How they differ'); // accessible channel
+    // the picture/client analytic surface hides the interpretive narrative
+    const pic = renderPartsMap(m, { showInterpretive: false });
+    expect(pic.svg).not.toContain('IFS: a protector; schema: a punitive mode.');
+    expect(pic.altText).not.toContain('How they differ');
+  });
+
   it('matches the committed golden SVG', () => {
     expectGolden('parts-map.svg', renderPartsMap(partsModel).svg);
   });

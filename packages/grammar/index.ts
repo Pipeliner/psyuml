@@ -129,6 +129,7 @@ function propTokens(p: PsyumlModel['nodes'][number]['properties']): string {
   if (p.epistemicStatus) out += ` epistemic=${p.epistemicStatus}`;
   if (p.asIf) out += ` asIf=true`;
   if (p.provenance && p.provenance.length > 0) out += ` provenance=${p.provenance.join(',')}`;
+  if (p.provenanceNote) out += ` provenanceNote=${q(p.provenanceNote)}`;
   if (p.index) out += ` index=true`;
   return out;
 }
@@ -141,6 +142,7 @@ function readProps(o: Record<string, string>): Record<string, unknown> {
   if (o.epistemic !== undefined) p.epistemicStatus = o.epistemic;
   if (o.asIf === 'true') p.asIf = true;
   if (o.provenance !== undefined) p.provenance = o.provenance.split(',');
+  if (o.provenanceNote !== undefined) p.provenanceNote = o.provenanceNote;
   if (o.index === 'true') p.index = true;
   return p;
 }

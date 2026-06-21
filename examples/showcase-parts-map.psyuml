@@ -38,7 +38,7 @@
       "stereotype": "manager",
       "tier": 3,
       "label": { "clinician": { "en": "Inner critic" }, "client": { "en": "the harsh voice" } },
-      "properties": { "epistemicStatus": "contested", "asIf": true, "confidence": "L", "provenance": ["school:IFS", "school:schema"] }
+      "properties": { "epistemicStatus": "contested", "asIf": true, "confidence": "L", "provenance": ["school:IFS", "school:schema"], "provenanceNote": "IFS reads it as a protector with positive intent; schema therapy as a punitive-parent mode to be limited." }
     },
     {
       "id": "numbout",

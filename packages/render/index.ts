@@ -779,7 +779,20 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   });
   const exileY = cy + Math.max(170, orbitR + 30);
   exiles.forEach((e, i) => pos.set(e.id, { x: r1(cx + exileOffsets[i]), y: exileY }));
-  const partsH = Math.max(PARTS_H + titleH, exileY + radialDown + 60);
+  // REQ-PROVENANCE-NARRATIVE: the SUBSTANCE of each contested node's cross-school disagreement — the
+  // "how" behind the ⚖ marker (which only names WHICH schools). Drawn as a footnote + echoed in
+  // alt-text; clinician/interpretive surface only, and never resolved into one view.
+  const provNarr = showInterpretive
+    ? model.nodes
+        .filter(
+          (n) =>
+            schoolClaims(n.properties.provenance).length > 1 &&
+            (n.properties.provenanceNote ?? '').trim().length > 0,
+        )
+        .map((n) => `⚖ ${getText(n.label, layer, lang)}: ${n.properties.provenanceNote!.trim()}`)
+    : [];
+  const narrH = provNarr.length ? provNarr.length * 13 + 8 : 0;
+  const partsH = Math.max(PARTS_H + titleH, exileY + radialDown + 60) + narrH;
 
   const parts: string[] = [];
 
@@ -955,6 +968,18 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   // emitted HERE so they draw over the connectors. Z-order and bytes are identical to emitting inline.
   parts.push(...nodeParts);
 
+  // Contested-origin narrative footnote (REQ-PROVENANCE-NARRATIVE): the substance of each ⚖
+  // disagreement, drawn above the legend (plain text — not data-el, like the legend/disclaimer).
+  provNarr.forEach((line, i) => {
+    parts.push(
+      fitText(line, 20, partsH - 16 - narrH + (i + 1) * 13, {
+        size: 10,
+        fill: '#555',
+        maxWidth: PARTS_W2 - 40,
+      }),
+    );
+  });
+
   // Legend (chrome).
   parts.push(
     fitText(
@@ -989,6 +1014,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     `Protectors guard the exile.` +
     (showInterpretive && contested.length
       ? ` Origins disagree on: ${contested.join('; ')} — both claims are shown, not merged.`
+      : '') +
+    (provNarr.length
+      ? ` How they differ — ${provNarr.map((s) => s.replace(/^⚖ /, '')).join('; ')}.`
       : '');
 
   const titleText = model.meta.title
