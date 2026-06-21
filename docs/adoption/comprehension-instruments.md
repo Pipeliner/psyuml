@@ -267,6 +267,27 @@ A symbol that misses its bar is **iterated and re-tested, not shipped** (and nev
 | `dilemma` (+ "DILEMMA") | a false-binary either/or | ≥67% | ✅ pass | ⏳ pending |
 | `snag` (+ "SNAG") | self-sabotage of success | ≥67% | ✅ pass | ⏳ pending |
 
+### Picture-profile pictograph ledger (status: PENDING — no study has been run)
+
+> The **picture audience** (low-literacy / child) needs *drawn* symbols, not glyphs. These candidate
+> pictographs are enumerated in code as `PICTOGRAPHS` (`@psyuml/profiles`) and made visible by
+> `pictographKeySvg()` (the candidate sheet the editor shows in picture mode). They drive a **Tier-A
+> pictograph audit** (`auditPictographs()` — discriminable icons, every symbol dual-coded with a word,
+> a gloss + unique id, **and** the honesty gate: while no study has run, every entry MUST stay
+> `pending`). **None has passed**, so the picture profile still renders **client + a flag** (words) —
+> `pictographFor()` returns nothing and no pictograph enters a diagram. A symbol that misses its bar is
+> **redrawn and re-tested, never shipped** (REQ-PICTURE-PICTOGRAPHS, gated on this study; ADR-0037).
+
+| Pictograph (`id`) | Word (dual-coding) | Meaning to convey | Bar | Tier-A (auto) | Tier-B comprehension (humans) |
+|---|---|---|---|---|---|
+| `self` | STEADY ME | the steady, settled centre of me | ≥67% | ✅ pass | ⏳ pending |
+| `part` | A PART | a part of me / a sub-personality | ≥67% | ✅ pass | ⏳ pending |
+| `feeling` | A FEELING | a feeling or state I can be in | ≥67% | ✅ pass | ⏳ pending |
+| `resource` | A STRENGTH | a strength, support, or anchor | ≥67% | ✅ pass | ⏳ pending |
+| **`exit`** | **WAY OUT** | **a way out / a way to get help** | **≥85%** | ✅ pass | ⏳ pending |
+| `trigger` | A SPARK | a spark that sets a pattern off | ≥67% | ✅ pass | ⏳ pending |
+| **`reach-out`** | **REACH OUT** | reach out / tell someone / ask for help | **≥85%** | ✅ pass | ⏳ pending |
+
 ---
 
 ## Pilot-study design (feasibility scale)

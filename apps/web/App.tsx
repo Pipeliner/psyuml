@@ -17,6 +17,7 @@ import {
   AUDIENCE_PROFILES,
   audienceProfile,
   listFamilies,
+  pictographKeySvg,
   roleLabelsFor,
   TRANSLATABLE_SCHOOLS,
   withinSymbolBudget,
@@ -785,6 +786,19 @@ export function App() {
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       </section>
+
+      {audience === 'picture' && (
+        <section aria-label="Picture symbols in development" className="panel panel--caption">
+          <strong>Picture symbols — in development</strong>{' '}
+          <span className="muted">· candidates, not yet comprehension-tested</span>
+          <p style={{ margin: '0.4rem 0' }}>
+            The diagram above still uses words: no picture symbol has passed the comprehension gate
+            (ISO 9186) yet, so none ships. These are the candidate pictographs a future study will
+            test — a symbol that fails is redrawn, never shipped.
+          </p>
+          <div dangerouslySetInnerHTML={{ __html: pictographKeySvg() }} />
+        </section>
+      )}
 
       {compareError && (
         <p role="alert" className="alert-text">

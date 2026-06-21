@@ -1100,8 +1100,10 @@
       "spec": ["§1", "§8"],
       "source": "docs/specification/roadmap-to-v1.md",
       "milestone": "M20",
-      "status": "planned",
-      "notes": "The picture audience profile is today 'client layer + a flag' (ADR-0016); comprehension-tested pictographic symbols do not exist, and the topology glyphs remain placeholders (ADR-0015). GATED ON REQ-STUDY-PREREG: a pictograph MUST pass the ISO-9186 threshold before shipping; until then picture stays client+flag. Failures drive a documented symbol revision, never a shipped symbol."
+      "status": "implemented",
+      "impl": ["packages/profiles/index.ts", "apps/web/App.tsx"],
+      "tests": ["packages/profiles/index.test.ts"],
+      "notes": "BUILDABLE HALF SHIPPED (ADR-0037), the human-study half stays GATED (ADR-0017 pattern). The picture audience profile was 'client layer + a flag' (ADR-0016); now `@psyuml/profiles` carries the pictograph MECHANISM, wired INERT: `PICTOGRAPHS` (a novice-first set of drawn 24×24 candidate icons — self/part/feeling/resource/exit/trigger/reach-out — each dual-coded with a redundant word, all `comprehension: 'pending'`); `auditPictographs` (the Tier-A CI gate: discriminable icons + EVERY symbol dual-coded + gloss/id + the HONESTY GATE — while `PICTOGRAPH_STUDY_RUN` is false every symbol MUST stay `pending`, so a symbol can never be marked passed/shipped without recorded data); `pictographFor` (returns nothing until a symbol passes → picture stays client+flag, zero diagram-golden change); `availablePictographs` ([] today); `pictographKeySvg` (the CANDIDATE sheet with a 'NOT validated' banner, surfaced in the editor's picture mode). GATED ON REQ-STUDY-PREREG: a pictograph MUST pass its ISO-9186 bar (≥67% general; ≥85% safety — way-out + reach-out) in a real human study before it ships; a failure is redrawn + re-tested, never shipped. Results are NEVER fabricated; the comprehension-instruments ledger gains a pictograph section, every row `pending`. The CAT topology glyphs (ADR-0015) remain separate placeholders. Additive; Tier-1 core unchanged."
     },
     {
       "id": "REQ-CATALOG-CONFORMANCE",

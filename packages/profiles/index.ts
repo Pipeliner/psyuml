@@ -809,3 +809,259 @@ export function auditNotation(
   }
   return { ok: !issues.some((i) => i.severity === 'error'), issues };
 }
+
+// ---------------------------------------------------------------------------
+// Picture-profile pictographs (REQ-PICTURE-PICTOGRAPHS, §1/§8; ADR-0037)
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether a candidate pictograph has cleared the §5 comprehension gate. `pending` = not yet tested
+ * (the honest default in v0.x); `passed` = met its ISO-9186 bar in a real human study; `revised` =
+ * failed and was redrawn (awaiting re-test). A pictograph is only ever drawn into the picture profile
+ * once it is `passed` — see `pictographFor`.
+ */
+export type ComprehensionStatus = 'pending' | 'passed' | 'revised';
+
+/**
+ * A CANDIDATE picture-profile symbol — a drawn pictograph for the low-literacy / child audience,
+ * paired one-to-one with a `NOTATION_SYMBOLS` concept. `icon` is the inner SVG markup for a
+ * `0 0 24 24` cell; `redundantWord` is the dual-coding text shown with it (a pictograph is NEVER
+ * icon-alone — §D). `comprehension` records the §5 study status and is `pending` for every symbol
+ * until a real study runs (results are never fabricated; the gate is `REQ-STUDY-PREREG`).
+ */
+export interface Pictograph {
+  id: string;
+  /** Plain-language meaning — the answer key for an ISO-9186 "what does this mean?" study item. */
+  concept: string;
+  /** Inner SVG markup for a 24×24 cell (drawn monochrome; the editor/key scales it). */
+  icon: string;
+  /** Dual-coding word, always shown with the icon (§D). */
+  redundantWord: string;
+  safetyCritical: boolean;
+  comprehension: ComprehensionStatus;
+  tier: Tier;
+}
+
+/**
+ * **Has a real ISO-9186 comprehension study been run + analysed for the pictographs?** `false` in
+ * v0.x — no study has run, and results must never be fabricated (an LLM dry-run is not a sample).
+ * `auditPictographs` enforces that while this is `false`, every pictograph stays `pending`; flipping
+ * it true is a deliberate act that must accompany recorded study data. Until then, `pictographFor`
+ * returns nothing and the picture profile stays "client + flag" (the REQ-PICTURE-PICTOGRAPHS gate).
+ */
+export const PICTOGRAPH_STUDY_RUN = false;
+
+/**
+ * The candidate pictographs — the *set under test*, not a shipped symbol set. Each is paired with a
+ * core concept; all are `pending` (no study has run). This registry drives `auditPictographs` (the
+ * Tier-A pre-study gate), the candidate `pictographKeySvg` sheet, and — once a symbol passes — the
+ * gated `pictographFor` lookup the renderers consult. Designed novice-first; deliberately minimal
+ * (the picture profile caps symbol kinds, §2).
+ */
+export const PICTOGRAPHS: readonly Pictograph[] = [
+  {
+    id: 'self',
+    concept: 'the steady, settled centre of me (Self)',
+    icon: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="9.5" r="2.6" fill="#1a1a1a" stroke="none"/><path d="M7 17.5a5 5 0 0 1 10 0"/>',
+    redundantWord: 'STEADY ME',
+    safetyCritical: false,
+    comprehension: 'pending',
+    tier: 1,
+  },
+  {
+    id: 'part',
+    concept: 'a part of me / a sub-personality',
+    icon: '<circle cx="12" cy="8" r="3" fill="#1a1a1a" stroke="none"/><path d="M6 19a6 6 0 0 1 12 0"/>',
+    redundantWord: 'A PART',
+    safetyCritical: false,
+    comprehension: 'pending',
+    tier: 1,
+  },
+  {
+    id: 'feeling',
+    concept: 'a feeling or state I can be in',
+    icon: '<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10.5" r="1.1" fill="#1a1a1a" stroke="none"/><circle cx="15" cy="10.5" r="1.1" fill="#1a1a1a" stroke="none"/><path d="M8.5 15q3.5 2.5 7 0"/>',
+    redundantWord: 'A FEELING',
+    safetyCritical: false,
+    comprehension: 'pending',
+    tier: 1,
+  },
+  {
+    id: 'resource',
+    concept: 'a strength, support, or anchor that steadies me',
+    icon: '<circle cx="12" cy="4.5" r="2"/><path d="M12 6.5V20"/><path d="M8 10h8"/><path d="M4.5 14a7.5 7.5 0 0 0 15 0"/>',
+    redundantWord: 'A STRENGTH',
+    safetyCritical: false,
+    comprehension: 'pending',
+    tier: 1,
+  },
+  {
+    id: 'exit',
+    concept: 'a way out / a way to get help',
+    icon: '<path d="M13 4H4v16h9"/><path d="M10 12h10"/><path d="M16 8l4 4-4 4"/>',
+    redundantWord: 'WAY OUT',
+    safetyCritical: true,
+    comprehension: 'pending',
+    tier: 1,
+  },
+  {
+    id: 'trigger',
+    concept: 'a spark that sets a pattern off (a trigger)',
+    icon: '<path d="M13 2 5 13h5l-2 9 9-13h-5z" fill="#1a1a1a" stroke="none"/>',
+    redundantWord: 'A SPARK',
+    safetyCritical: false,
+    comprehension: 'pending',
+    tier: 1,
+  },
+  {
+    id: 'reach-out',
+    concept: 'reach out / tell someone / ask for help',
+    icon: '<path d="M4 5h16v10h-9l-4 4v-4H4z"/><circle cx="9" cy="10" r="1" fill="#1a1a1a" stroke="none"/><circle cx="12" cy="10" r="1" fill="#1a1a1a" stroke="none"/><circle cx="15" cy="10" r="1" fill="#1a1a1a" stroke="none"/>',
+    redundantWord: 'REACH OUT',
+    safetyCritical: true,
+    comprehension: 'pending',
+    tier: 2,
+  },
+];
+
+/**
+ * Tier-A pictograph audit — the automatable pre-study gate (mirrors `auditNotation`, runs in CI). It
+ * does NOT measure comprehension (that needs the §5 human study). It enforces the necessary
+ * conditions to be worth testing AND the honesty gate: every pictograph has a unique id + a
+ * plain-language gloss; every one carries a **redundant word** (a pictograph is never icon-alone,
+ * §D — stricter than `auditNotation`, which requires the word only for safety-critical symbols);
+ * icons are **discriminable** (no two identical); and — while `PICTOGRAPH_STUDY_RUN` is false — every
+ * symbol is still `pending` (so an unvalidated symbol can never be marked `passed` and slip into the
+ * picture profile). `ok` is false iff any error-severity issue is present.
+ */
+export function auditPictographs(
+  pictographs: readonly Pictograph[] = PICTOGRAPHS,
+  studyRun: boolean = PICTOGRAPH_STUDY_RUN,
+): NotationAudit {
+  const issues: NotationAuditIssue[] = [];
+  const ids = new Set<string>();
+  const iconOwner = new Map<string, string>();
+  for (const p of pictographs) {
+    if (ids.has(p.id))
+      issues.push({
+        rule: 'pictograph.unique-id',
+        severity: 'error',
+        message: `Duplicate pictograph id "${p.id}".`,
+        symbol: p.id,
+      });
+    ids.add(p.id);
+    if (!p.concept.trim())
+      issues.push({
+        rule: 'pictograph.gloss',
+        severity: 'error',
+        message: `Pictograph "${p.id}" has no plain-language gloss to test against.`,
+        symbol: p.id,
+      });
+    if (!p.icon.trim())
+      issues.push({
+        rule: 'pictograph.icon',
+        severity: 'error',
+        message: `Pictograph "${p.id}" has no drawn icon.`,
+        symbol: p.id,
+      });
+    if (!p.redundantWord.trim())
+      issues.push({
+        rule: 'pictograph.dual-coding',
+        severity: 'error',
+        message: `Pictograph "${p.id}" must carry a redundant word — a pictograph is never icon-alone (§D).`,
+        symbol: p.id,
+      });
+    const owner = iconOwner.get(p.icon);
+    if (owner)
+      issues.push({
+        rule: 'pictograph.discriminability',
+        severity: 'error',
+        message: `Pictographs "${owner}" and "${p.id}" share an identical icon — not discriminable.`,
+        symbol: p.id,
+      });
+    else iconOwner.set(p.icon, p.id);
+    if (!studyRun && p.comprehension !== 'pending')
+      issues.push({
+        rule: 'pictograph.gate',
+        severity: 'error',
+        message: `No comprehension study has run, so pictograph "${p.id}" must stay "pending", not "${p.comprehension}" — a symbol cannot be marked tested/shipped without recorded data (REQ-STUDY-PREREG).`,
+        symbol: p.id,
+      });
+  }
+  return { ok: !issues.some((i) => i.severity === 'error'), issues };
+}
+
+/** The pictographs cleared to ship into the picture profile — only `passed` ones, and only after a
+ * real study has run. Empty in v0.x (the honest state). */
+export function availablePictographs(): Pictograph[] {
+  if (!PICTOGRAPH_STUDY_RUN) return [];
+  return PICTOGRAPHS.filter((p) => p.comprehension === 'passed');
+}
+
+/**
+ * The gated lookup a renderer uses to draw a picture symbol: returns the pictograph for a concept
+ * **only if it has passed the comprehension gate**. Returns `undefined` in v0.x for every concept
+ * (no study has run) — so the mechanism is wired but inert, and the picture profile stays
+ * "client + flag" until a symbol earns its place. This is the load-bearing honesty of the REQ.
+ */
+export function pictographFor(conceptId: string): Pictograph | undefined {
+  if (!PICTOGRAPH_STUDY_RUN) return undefined;
+  return PICTOGRAPHS.find((p) => p.id === conceptId && p.comprehension === 'passed');
+}
+
+const escXml = (s: string): string =>
+  s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
+
+/**
+ * Render the **candidate** pictograph sheet — the set-under-test made visible, exactly what a §5
+ * study would show participants and what the editor surfaces in picture mode. Every cell pairs the
+ * icon with its redundant word + plain-language gloss; safety-critical symbols (the way-out) are
+ * marked with their higher ≥85% bar. A prominent banner states these are CANDIDATES, **not validated**
+ * — so the sheet can never be mistaken for a shipped symbol set. Monochrome; carries alt-text.
+ */
+export function pictographKeySvg(pictographs: readonly Pictograph[] = PICTOGRAPHS): string {
+  const cols = 3;
+  const cellW = 224;
+  const cellH = 96;
+  const padX = 16;
+  const top = 76;
+  const rows = Math.ceil(pictographs.length / cols);
+  const W = padX * 2 + cols * cellW;
+  const H = top + rows * cellH + 20;
+
+  const banner =
+    'CANDIDATE picture symbols — pending comprehension testing (ISO 9186), NOT validated';
+  const altText =
+    `Candidate picture-profile pictographs (the set under test, not validated): ` +
+    pictographs.map((p) => `${p.redundantWord} = ${p.concept}`).join('; ') +
+    '. None has passed the comprehension gate, so the diagrams still use words.';
+
+  const cells = pictographs
+    .map((p, i) => {
+      const cx = padX + (i % cols) * cellW;
+      const cy = top + Math.floor(i / cols) * cellH;
+      const iconWrap =
+        `<g transform="translate(${cx + 6}, ${cy + 14})">` +
+        `<rect x="0" y="0" width="48" height="48" rx="8" fill="#fff" stroke="#ccc"/>` +
+        `<svg x="6" y="6" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p.icon}</svg>` +
+        `</g>`;
+      const word = `<text x="${cx + 64}" y="${cy + 30}" font-family="sans-serif" font-size="13" font-weight="700">${escXml(p.redundantWord)}</text>`;
+      const bar = p.safetyCritical
+        ? `<text x="${cx + 64}" y="${cy + 46}" font-family="sans-serif" font-size="9" fill="#b00">safety — ≥85% bar</text>`
+        : '';
+      const gloss = `<text x="${cx + 64}" y="${cy + (p.safetyCritical ? 62 : 48)}" font-family="sans-serif" font-size="10" fill="#444">${escXml(p.concept.length > 30 ? p.concept.slice(0, 29) + '…' : p.concept)}</text>`;
+      const status = `<text x="${cx + 64}" y="${cy + (p.safetyCritical ? 78 : 64)}" font-family="sans-serif" font-size="9" fill="#888">⏳ pending test</text>`;
+      return iconWrap + word + bar + gloss + status;
+    })
+    .join('');
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escXml(altText)}">` +
+    `<title>Candidate picture symbols (under test)</title><desc>${escXml(altText)}</desc>` +
+    `<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>` +
+    `<rect x="8" y="10" width="${W - 16}" height="34" rx="6" fill="#fff7e6" stroke="#e0a800"/>` +
+    `<text x="${W / 2}" y="32" font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#7a5b00">${escXml(banner)}</text>` +
+    cells +
+    '</svg>'
+  );
+}
