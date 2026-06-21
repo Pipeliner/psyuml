@@ -902,6 +902,21 @@ details.disclose-inline > summary {
   }
 }
 
+/* Compact text button (e.g. "Remove" a view from the case-file board) — looks like a link, but is a
+   real <button> for accessibility. */
+.link-like {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--c-accent-text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.link-like:hover {
+  text-decoration: none;
+}
+
 /* --------------------------------------------------------------------------
    Print / "paper copy" (REQ-EXPORT-RASTER) — a clinician printing the page
    (or Print → Save as PDF) gets the diagram + its honest "about" caption, not

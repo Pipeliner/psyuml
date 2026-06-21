@@ -257,6 +257,49 @@ export function serializeModel(model: PsyumlModel): string {
   return JSON.stringify(PsyumlModel.parse(model), null, 2);
 }
 
+// ---------------------------------------------------------------------------
+// Case file — a persisted multi-document container (REQ-CASE-FILE, ADR-0039)
+// ---------------------------------------------------------------------------
+
+/**
+ * A persisted **case file**: several PsyUML views (`documents`) of ONE client/case — the saved form
+ * of the v0.2 Composite board (ADR-0019; rendered by `renderComposite`). It is purely a *container*:
+ * each document is an ordinary `PsyumlModel`, so a case file is **never** a model-schema change. The
+ * `kind: 'case-file'` discriminator lets an opener tell a case file from a single model. It carries
+ * its own case-level `meta`; every document keeps its own disclaimer/safety fields. NB: aggregating
+ * several views of one person is **more identifying** than a single view — the §L.2 disclaimer and
+ * de-identification posture (REQ-PRIVACY) are unchanged and apply **per document**.
+ */
+export const CaseFile = z.object({
+  version: z.string().default(PSYUML_MODEL_VERSION),
+  kind: z.literal('case-file'),
+  meta: z
+    .object({
+      title: z.string().optional(),
+      note: z.string().optional(),
+    })
+    .default({}),
+  documents: z.array(PsyumlModel).default([]),
+});
+export type CaseFile = z.infer<typeof CaseFile>;
+
+/** Parse + validate a case file from JSON text or a plain object. Throws on invalid input (incl. a
+ * single model, whose missing `kind: 'case-file'` is rejected — so the opener can tell them apart). */
+export function parseCaseFile(input: string | unknown): CaseFile {
+  const data = typeof input === 'string' ? JSON.parse(input) : input;
+  return CaseFile.parse(data);
+}
+
+/** Serialize a case file to canonical, stable JSON (round-trips with `parseCaseFile`). */
+export function serializeCaseFile(file: CaseFile): string {
+  return JSON.stringify(CaseFile.parse(file), null, 2);
+}
+
+/** Build a case file from a set of views + optional case meta (the editor's board → a saved file). */
+export function caseFileFrom(documents: PsyumlModel[], meta: CaseFile['meta'] = {}): CaseFile {
+  return CaseFile.parse({ kind: 'case-file', meta, documents });
+}
+
 /** Resolve the best label string for a layer + language, with graceful fallback. */
 export function getText(
   label: Label,

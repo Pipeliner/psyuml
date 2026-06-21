@@ -1168,8 +1168,10 @@
       "spec": ["§3", "§2"],
       "source": "docs/specification/roadmap-to-v1.md",
       "milestone": "M21",
-      "status": "planned",
-      "notes": "The Composite board is in-memory and render-only (ADR-0019): no saved case file of several views, and the editor cannot AUTHOR a composite (one model at a time). Spec a persisted multi-document case-file format + editor composite authoring, reusing `renderComposite`/`sharedNodeIds`. Additive (a case file is an array of existing models, never a model-schema change)."
+      "status": "implemented",
+      "impl": ["packages/model/index.ts", "apps/web/App.tsx", "apps/web/styles.css"],
+      "tests": ["packages/model/index.test.ts", "e2e/onboarding.spec.ts"],
+      "notes": "Implemented additively (ADR-0039). A `CaseFile` schema in `@psyuml/model` — `{ version, kind: 'case-file', meta: { title?, note? }, documents: PsyumlModel[] }` — is a PURE container (each document is a fully-validated `PsyumlModel`, so NEVER a model-schema change); the `kind: 'case-file'` literal discriminates a case file from a single model so `parseCaseFile` rejects the latter. `parseCaseFile`/`serializeCaseFile` round-trip losslessly; `caseFileFrom(documents, meta)` builds one. The editor's Composite board IS the documents: the panel gains a case-title field, Save case file (`<slug>.psyuml-case`), Open case file (repopulates board + title, shows the composite), and a per-view list with Remove — real authoring, not just append/clear; `renderComposite(board)` unchanged (the board was always `PsyumlModel[]`). HONEST SCOPE: a case file aggregates several views of one person → MORE IDENTIFYING; §L.2 disclaimer + de-identification (REQ-PRIVACY/`toFhir`) unchanged + applied per document (no new PII handling). Authoring is snapshot-based (a board view is a copy); in-place view editing + reorder-by-drag are future polish; no CLI surface yet. Verified by a model round-trip/discrimination unit test + a Playwright e2e (author 2 views → save → clear → reopen → board repopulates)."
     },
     {
       "id": "REQ-LIVE-PROFILES",

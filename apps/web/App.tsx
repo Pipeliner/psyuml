@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  caseFileFrom,
   createEmptyModel,
   getText,
+  parseCaseFile,
   parseModel,
+  serializeCaseFile,
   serializeModel,
   type DiagramType,
   type EdgeKind,
@@ -396,9 +399,10 @@ export function App() {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
   // v0.2 §2 Composite board: an in-memory set of views of one case (a persisted multi-document
-  // "case file" is future). renderComposite cross-links them by shared node id.
+  // case file, REQ-CASE-FILE/ADR-0039). renderComposite cross-links them by shared node id.
   const [board, setBoard] = useState<PsyumlModel[]>([]);
   const [showBoard, setShowBoard] = useState(false);
+  const [caseTitle, setCaseTitle] = useState('');
 
   const single = useMemo(() => {
     const roleLabels = school ? roleLabelsFor(school) : undefined;
@@ -928,7 +932,9 @@ export function App() {
 
       <section aria-label="Composite board" className="panel">
         <strong>Composite board (v0.2)</strong>{' '}
-        <span className="muted">— several views of one case, cross-linked by shared node ids.</span>
+        <span className="muted">
+          — several views of one case, cross-linked by shared node ids; save them as a case file.
+        </span>
         <div className="row" style={{ marginTop: '0.5rem' }}>
           <button
             type="button"
@@ -949,6 +955,71 @@ export function App() {
           >
             Clear board
           </button>
+        </div>
+        {board.length > 0 && (
+          <ul aria-label="Views on the board">
+            {board.map((doc, i) => (
+              <li key={i}>
+                {i + 1}. {doc.meta.title?.trim() || doc.diagram}{' '}
+                <button
+                  type="button"
+                  className="link-like"
+                  aria-label={`Remove view ${i + 1} from the board`}
+                  onClick={() => setBoard((b) => b.filter((_, j) => j !== i))}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="row" style={{ marginTop: '0.5rem' }}>
+          <label className="control" title="A name for the saved case file">
+            Case title
+            <input
+              type="text"
+              value={caseTitle}
+              placeholder="e.g. R. — formulation"
+              onChange={(e) => setCaseTitle(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={!board.length}
+            title={board.length ? undefined : 'Add at least one view to the board first'}
+            onClick={() =>
+              downloadText(
+                `${slugify(caseTitle) || 'case'}.psyuml-case`,
+                serializeCaseFile(caseFileFrom(board, { title: caseTitle || undefined })),
+                'application/json',
+              )
+            }
+          >
+            Save case file
+          </button>
+          <label className="control" title="Open a saved .psyuml-case file of several views">
+            Open case file
+            <input
+              type="file"
+              accept=".psyuml-case,.json,application/json"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                f.text()
+                  .then((txt) => {
+                    const cf = parseCaseFile(txt);
+                    setBoard(cf.documents);
+                    setCaseTitle(cf.meta.title ?? '');
+                    setShowBoard(cf.documents.length > 0);
+                    setCompareError(null);
+                  })
+                  .catch(() =>
+                    setCompareError('Could not open that file as a .psyuml-case case file.'),
+                  );
+                e.target.value = '';
+              }}
+            />
+          </label>
         </div>
       </section>
 

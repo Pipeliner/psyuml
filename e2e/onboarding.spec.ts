@@ -218,4 +218,34 @@ test.describe('new user: diagramming a partially understood situation', () => {
     expect(buf.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
     expect(buf.length).toBeGreaterThan(1000);
   });
+
+  test('authors, saves, and reopens a multi-view case file (REQ-CASE-FILE)', async ({ page }) => {
+    await page.goto('/');
+    // compose two distinct views of "one case" onto the board
+    await page.getByRole('combobox', { name: 'Diagram' }).selectOption('parts-map');
+    await page.getByRole('button', { name: /Add current view/ }).click();
+    await page.getByRole('combobox', { name: 'Diagram' }).selectOption('state-map');
+    await page.getByRole('button', { name: /Add current view/ }).click();
+    const list = page.getByRole('list', { name: 'Views on the board' });
+    await expect(list.getByRole('listitem')).toHaveCount(2);
+
+    // save → a real .psyuml-case file holding both documents
+    const [dl] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Save case file' }).click(),
+    ]);
+    expect(dl.suggestedFilename()).toMatch(/\.psyuml-case$/);
+    const path = await dl.path();
+    const cf = JSON.parse(readFileSync(path, 'utf8'));
+    expect(cf.kind).toBe('case-file');
+    expect(cf.documents).toHaveLength(2);
+
+    // clear, then reopen the saved file → the board repopulates from disk (persistence works)
+    await page.getByRole('button', { name: 'Clear board' }).click();
+    await expect(list).toHaveCount(0);
+    await page.getByLabel('Open case file').setInputFiles(path);
+    await expect(
+      page.getByRole('list', { name: 'Views on the board' }).getByRole('listitem'),
+    ).toHaveCount(2);
+  });
 });

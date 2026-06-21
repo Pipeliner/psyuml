@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
+  caseFileFrom,
   createEmptyModel,
   getText,
   INTERPRETIVE_STATUSES,
   isInterpretive,
+  parseCaseFile,
   parseModel,
   PSYUML_MODEL_VERSION,
   schoolClaims,
+  serializeCaseFile,
   serializeModel,
 } from './index';
 
@@ -117,5 +120,37 @@ describe('model', () => {
     expect(schoolClaims(['IFS', 'ifs', 'source:notes'])).toEqual(['IFS']);
     expect(schoolClaims([])).toEqual([]);
     expect(schoolClaims(undefined)).toEqual([]);
+  });
+});
+
+describe('case file (REQ-CASE-FILE, ADR-0039)', () => {
+  const m1 = createEmptyModel('state-map');
+  const m2 = createEmptyModel('parts-map');
+
+  it('round-trips losslessly through serialize → parse', () => {
+    const cf = caseFileFrom([m1, m2], { title: 'R. — a case', note: 'two views' });
+    const round = parseCaseFile(serializeCaseFile(cf));
+    expect(round).toEqual(cf);
+    expect(round.kind).toBe('case-file');
+    expect(round.documents).toHaveLength(2);
+    expect(round.documents.map((d) => d.diagram)).toEqual(['state-map', 'parts-map']);
+    expect(round.meta.title).toBe('R. — a case');
+  });
+
+  it('parses documents as full models (zod defaults applied) — a case file is just a container', () => {
+    const cf = parseCaseFile({
+      kind: 'case-file',
+      documents: [{ version: PSYUML_MODEL_VERSION, diagram: 'state-map' }],
+    });
+    // top-level case-file version + meta default; each document is validated as a full model
+    expect(cf.version).toBe(PSYUML_MODEL_VERSION);
+    expect(cf.meta).toEqual({});
+    expect(cf.documents[0].nodes).toEqual([]);
+    expect(cf.documents[0].edges).toEqual([]);
+  });
+
+  it('rejects a single model (no kind discriminator) so an opener can tell them apart', () => {
+    expect(() => parseCaseFile(serializeModel(m1))).toThrow();
+    expect(() => parseCaseFile({ kind: 'not-a-case', documents: [] })).toThrow();
   });
 });
