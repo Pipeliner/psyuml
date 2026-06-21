@@ -102,6 +102,7 @@ const RENDERERS: Record<string, Renderer> = {
   bullseye: render.renderBullseye,
   'tree-of-life': render.renderTreeOfLife,
   'schema-grid': render.renderSchemaGrid,
+  'decisional-balance': render.renderDecisionalBalance,
 };
 
 const load = (f: string): PsyumlModel =>

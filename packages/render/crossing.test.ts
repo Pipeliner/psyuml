@@ -41,6 +41,7 @@ const RENDERERS: Record<string, Renderer> = {
   bullseye: render.renderBullseye,
   'tree-of-life': render.renderTreeOfLife,
   'schema-grid': render.renderSchemaGrid,
+  'decisional-balance': render.renderDecisionalBalance,
 };
 
 /** Count proper crossings between NON-incident edges (edges sharing a node meet, they don't cross). */

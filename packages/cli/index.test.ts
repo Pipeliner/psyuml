@@ -181,6 +181,7 @@ describe('psyuml cli', () => {
                 'bullseye',
                 'tree-of-life',
                 'schema-grid',
+                'decisional-balance',
               ].map((t) => [t, 'ok']),
             ),
           },

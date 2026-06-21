@@ -488,6 +488,7 @@ export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
   bullseye: 'change',
   'tree-of-life': 'journey',
   'schema-grid': 'parts',
+  'decisional-balance': 'change',
   ritual: 'ritual',
 };
 

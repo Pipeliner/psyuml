@@ -14,8 +14,8 @@ This catalog drives the help-site **example library**. Each row maps a diagram t
 and a **renderer** (or flags a renderer PsyUML doesn't have yet). Build status:
 - **✅ existing** — realizable now on a shipped renderer (becomes an example `.psyuml`).
 - **◐ approx** — expressible on a shipped renderer with some loss (becomes an example, noted).
-- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. decisional-balance 2×2,
-  circle-of-security); catalogued, not yet an example.
+- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. circle-of-security); catalogued, not
+  yet an example.
 
 Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-created) — these map to
 PsyUML's three **audience profiles** (ADR-0016): **clinician** (the full analytic surface), **client**
@@ -221,7 +221,7 @@ help site must teach them, not just the pictures:
 | 43 | **SORC/SORCK functional analysis** | behavioural (Kanfer–Saslow) | Stimulus–Organism–Response–Consequence–Contingency | Influential clinician formulation heuristic; hard to standardise | ◐ intervention-sequence | C(+shared) |
 | 44 | **ABC functional analysis** | behavioural (Skinner) / REBT (Ellis) | A→B→C (operant) **or** Activating-event→Beliefs→Consequences→Dispute→Effect (REBT) — two distinct lineages | Both are teaching/self-monitoring tools; REBT's belief-mediation is the key differentiator | ◐ intervention-sequence | B |
 | 45 | **Values bullseye** | ACT (Lundgren) | life domains plotted as on-/off-target to values | Client values-clarification tool | ✅ bullseye | L |
-| 46 | **Decisional balance / pros-cons** | MI (Miller–Rollnick) | costs/benefits of change vs staying the same (2×2) | MI is evidenced; decisional-balance is a tool (and MI now uses it cautiously re ambivalence) | ◇ new (2×2 sorter) | B |
+| 46 | **Decisional balance / pros-cons** | MI (Miller–Rollnick) | costs/benefits of change vs staying the same (2×2) | MI is evidenced; decisional-balance is a tool (and MI now uses it cautiously re ambivalence) | ✅ decisional-balance | B |
 | 47 | **Goal ladder / scaling** | solution-focused (de Shazer) | scaling 0–10 + steps up; preferred future | SFBT practice tool | ◐ intervention-sequence / timeline | B |
 
 ## RITUAL — "what symbolic/ceremonial process?" (→ `ritual`)
@@ -244,7 +244,7 @@ help site must teach them, not just the pictures:
 
 - **The shipped example set is the machine-verified manifest `examples/catalog.json`** (the source of
   truth; `conformance/catalog.test.ts` asserts every row is a real, catalogued, correctly-typed
-  `.psyuml` and no example is un-catalogued — ADR-0027). **51 non-showcase examples ship today** on the
+  `.psyuml` and no example is un-catalogued — ADR-0027). **52 non-showcase examples ship today** on the
   shipped renderers, spanning all 8 families — each real and rendered, golden-stable under the overlap
   / legibility / layout-quality / edge↔edge invariants. Reused base examples (state-map, parts-map,
   mode-map, relational-field, drama-triangle, body-map, decision-nav, resource-anchor, process-loop,
@@ -258,7 +258,7 @@ help site must teach them, not just the pictures:
   narrative-externalising** (White). The catalogued **composite** board is rendered live
   (`renderComposite` over several views) rather than a single `.psyuml`; the ◇ new-type rows stay
   catalogued-not-faked pending their renderers.
-- **◇ new-type rows are catalogued, not faked** (decisional-balance 2×2, circle-of-security). Each is
+- **◇ new-type rows are catalogued, not faked** (circle-of-security). Each is
   a candidate
   **new renderer** — a future milestone, recorded here so the help site can show them as "planned"
   rather than mis-render them on a renderer that distorts their meaning.
@@ -277,7 +277,7 @@ can never drift from what actually ships. To change it, edit the manifest and ru
 
 <!-- BEGIN catalog:generated -->
 
-_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 51 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 52 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
 
 ### Cycle
 
@@ -358,6 +358,7 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 | ABC(DE) functional analysis | REBT (Ellis) | B | Activating event → Beliefs → Consequence, then Dispute → Effect. A teaching / self-monitoring tool; belief-mediation is the REBT differentiator. | `abc.psyuml` |
 | Exposure / fear ladder | CBT (Wolpe) | B | Feared situations ranked by SUDS, climbed least → most. Exposure therapy is strongly evidenced; the ladder is a planning aid — the inhibitory-learning turn questions strict graded ordering / SUDS-drop stopping rules. | `exposure-ladder.psyuml` |
 | Values bullseye | ACT (Lundgren) | L | Life domains plotted as on-/off-target to chosen values; the spread of darts shows where to close the gap. A client values-clarification reflection — a teaching aid, not a measure of a good life. | `values-bullseye.psyuml` |
+| Decisional balance / pros-cons | MI (Miller–Rollnick) | B | A 2×2 of benefits/costs for making a change vs staying the same. MI is evidenced, but the tool is used cautiously: a neutral decisional balance can deepen ambivalence when the goal is change (MI-3) — a reflection, not a persuasion device. | `decisional-balance.psyuml` |
 
 ### Ritual
 
@@ -372,9 +373,9 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 ## Showcase examples — one feature-dense model per diagram type
 
 Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the
-18 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
+19 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
 dense, validated model that exercises as much of the notation as that type sensibly carries — so you
-can see, and live-edit, the system's full range in one place. All eighteen are corpus-lint clean,
+can see, and live-edit, the system's full range in one place. All nineteen are corpus-lint clean,
 overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by a golden render.
 
 | Type (★ showcase) | Capabilities it exercises |
@@ -397,6 +398,7 @@ overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by
 | **Bull's-eye (ACT values)** | 6 life domains plotted by `intensity` (on-/off-target radius) · evenly-spaced angles · perimeter labels + leaders · decorative concentric rings · edge-free model · client labels |
 | **Tree of Life (narrative)** | 6 botanical zones by `stereotype` (roots/ground/trunk/branches/leaves/fruits) · canopy + trunk + soil + root-fan silhouette · `separate1D` item rows · edge-free model · client labels |
 | **Schema grid (Young)** | Young's 18 EMS in the 5 schema domains (column sorter) · domain headers · `stereotype` grouping · active schemas highlighted (bold outline + wedge + bold, `intensity`) · label-in-box · edge-free model |
+| **Decisional balance (MI)** | 2×2 labelled-axis grid (making the change / staying the same × benefits / costs) · `stereotype` quadrants · tinted rows · the MI ambivalence caveat · edge-free model |
 
 ---
 
@@ -429,15 +431,21 @@ meaning?* If it is fundamentally fill-in / score-it / list-it / ask-these-questi
 **excluded** from the rendered library:
 
 - **Thought record** (column table) · **PHQ-9 / GAD-7** (rating scales) · **SMART goals** (mnemonic checklist) ·
-  **DSM-5 Cultural Formulation Interview** + **Kleinman's 8 questions** (interviews) · **Decisional balance**
-  (2×2 pros/cons table) · **Readiness ruler** (0–10 scale) · **5 Ps** & **biopsychosocial grid** (matrices) ·
-  activity/mood/gratitude **logs**.
+  **DSM-5 Cultural Formulation Interview** + **Kleinman's 8 questions** (interviews) · **Readiness ruler**
+  (0–10 scale) · **5 Ps** & **biopsychosocial grid** (matrices) · activity/mood/gratitude **logs**.
 
-The remaining ◇ rows (decisional-balance 2×2, circle-of-security) are candidate **new renderers** —
-catalogued, not mis-rendered. (Shipped so far: the **ranked ladder** as `ladder` (ADR-0029), the **CFT
-three circles** as `three-circles` (ADR-0030), **DBT states of mind** as `venn` (ADR-0031), the **ACT
-values bull's-eye** as `bullseye` (ADR-0032), the narrative **Tree of Life** as `tree-of-life`
-(ADR-0033), and the **schema-domains sorter** as `schema-grid` (ADR-0034).)
+(The **decisional balance** 2×2 was *promoted out* of this excluded set and shipped as `decisional-balance`
+(ADR-0035): unlike a flat pros/cons table, its crossed **axes** — making-the-change/staying-the-same ×
+benefits/costs — are a load-bearing 2-D structure. It ships with the honest caveat that a *neutral*
+decisional balance can deepen ambivalence when the goal is change (MI-3), so it is a reflection, not a
+persuasion device.)
+
+The one remaining ◇ row (circle-of-security) is a candidate **new renderer** — catalogued, not
+mis-rendered. (Shipped so far: the **ranked ladder** as `ladder` (ADR-0029), the **CFT three circles**
+as `three-circles` (ADR-0030), **DBT states of mind** as `venn` (ADR-0031), the **ACT values
+bull's-eye** as `bullseye` (ADR-0032), the narrative **Tree of Life** as `tree-of-life` (ADR-0033), the
+**schema-domains sorter** as `schema-grid` (ADR-0034), and the **decisional-balance 2×2** as
+`decisional-balance` (ADR-0035).)
 
 ## Safety & cultural caveats (consolidated)
 

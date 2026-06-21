@@ -245,6 +245,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderTreeOfLife(model, o);
     case 'schema-grid':
       return renderSchemaGrid(model, o);
+    case 'decisional-balance':
+      return renderDecisionalBalance(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -258,6 +260,7 @@ const VENN_W = 600;
 const BULLSEYE_W = 640;
 const TREE_W = 760;
 const SCHEMA_W = 880;
+const MATRIX_W = 720;
 const NODE_W = 220;
 const NODE_H = 40;
 const BAND_H = 96;
@@ -3634,6 +3637,137 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Schema-domains grid')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
+    title +
+    parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
+
+/**
+ * Decisional balance 2×2 (REQ-NEW-DIAGRAM-TYPES, ADR-0035) — the MI (Miller–Rollnick) pros/cons grid,
+ * rendered as a true LABELLED-AXIS quadrant grid so the crossed dimensions are the structure: the
+ * columns are the two options (making the change | staying the same), the rows are benefits | costs.
+ * Each item is placed in a quadrant by `stereotype` (`change-benefit` | `stay-benefit` |
+ * `change-cost` | `stay-cost`); items are free haloed labels stacked per quadrant. Edge-free + no
+ * schema growth. Honest scope: the most table-like ◇ type (the cells don't link) — what carries
+ * meaning is the 2-D axis structure; and a NEUTRAL decisional balance can DEEPEN ambivalence when the
+ * goal is change (MI-3), so the footer says: use when genuinely weighing, not to persuade.
+ */
+export function renderDecisionalBalance(
+  model: PsyumlModel,
+  options: RenderOptions = {},
+): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const W = MATRIX_W;
+  const QUAD: { key: string; col: 0 | 1; row: 0 | 1 }[] = [
+    { key: 'change-benefit', col: 0, row: 0 },
+    { key: 'stay-benefit', col: 1, row: 0 },
+    { key: 'change-cost', col: 0, row: 1 },
+    { key: 'stay-cost', col: 1, row: 1 },
+  ];
+  const colHeaders = ['Making the change', 'Staying the same'];
+  const rowHeaders = ['Benefits / hopes', 'Costs / worries'];
+
+  const leftHdr = 92;
+  const titleH = model.meta.title ? 34 : 12;
+  const colHdrY = titleH + 16;
+  const gridTop = colHdrY + 12;
+  const gridLeft = leftHdr;
+  const colW = Math.round((W - gridLeft - 16) / 2);
+  const itemH = 24;
+  const itemTopPad = 26;
+
+  const itemsIn = (key: string): typeof model.nodes =>
+    model.nodes.filter((n) => (n.stereotype ?? '') === key);
+  const rowCount = (row: 0 | 1): number =>
+    Math.max(...QUAD.filter((q) => q.row === row).map((q) => itemsIn(q.key).length), 1);
+  const rowHt = (row: 0 | 1): number => rowCount(row) * itemH + itemTopPad + 12;
+  const row0H = rowHt(0);
+  const row1H = rowHt(1);
+  const gridH = row0H + row1H;
+  const gridRight = gridLeft + 2 * colW;
+  const gridBottom = gridTop + gridH;
+
+  const parts: string[] = [];
+  // Quadrant tints (faint, redundant with position/headers — not meaning-by-colour).
+  parts.push(
+    `<rect x="${gridLeft}" y="${gridTop}" width="${2 * colW}" height="${row0H}" fill="#f3f7f3" />`,
+    `<rect x="${gridLeft}" y="${gridTop + row0H}" width="${2 * colW}" height="${row1H}" fill="#faf4f2" />`,
+  );
+  // Grid border + dividing cross.
+  parts.push(
+    `<rect x="${gridLeft}" y="${gridTop}" width="${2 * colW}" height="${gridH}" fill="none" stroke="#000" stroke-width="2" />`,
+    `<line x1="${gridLeft + colW}" y1="${gridTop}" x2="${gridLeft + colW}" y2="${gridBottom}" stroke="#000" stroke-width="1.5" />`,
+    `<line x1="${gridLeft}" y1="${gridTop + row0H}" x2="${gridRight}" y2="${gridTop + row0H}" stroke="#000" stroke-width="1.5" />`,
+  );
+  // Column headers.
+  colHeaders.forEach((h, c) => {
+    parts.push(
+      `<text x="${gridLeft + c * colW + colW / 2}" y="${colHdrY + 2}" font-family="sans-serif" font-size="13" font-weight="700" text-anchor="middle">${esc(h)}</text>`,
+    );
+  });
+  // Row headers (left margin, wrapped).
+  rowHeaders.forEach((h, r) => {
+    const cy = gridTop + (r === 0 ? 0 : row0H) + (r === 0 ? row0H : row1H) / 2;
+    parts.push(
+      wrapLabel(h, gridLeft / 2 + 2, cy, {
+        size: 12,
+        weight: 700,
+        maxWidth: leftHdr - 12,
+        maxLines: 2,
+      }),
+    );
+  });
+
+  // Items per quadrant — free haloed labels, stacked.
+  const altQ: string[] = [];
+  for (const q of QUAD) {
+    const items = itemsIn(q.key);
+    const cellX = gridLeft + q.col * colW;
+    const cellY = gridTop + (q.row === 0 ? 0 : row0H);
+    items.forEach((n, i) => {
+      const y = cellY + itemTopPad + i * itemH;
+      const name = getText(n.label, layer, lang);
+      parts.push(
+        `<text data-el="nodelabel:${esc(n.id)}" x="${cellX + colW / 2}" y="${y}" font-family="sans-serif" font-size="11" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke"${textWidth(name, 11) > colW - 18 ? ` textLength="${colW - 18}" lengthAdjust="spacingAndGlyphs"` : ''}>${esc(name)}</text>`,
+      );
+    });
+    const colWord = q.col === 0 ? 'changing' : 'staying';
+    const rowWord = q.row === 0 ? 'benefits' : 'costs';
+    altQ.push(
+      `${rowWord} of ${colWord}: ${items.map((n) => getText(n.label, layer, lang)).join(', ') || 'none'}`,
+    );
+  }
+
+  let h = gridBottom + 20;
+  parts.push(
+    `<text x="${gridLeft}" y="${h}" font-family="sans-serif" font-size="10" fill="#333">Use when genuinely weighing both sides — dwelling on reasons to stay can deepen ambivalence (MI-3), so it is not a persuasion tool.</text>`,
+  );
+  h += 15;
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="${gridLeft}" y="${h}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+    h += 14;
+  }
+  const height = h + 6;
+
+  const altText =
+    `Decisional balance 2×2${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Columns: making the change vs staying the same; rows: benefits vs costs. ${altQ.join('; ')}.`;
+
+  const title = model.meta.title
+    ? `<text x="${gridLeft}" y="26" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Decisional balance')}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +

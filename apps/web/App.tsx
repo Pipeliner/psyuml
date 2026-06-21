@@ -283,6 +283,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: "Young's full 18 Early Maladaptive Schemas sorted into the 5 schema domains, with a person's active schemas highlighted (bold outline + wedge) — a psychoeducation map, not a diagnosis.",
   },
+  {
+    key: 'showcase-decisional-balance',
+    label: '★ Decisional balance — full showcase',
+    family: 'change',
+    school: 'capability demo',
+    note: 'The MI 2×2: making the change vs staying the same, by benefits vs costs, on a labelled-axis grid — with the honest MI caveat that a neutral balance can deepen ambivalence, so it is a reflection, not a persuasion tool.',
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "decisional-balance",
+  "meta": {
+    "title": "Decisional balance — thinking about leaving my job",
+    "disclaimer": "An MI reflection tool (Miller & Rollnick) — a way to look at both sides honestly, held by the person whose choice it is.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "nodes": [
+    { "id": "cb1", "kind": "context", "stereotype": "change-benefit", "label": { "clinician": { "en": "Less daily stress" } }, "properties": {} },
+    { "id": "cb2", "kind": "context", "stereotype": "change-benefit", "label": { "clinician": { "en": "A chance to retrain" } }, "properties": {} },
+    { "id": "cb3", "kind": "context", "stereotype": "change-benefit", "label": { "clinician": { "en": "More time with family" } }, "properties": {} },
+    { "id": "cc1", "kind": "context", "stereotype": "change-cost", "label": { "clinician": { "en": "Money uncertainty" } }, "properties": {} },
+    { "id": "cc2", "kind": "context", "stereotype": "change-cost", "label": { "clinician": { "en": "Losing colleagues" } }, "properties": {} },
+    { "id": "cc3", "kind": "context", "stereotype": "change-cost", "label": { "clinician": { "en": "Facing the unknown" } }, "properties": {} },
+    { "id": "sb1", "kind": "context", "stereotype": "stay-benefit", "label": { "clinician": { "en": "Steady income" } }, "properties": {} },
+    { "id": "sb2", "kind": "context", "stereotype": "stay-benefit", "label": { "clinician": { "en": "Familiar routine" } }, "properties": {} },
+    { "id": "sb3", "kind": "context", "stereotype": "stay-benefit", "label": { "clinician": { "en": "Known colleagues" } }, "properties": {} },
+    { "id": "sc1", "kind": "context", "stereotype": "stay-cost", "label": { "clinician": { "en": "Dread on Sundays" } }, "properties": {} },
+    { "id": "sc2", "kind": "context", "stereotype": "stay-cost", "label": { "clinician": { "en": "No room to grow" } }, "properties": {} },
+    { "id": "sc3", "kind": "context", "stereotype": "stay-cost", "label": { "clinician": { "en": "Health is suffering" } }, "properties": {} }
+  ],
+  "edges": []
+}

@@ -514,14 +514,19 @@
       "school": "Schema Therapy (Young)",
       "note": "Young's 18 Early Maladaptive Schemas grouped into the 5 schema domains; a person's active schemas are highlighted. The schema labels are validated; the grid is a teaching convention (layout varies by trainer), not a diagnosis.",
       "audience": "C"
+    },
+    {
+      "file": "decisional-balance.psyuml",
+      "type": "decisional-balance",
+      "family": "Change",
+      "name": "Decisional balance / pros-cons",
+      "catalogId": 46,
+      "school": "MI (Miller–Rollnick)",
+      "note": "A 2×2 of benefits/costs for making a change vs staying the same. MI is evidenced, but the tool is used cautiously: a neutral decisional balance can deepen ambivalence when the goal is change (MI-3) — a reflection, not a persuasion device.",
+      "audience": "B"
     }
   ],
   "newTypes": [
-    {
-      "name": "Decisional balance",
-      "shape": "2x2-sorter",
-      "catalogId": 46
-    },
     {
       "name": "Circle of Security",
       "shape": "circle/hands",
