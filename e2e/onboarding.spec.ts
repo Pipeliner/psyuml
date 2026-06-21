@@ -267,4 +267,28 @@ test.describe('new user: diagramming a partially understood situation', () => {
     await page.getByRole('button', { name: 'Use built-in labels' }).click();
     await expect(panel).toHaveCount(0);
   });
+
+  test('switches locale + flips to RTL on the localization demo (REQ-I18N-LOCALIZATION)', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: 'Diagram' }).selectOption('i18n-demo');
+    const diagram = page.locator('section[aria-label$="diagram"]');
+    await expect(diagram).toContainText('Calm'); // English by default
+
+    const locale = page.getByRole('combobox', { name: 'Language' });
+    // switch to Spanish — the same model now renders Spanish labels
+    await locale.selectOption('es');
+    await expect(diagram).toContainText('Calma');
+    await expect(diagram).not.toContainText('Worried'); // English-only label is gone
+
+    // switch to Arabic — labels localize AND the diagram flips to right-to-left
+    await locale.selectOption('ar');
+    await expect(diagram).toContainText('هدوء');
+    await expect(diagram).toHaveAttribute('dir', 'rtl');
+
+    // back to English → LTR
+    await locale.selectOption('en');
+    await expect(diagram).toHaveAttribute('dir', 'ltr');
+  });
 });

@@ -244,7 +244,7 @@ help site must teach them, not just the pictures:
 
 - **The shipped example set is the machine-verified manifest `examples/catalog.json`** (the source of
   truth; `conformance/catalog.test.ts` asserts every row is a real, catalogued, correctly-typed
-  `.psyuml` and no example is un-catalogued — ADR-0027). **53 non-showcase examples ship today** on the
+  `.psyuml` and no example is un-catalogued — ADR-0027). **54 non-showcase examples ship today** on the
   shipped renderers, spanning all 8 families — each real and rendered, golden-stable under the overlap
   / legibility / layout-quality / edge↔edge invariants. Reused base examples (state-map, parts-map,
   mode-map, relational-field, drama-triangle, body-map, decision-nav, resource-anchor, process-loop,
@@ -277,7 +277,7 @@ can never drift from what actually ships. To change it, edit the manifest and ru
 
 <!-- BEGIN catalog:generated -->
 
-_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 53 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 54 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
 
 ### Cycle
 
@@ -295,6 +295,7 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 | Metacognitive CAS — Wells (disorder-specific) | MCT (Wells) | B | Worry / rumination + threat-monitoring + thought-control (the Cognitive-Attentional Syndrome) maintain distress. The way out is detached mindfulness, not more thinking. | `metacognitive-cas.psyuml` |
 | Eating disorder — transdiagnostic, Fairburn (disorder-specific) | CBT-E (Fairburn) | B | Over-evaluation of shape / weight / control → strict dieting → binge → compensation → confirms the over-evaluation. Underpins evidenced CBT-E; the diagram is the formulation, not the measure. | `eating-disorder.psyuml` |
 | Psychosis — cognitive maintenance, Morrison (disorder-specific) | CBT for psychosis (Morrison) | B | An unusual experience → a threatening interpretation → distress + safety behaviours → the meaning goes unchallenged. A shared, non-judgemental account of experience. | `psychosis-cycle.psyuml` |
+| Localization demo (en · es · ar) | i18n demo | B | An illustrative localization demo — the same model in English, Spanish, and Arabic (right-to-left), to exercise the editor's locale switch. Translations are basic and NOT professionally validated; real clinical content needs a qualified translator. | `i18n-demo.psyuml` |
 
 ### Pattern
 

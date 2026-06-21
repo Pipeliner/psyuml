@@ -265,6 +265,43 @@ export function serializeModel(model: PsyumlModel): string {
 }
 
 // ---------------------------------------------------------------------------
+// Localization (REQ-I18N-LOCALIZATION, ADR-0042) — the architecture (concept ids vs localized
+// labels) already exists; these helpers make it usable (an editor locale switch + RTL direction).
+// ---------------------------------------------------------------------------
+
+/** BCP-47 base subtags that lay out right-to-left (the therapy-relevant set). */
+const RTL_LANGS = new Set(['ar', 'he', 'fa', 'ur', 'yi', 'ps', 'sd']);
+
+/** Whether a language code lays out right-to-left (matches the base subtag, e.g. `ar-EG` → true). */
+export function isRtl(lang: string): boolean {
+  return RTL_LANGS.has((lang || '').toLowerCase().split('-')[0]);
+}
+
+/**
+ * The languages actually present in a model's labels (the clinician + client dictionaries across
+ * every node), with the model's declared `language` first. Drives the editor's locale switch — you
+ * can only view a language the model genuinely carries (no fabricated fallback). Always includes
+ * `model.language`.
+ */
+export function availableLanguages(model: PsyumlModel): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const add = (l: string): void => {
+    if (l && !seen.has(l)) {
+      seen.add(l);
+      out.push(l);
+    }
+  };
+  add(model.language || 'en');
+  for (const n of model.nodes) {
+    for (const dict of [n.label.clinician, n.label.client]) {
+      if (dict) for (const l of Object.keys(dict)) add(l);
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Case file — a persisted multi-document container (REQ-CASE-FILE, ADR-0039)
 // ---------------------------------------------------------------------------
 

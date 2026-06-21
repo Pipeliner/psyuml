@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  availableLanguages,
   caseFileFrom,
   createEmptyModel,
   getText,
+  isRtl,
   parseCaseFile,
   parseModel,
   serializeCaseFile,
@@ -414,6 +416,12 @@ export function App() {
   const [board, setBoard] = useState<PsyumlModel[]>([]);
   const [showBoard, setShowBoard] = useState(false);
   const [caseTitle, setCaseTitle] = useState('');
+  // REQ-I18N-LOCALIZATION (ADR-0042): view the model in any language its labels carry; an RTL locale
+  // flips the diagram's writing direction. The architecture (concept ids vs localized labels) exists;
+  // this makes it usable. Clamped to a language the current model actually has (no fabricated fallback).
+  const langs = useMemo(() => availableLanguages(model), [model]);
+  const [lang, setLang] = useState('en');
+  const activeLang = langs.includes(lang) ? lang : langs[0];
 
   const single = useMemo(() => {
     // A loaded §K profile's vocabulary wins over the built-in school table (same `roleLabels` surface).
@@ -423,12 +431,13 @@ export function App() {
         ? roleLabelsFor(school)
         : undefined;
     // One dispatcher resolves the audience profile → layer + interpretive visibility (§2);
-    // monochrome applies to every renderer (colour must stay redundant, §D).
-    return render(model, { audience, monochrome, roleLabels });
-  }, [model, audience, monochrome, school, profile]);
+    // monochrome applies to every renderer (colour must stay redundant, §D); `lang` localizes labels.
+    return render(model, { audience, monochrome, roleLabels, lang: activeLang });
+  }, [model, audience, monochrome, school, profile, activeLang]);
   const composite = useMemo(
-    () => (board.length ? renderComposite(board, { audience, monochrome }) : null),
-    [board, audience, monochrome],
+    () =>
+      board.length ? renderComposite(board, { audience, monochrome, lang: activeLang }) : null,
+    [board, audience, monochrome, activeLang],
   );
   // What's on screen / exported: the composite board when toggled on, else the single view.
   const { svg, altText } = showBoard && composite ? composite : single;
@@ -684,6 +693,25 @@ export function App() {
 
         <label
           className="control"
+          title="View the model in any language its labels carry (an RTL locale flips the diagram)"
+        >
+          Language{' '}
+          <select
+            value={activeLang}
+            onChange={(e) => setLang(e.target.value)}
+            disabled={langs.length < 2}
+          >
+            {langs.map((l) => (
+              <option key={l} value={l}>
+                {l}
+                {isRtl(l) ? ' (rtl)' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label
+          className="control"
           title="Load a validated §K extension profile or cultural pack (JSON) to render in its vocabulary"
         >
           Profile (§K)
@@ -905,7 +933,12 @@ export function App() {
           <p style={{ margin: '0.4rem 0 0' }}>{GALLERY_BY_KEY[example].note}</p>
         </section>
       )}
-      <section aria-label={`${model.diagram} diagram`} className="diagram">
+      <section
+        aria-label={`${model.diagram} diagram`}
+        className="diagram"
+        lang={activeLang}
+        dir={isRtl(activeLang) ? 'rtl' : 'ltr'}
+      >
         <div
           ref={diagramRef}
           className="diagram__canvas"

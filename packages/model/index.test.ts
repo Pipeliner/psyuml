@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
+  availableLanguages,
   caseFileFrom,
   createEmptyModel,
   getText,
   INTERPRETIVE_STATUSES,
   isInterpretive,
+  isRtl,
   parseCaseFile,
   parseModel,
   PSYUML_MODEL_VERSION,
@@ -152,5 +154,29 @@ describe('case file (REQ-CASE-FILE, ADR-0039)', () => {
   it('rejects a single model (no kind discriminator) so an opener can tell them apart', () => {
     expect(() => parseCaseFile(serializeModel(m1))).toThrow();
     expect(() => parseCaseFile({ kind: 'not-a-case', documents: [] })).toThrow();
+  });
+});
+
+describe('localization (REQ-I18N-LOCALIZATION, ADR-0042)', () => {
+  it('isRtl matches RTL base subtags (incl. region suffixes), LTR otherwise', () => {
+    for (const l of ['ar', 'he', 'fa', 'ur', 'ar-EG', 'HE']) expect(isRtl(l), l).toBe(true);
+    for (const l of ['en', 'es', 'de', 'zh', 'en-GB', '']) expect(isRtl(l), l).toBe(false);
+  });
+
+  it('availableLanguages lists the langs a model carries, model.language first, de-duped', () => {
+    const m = parseModel({
+      version: PSYUML_MODEL_VERSION,
+      language: 'en',
+      diagram: 'process-loop',
+      nodes: [
+        { id: 'a', kind: 'state', label: { clinician: { en: 'Calm', es: 'Calma', ar: 'هدوء' } } },
+        { id: 'b', kind: 'state', label: { clinician: { en: 'Worried' }, client: { es: 'Mal' } } },
+      ],
+    });
+    expect(availableLanguages(m)).toEqual(['en', 'es', 'ar']);
+  });
+
+  it('always includes the declared language even with no labels', () => {
+    expect(availableLanguages(createEmptyModel('state-map'))).toEqual(['en']);
   });
 });

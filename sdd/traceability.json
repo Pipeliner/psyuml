@@ -1190,8 +1190,10 @@
       "spec": ["§3"],
       "source": "docs/specification/roadmap-to-v1.md",
       "milestone": "M21",
-      "status": "planned",
-      "notes": "REQ-I18N (implemented) gave the ARCHITECTURE — concept IDs separate from localized labels, alt-text per view — but only `en` label packs exist. Spec real multi-language label packs, RTL layout, and an editor locale switch. Distinct from REQ-I18N (architecture) — this is the localized CONTENT + RTL rendering + UI."
+      "status": "implemented",
+      "impl": ["packages/model/index.ts", "apps/web/App.tsx", "examples/i18n-demo.psyuml"],
+      "tests": ["packages/model/index.test.ts", "e2e/onboarding.spec.ts"],
+      "notes": "Implemented as the MECHANISM + one illustrative demo pack (ADR-0042); the REQ-I18N architecture (concept ids vs localized labels) is now USABLE. `@psyuml/model`: `isRtl(lang)` (RTL base subtags ar/he/fa/ur/yi/ps/sd) + `availableLanguages(model)` (the langs a model's labels actually carry, `model.language` first, de-duped). Editor: a Language selector listing those langs (disabled when monolingual); `activeLang` flows to `render`/`renderComposite` + `getText` localizes; clamped to a language the model has; an RTL locale sets `dir=\"rtl\"` on the diagram container (browser bidi shaping). One demo pack `examples/i18n-demo.psyuml` (a generic process-loop in en · es · ar) exercises it; its disclaimer states the translations are basic + NOT professionally validated. HONEST SCOPE (recorded): clinical content is NEVER machine/AI-translated and shipped as usable — hence one marked-illustrative pack, not 73 fabricated translations; renderer CHROME stays English (safety 'EXIT', ladder 'harder/easier', banners, legends — only model content localizes); RTL is text-direction, not geometry mirroring; `meta.title`/`disclaimer` are monolingual strings. Model unit tests (`isRtl`, `availableLanguages`) + a Playwright e2e (en→es labels change; en→ar labels change AND `dir` flips to rtl; back to en → ltr). Localizing renderer chrome (a string table across 20 renderers) is the honest remaining gap."
     },
     {
       "id": "REQ-PROVENANCE-NARRATIVE",

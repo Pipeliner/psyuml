@@ -534,6 +534,15 @@
       "school": "attachment (Bowlby/Ainsworth)",
       "note": "A generic secure-base / safe-haven graphic: a trusted caregiver as a base to explore from and a haven to return to. Deliberately NOT the trademarked Circle of Security® programme (Cooper/Hoffman/Marvin/Powell) — graphic ≠ programme, and a 2025 NHS COSI RCT found no added benefit.",
       "audience": "L"
+    },
+    {
+      "file": "i18n-demo.psyuml",
+      "type": "process-loop",
+      "family": "Cycle",
+      "name": "Localization demo (en · es · ar)",
+      "school": "i18n demo",
+      "note": "An illustrative localization demo — the same model in English, Spanish, and Arabic (right-to-left), to exercise the editor's locale switch. Translations are basic and NOT professionally validated; real clinical content needs a qualified translator.",
+      "audience": "B"
     }
   ],
   "newTypes": []
