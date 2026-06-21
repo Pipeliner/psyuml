@@ -247,6 +247,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderSchemaGrid(model, o);
     case 'decisional-balance':
       return renderDecisionalBalance(model, o);
+    case 'secure-base':
+      return renderSecureBase(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -261,6 +263,7 @@ const BULLSEYE_W = 640;
 const TREE_W = 760;
 const SCHEMA_W = 880;
 const MATRIX_W = 720;
+const SECURE_W = 620;
 const NODE_W = 220;
 const NODE_H = 40;
 const BAND_H = 96;
@@ -3771,6 +3774,124 @@ export function renderDecisionalBalance(
     `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
+
+/**
+ * Secure base & safe haven (REQ-NEW-DIAGRAM-TYPES, ADR-0036) — a GENERIC attachment teaching graphic
+ * (Bowlby's secure base; Ainsworth's safe haven): a trusted caregiver is both somewhere safe to go
+ * out FROM (supporting exploration) and somewhere safe to come BACK to (offering comfort). This is
+ * deliberately NOT a reproduction of the trademarked Circle of Security® programme — generic
+ * attachment-care language, an abstract cradle (not the CoS hands graphic), and an explicit
+ * "graphic ≠ programme" disclaimer. Each node is placed by `stereotype`: `explore` (secure-base
+ * supports, top), `comfort` (safe-haven offers, bottom), `base` (the caregiver, at the foot). Items
+ * are free haloed labels in rows (`separate1D`); the ring + cycle arrows + cradle are decoration.
+ * Edge-free + no schema growth; monochrome; alt-text reads both halves and the caregiver.
+ */
+export function renderSecureBase(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const W = SECURE_W;
+  const cx = Math.round(W / 2);
+  const titleH = model.meta.title ? 34 : 12;
+  const R = 175;
+  const cy = titleH + 18 + R;
+
+  const inZone = (k: string): typeof model.nodes =>
+    model.nodes.filter((n) => (n.stereotype ?? '') === k);
+  const exploreNeeds = inZone('explore');
+  const comfortNeeds = inZone('comfort');
+  const base = inZone('base');
+
+  const deco: string[] = [];
+  const body: string[] = [];
+
+  deco.push(
+    `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#fbfcfb" stroke="#666" stroke-width="2" />`,
+    `<circle cx="${cx}" cy="${cy - R}" r="6" fill="#000" />`,
+    // Cycle: up the right (out to explore), down the left (back for comfort).
+    `<path d="M ${r1(cx + 0.55 * R)},${r1(cy + 0.62 * R)} Q ${cx + R + 8},${cy} ${r1(cx + 0.55 * R)},${r1(cy - 0.62 * R)}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
+    `<path d="M ${r1(cx - 0.55 * R)},${r1(cy - 0.62 * R)} Q ${cx - R - 8},${cy} ${r1(cx - 0.55 * R)},${r1(cy + 0.62 * R)}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
+    fitText('SECURE BASE — support me going out to explore', cx, cy - R + 34, {
+      size: 12,
+      weight: 700,
+      anchor: 'middle',
+      maxWidth: 2 * R - 24,
+    }),
+    fitText('SAFE HAVEN — welcome me back for comfort', cx, cy + R - 20, {
+      size: 12,
+      weight: 700,
+      anchor: 'middle',
+      maxWidth: 2 * R - 24,
+    }),
+  );
+
+  const layRow = (items: typeof model.nodes, y: number): void => {
+    if (!items.length) return;
+    const size = 11;
+    const left = 72;
+    const avail = W - 2 * left;
+    const spans = items.map((n, i) => ({
+      center: left + (avail * (i + 0.5)) / items.length,
+      half: textWidth(getText(n.label, layer, lang), size) / 2 + 8,
+    }));
+    const centers = separate1D(spans, 14);
+    items.forEach((n, i) => {
+      body.push(
+        `<text data-el="nodelabel:${esc(n.id)}" x="${r1(centers[i])}" y="${y}" font-family="sans-serif" font-size="${size}" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(getText(n.label, layer, lang))}</text>`,
+      );
+    });
+  };
+  layRow(exploreNeeds, cy - R + 72);
+  layRow(comfortNeeds, cy + R - 54);
+
+  // Caregiver base + an abstract cradle (NOT the trademarked hands graphic).
+  const baseY = cy + R + 34;
+  deco.push(
+    `<path d="M ${cx - 84},${baseY + 8} Q ${cx},${baseY + 42} ${cx + 84},${baseY + 8}" fill="none" stroke="#8a6d3b" stroke-width="2.5" />`,
+  );
+  base.forEach((n, i) => {
+    body.push(
+      `<text data-el="nodelabel:${esc(n.id)}" x="${cx}" y="${baseY + i * 22}" font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle" stroke="#fff" stroke-width="3.5" paint-order="stroke">${esc(getText(n.label, layer, lang))}</text>`,
+    );
+  });
+
+  let h = baseY + Math.max(1, base.length) * 22 + 30;
+  body.push(
+    `<text x="20" y="${h}" font-family="sans-serif" font-size="10" fill="#333">A trusted caregiver is both — somewhere safe to go FROM, and somewhere safe to come BACK to.</text>`,
+  );
+  h += 15;
+  if (model.meta.disclaimer) {
+    body.push(
+      `<text x="20" y="${h}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+    h += 14;
+  }
+  const height = h + 6;
+
+  const altText =
+    `Secure base & safe haven${model.meta.title ? `: ${model.meta.title}` : ''} (a generic attachment graphic, not the trademarked Circle of Security programme). ` +
+    `A trusted caregiver is a secure base to explore from and a safe haven to return to. ` +
+    `Secure base supports: ${exploreNeeds.map((n) => getText(n.label, layer, lang)).join(', ') || '—'}. ` +
+    `Safe haven offers: ${comfortNeeds.map((n) => getText(n.label, layer, lang)).join(', ') || '—'}. ` +
+    `Caregiver: ${base.map((n) => getText(n.label, layer, lang)).join(', ') || '—'}.`;
+
+  const title = model.meta.title
+    ? `<text x="20" y="26" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Secure base & safe haven')}</title><desc>${esc(altText)}</desc>` +
+    `<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>` +
+    `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
+    title +
+    deco.join('') +
+    body.join('') +
     '</svg>';
 
   return { svg, altText };

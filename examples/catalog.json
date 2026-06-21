@@ -524,13 +524,17 @@
       "school": "MI (Miller–Rollnick)",
       "note": "A 2×2 of benefits/costs for making a change vs staying the same. MI is evidenced, but the tool is used cautiously: a neutral decisional balance can deepen ambivalence when the goal is change (MI-3) — a reflection, not a persuasion device.",
       "audience": "B"
+    },
+    {
+      "file": "secure-base.psyuml",
+      "type": "secure-base",
+      "family": "Field",
+      "name": "Circle of Security → secure-base graphic",
+      "catalogId": 56,
+      "school": "attachment (Bowlby/Ainsworth)",
+      "note": "A generic secure-base / safe-haven graphic: a trusted caregiver as a base to explore from and a haven to return to. Deliberately NOT the trademarked Circle of Security® programme (Cooper/Hoffman/Marvin/Powell) — graphic ≠ programme, and a 2025 NHS COSI RCT found no added benefit.",
+      "audience": "L"
     }
   ],
-  "newTypes": [
-    {
-      "name": "Circle of Security",
-      "shape": "circle/hands",
-      "catalogId": 56
-    }
-  ]
+  "newTypes": []
 }

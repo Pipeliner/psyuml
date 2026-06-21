@@ -26,6 +26,7 @@ import {
   renderTreeOfLife,
   renderSchemaGrid,
   renderDecisionalBalance,
+  renderSecureBase,
 } from './index';
 
 const read = (name: string): string =>
@@ -874,10 +875,11 @@ describe('REQ-EXAMPLE-LIBRARY showcase — one feature-dense model per diagram t
     ['showcase-tree-of-life.psyuml', renderTreeOfLife],
     ['showcase-schema-grid.psyuml', renderSchemaGrid],
     ['showcase-decisional-balance.psyuml', renderDecisionalBalance],
+    ['showcase-secure-base.psyuml', renderSecureBase],
   ];
 
-  it('covers all 19 diagram types', () => {
-    expect(showcases.length).toBe(19);
+  it('covers all 20 diagram types', () => {
+    expect(showcases.length).toBe(20);
   });
 
   it.each(showcases)('%s renders and matches its committed golden', (file, renderFn) => {

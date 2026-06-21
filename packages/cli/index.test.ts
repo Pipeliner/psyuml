@@ -182,6 +182,7 @@ describe('psyuml cli', () => {
                 'tree-of-life',
                 'schema-grid',
                 'decisional-balance',
+                'secure-base',
               ].map((t) => [t, 'ok']),
             ),
           },

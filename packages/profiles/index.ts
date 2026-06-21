@@ -489,6 +489,7 @@ export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
   'tree-of-life': 'journey',
   'schema-grid': 'parts',
   'decisional-balance': 'change',
+  'secure-base': 'field',
   ritual: 'ritual',
 };
 

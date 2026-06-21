@@ -39,6 +39,7 @@ const RENDERERS: Record<string, Renderer> = {
   'tree-of-life': render.renderTreeOfLife,
   'schema-grid': render.renderSchemaGrid,
   'decisional-balance': render.renderDecisionalBalance,
+  'secure-base': render.renderSecureBase,
 };
 
 const load = (f: string): PsyumlModel =>

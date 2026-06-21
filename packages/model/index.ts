@@ -195,6 +195,7 @@ export const DiagramType = z.enum([
   'tree-of-life',
   'schema-grid',
   'decisional-balance',
+  'secure-base',
 ]);
 export type DiagramType = z.infer<typeof DiagramType>;
 

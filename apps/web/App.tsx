@@ -290,6 +290,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: 'The MI 2×2: making the change vs staying the same, by benefits vs costs, on a labelled-axis grid — with the honest MI caveat that a neutral balance can deepen ambivalence, so it is a reflection, not a persuasion tool.',
   },
+  {
+    key: 'showcase-secure-base',
+    label: '★ Secure base & safe haven — full showcase',
+    family: 'field',
+    school: 'capability demo',
+    note: 'A generic attachment circle (Bowlby/Ainsworth): a trusted caregiver as a secure base to explore from and a safe haven to return to, with the supporting and comforting needs around the ring. Deliberately NOT the trademarked Circle of Security® programme.',
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

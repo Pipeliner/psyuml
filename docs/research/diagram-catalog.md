@@ -14,8 +14,8 @@ This catalog drives the help-site **example library**. Each row maps a diagram t
 and a **renderer** (or flags a renderer PsyUML doesn't have yet). Build status:
 - **✅ existing** — realizable now on a shipped renderer (becomes an example `.psyuml`).
 - **◐ approx** — expressible on a shipped renderer with some loss (becomes an example, noted).
-- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. circle-of-security); catalogued, not
-  yet an example.
+- **◇ new-type** — would need a renderer PsyUML doesn't have (e.g. the BA activity week-grid, #40);
+  catalogued, not an example. (The committed build-list of ◇ shapes is now **complete** — see Build plan.)
 
 Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-created) — these map to
 PsyUML's three **audience profiles** (ADR-0016): **clinician** (the full analytic surface), **client**
@@ -244,7 +244,7 @@ help site must teach them, not just the pictures:
 
 - **The shipped example set is the machine-verified manifest `examples/catalog.json`** (the source of
   truth; `conformance/catalog.test.ts` asserts every row is a real, catalogued, correctly-typed
-  `.psyuml` and no example is un-catalogued — ADR-0027). **52 non-showcase examples ship today** on the
+  `.psyuml` and no example is un-catalogued — ADR-0027). **53 non-showcase examples ship today** on the
   shipped renderers, spanning all 8 families — each real and rendered, golden-stable under the overlap
   / legibility / layout-quality / edge↔edge invariants. Reused base examples (state-map, parts-map,
   mode-map, relational-field, drama-triangle, body-map, decision-nav, resource-anchor, process-loop,
@@ -256,12 +256,12 @@ help site must teach them, not just the pictures:
   ACT choice point; **SORC / ABC**; relapse-prevention; goal ladder; grief ritual (ritual.psyuml);
   and the field set — **empowerment-triangle, ecomap, social-atom, cultural-genogram,
   narrative-externalising** (White). The catalogued **composite** board is rendered live
-  (`renderComposite` over several views) rather than a single `.psyuml`; the ◇ new-type rows stay
-  catalogued-not-faked pending their renderers.
-- **◇ new-type rows are catalogued, not faked** (circle-of-security). Each is
-  a candidate
-  **new renderer** — a future milestone, recorded here so the help site can show them as "planned"
-  rather than mis-render them on a renderer that distorts their meaning.
+  (`renderComposite` over several views) rather than a single `.psyuml`; every catalogued ◇ build-list
+  shape now ships on its own renderer.
+- **◇ new-type rows: the build-list is complete.** All eight committed ◇ shapes now have a renderer
+  (ADR-0029–0036). The only ◇-marked survey row left, the **BA activity week-grid** (#40), is a
+  worksheet/grid kept out of scope on the same "tables aren't diagrams" ground as the excluded set —
+  recorded honestly rather than mis-rendered.
 - Every shipped example carries its **honest evidence note** (the table above) in the help-site
   gallery, and renders in the client/clinician/picture **audience profiles** with the standing
   disclaimer — so the library teaches the humility, not just the pictures.
@@ -277,7 +277,7 @@ can never drift from what actually ships. To change it, edit the manifest and ru
 
 <!-- BEGIN catalog:generated -->
 
-_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 52 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 53 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
 
 ### Cycle
 
@@ -331,6 +331,7 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 | Externalising map — narrative (disorder-agnostic) | narrative (White) | L | The person is never the problem — "the Worry" is mapped as a separate entity, alongside unique outcomes and allies who know the real person. A co-authored, client-led tool. | `narrative-externalising.psyuml` |
 | Cultural genogram — heritage & identity | systemic + DSM-5 CFI | C | Family plus heritage, faith, identity and migration. An assessment aid — hold it with cultural humility; the client is the expert on their own culture. | `cultural-genogram.psyuml` |
 | CFT three circles (threat / drive / soothing) | CFT (Gilbert) | B | Three emotion-regulation systems sized by balance — grow the soothing system. CFT has systematic-review support for self-criticism/shame; "three systems" is a neuroscientific simplification, not a brain map. | `three-circles.psyuml` |
+| Circle of Security → secure-base graphic | attachment (Bowlby/Ainsworth) | L | A generic secure-base / safe-haven graphic: a trusted caregiver as a base to explore from and a haven to return to. Deliberately NOT the trademarked Circle of Security® programme (Cooper/Hoffman/Marvin/Powell) — graphic ≠ programme, and a 2025 NHS COSI RCT found no added benefit. | `secure-base.psyuml` |
 
 ### Journey
 
@@ -373,9 +374,9 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 ## Showcase examples — one feature-dense model per diagram type
 
 Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the
-19 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
+20 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
 dense, validated model that exercises as much of the notation as that type sensibly carries — so you
-can see, and live-edit, the system's full range in one place. All nineteen are corpus-lint clean,
+can see, and live-edit, the system's full range in one place. All twenty are corpus-lint clean,
 overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by a golden render.
 
 | Type (★ showcase) | Capabilities it exercises |
@@ -399,6 +400,7 @@ overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by
 | **Tree of Life (narrative)** | 6 botanical zones by `stereotype` (roots/ground/trunk/branches/leaves/fruits) · canopy + trunk + soil + root-fan silhouette · `separate1D` item rows · edge-free model · client labels |
 | **Schema grid (Young)** | Young's 18 EMS in the 5 schema domains (column sorter) · domain headers · `stereotype` grouping · active schemas highlighted (bold outline + wedge + bold, `intensity`) · label-in-box · edge-free model |
 | **Decisional balance (MI)** | 2×2 labelled-axis grid (making the change / staying the same × benefits / costs) · `stereotype` quadrants · tinted rows · the MI ambivalence caveat · edge-free model |
+| **Secure base & safe haven** | a generic attachment circle (Bowlby/Ainsworth, *not* trademarked CoS) · `stereotype` zones (explore / comfort / base) · cycle arrows + cradle · `separate1D` need rows · edge-free model |
 
 ---
 
@@ -418,7 +420,7 @@ empowerment triangle); functional analysis **43 ↔ 44 ↔ 55** (SORC / ABC / AR
 | 53 | **Crisis Response Plan** (Bryan–Rudd) | suicide prevention | escalation: self-management → reasons for living → support → professional/crisis | **The RCT-supported safety plan** (Bryan 2017: ~76% fewer attempts vs a contract); a worded way-out path | ◐ decision-nav | B |
 | 54 | **Persons mechanism hub-and-spoke** | CBT (Jacqueline Persons) | one central mechanism → arrows to the problems it generates/maintains | A genuine integrative formulation *diagram*; inferential core's reliability is modest (finding 3) | ◐ process-loop (hub) | C(+shared) |
 | 55 | **UP functional model + ARC** | transdiagnostic CBT (Barlow) | neuroticism → aversive reaction to emotion → avoidance loop; ARC = antecedent→response→consequence | ARC ≈ a rebranded ABC; UP evidenced as a therapy, the figure is a teaching aid | ◐ process-loop / intervention-sequence | B |
-| 56 | **Circle of Security** | attachment (Cooper/Hoffman/Marvin/Powell) | secure-base (explore) top / safe-haven (comfort) bottom; hands = caregiver | **Graphic ≠ program**: 2016 meta positive but the 2025 NHS COSI RCT found **no added benefit** — teach the graphic, don't claim the program | ◇ new (circle/hands) | L (caregiver) |
+| 56 | **Circle of Security** | attachment (Cooper/Hoffman/Marvin/Powell) | secure-base (explore) top / safe-haven (comfort) bottom; hands = caregiver | **Graphic ≠ program**: 2016 meta positive but the 2025 NHS COSI RCT found **no added benefit** — teach the graphic, don't claim the program. Shipped as a **generic** secure-base graphic (Bowlby/Ainsworth), **not** a reproduction of the trademarked programme | ✅ secure-base | L (caregiver) |
 | 57 | **Sociogram** | sociometry (Moreno) | who chooses/rejects whom in a group; stars, isolates, cliques | Ancestor of social-network analysis; **negative-nomination ethics** (labelling/stigma) — never expose individual results | ◐ relational-field | C |
 | 58 | **CCRT / CMP relational cycle** | psychodynamic (Luborsky; Strupp–Binder) | Wish → Response-of-Other → Response-of-Self (the recurring pattern) | CCRT *coding* is reliable (κ ≈ .6–.7); the client-facing *diagram* is not separately validated; cousin of CAT reciprocal roles | ◐ process-loop (reciprocal) | C |
 | 59 | **Attachment hierarchy / network** | attachment (Bowlby–Ainsworth) | attachment figures ranked most→least accessible | Mainstream *construct*; no single standardised client diagram | ◐ relational-field / resource-anchor | C(+psychoed) |
@@ -440,12 +442,13 @@ benefits/costs — are a load-bearing 2-D structure. It ships with the honest ca
 decisional balance can deepen ambivalence when the goal is change (MI-3), so it is a reflection, not a
 persuasion device.)
 
-The one remaining ◇ row (circle-of-security) is a candidate **new renderer** — catalogued, not
-mis-rendered. (Shipped so far: the **ranked ladder** as `ladder` (ADR-0029), the **CFT three circles**
-as `three-circles` (ADR-0030), **DBT states of mind** as `venn` (ADR-0031), the **ACT values
-bull's-eye** as `bullseye` (ADR-0032), the narrative **Tree of Life** as `tree-of-life` (ADR-0033), the
-**schema-domains sorter** as `schema-grid` (ADR-0034), and the **decisional-balance 2×2** as
-`decisional-balance` (ADR-0035).)
+The ◇ build-list is **complete** — all eight committed new-type shapes now ship on their own renderer:
+the **ranked ladder** as `ladder` (ADR-0029), the **CFT three circles** as `three-circles` (ADR-0030),
+**DBT states of mind** as `venn` (ADR-0031), the **ACT values bull's-eye** as `bullseye` (ADR-0032), the
+narrative **Tree of Life** as `tree-of-life` (ADR-0033), the **schema-domains sorter** as `schema-grid`
+(ADR-0034), the **decisional-balance 2×2** as `decisional-balance` (ADR-0035), and the **Circle of
+Security** concept as a generic, trademark-safe `secure-base` graphic (ADR-0036). The lone remaining
+◇-marked survey row, the BA activity **week-grid** (#40), is a worksheet kept out of scope as a table.
 
 ## Safety & cultural caveats (consolidated)
 

@@ -37,6 +37,7 @@ const KNOWN_TYPES = new Set([
   'tree-of-life',
   'schema-grid',
   'decisional-balance',
+  'secure-base',
 ]);
 
 interface CatalogEntry {
@@ -105,11 +106,18 @@ describe('catalog ↔ corpus conformance (ADR-0027)', () => {
     expect(manifest.diagrams.length).toBe(shipped);
   });
 
-  it('◇ new-type rows are catalogued but never shipped as an example', () => {
-    expect(manifest.newTypes.length).toBeGreaterThan(0);
+  it('◇ new-type rows (if any) are well-formed and never shipped as an example', () => {
+    // The committed ◇ build-list is now COMPLETE — all catalogued new-type shapes shipped
+    // (ADR-0029–0036), so `newTypes` may legitimately be empty. Any remaining entry must still be
+    // well-formed AND must not collide with a shipped diagram (a type can't be both "to build" and
+    // "shipped").
+    const shippedIds = new Set(manifest.diagrams.map((d) => d.catalogId));
     for (const nt of manifest.newTypes) {
       expect(nt.name.length, 'a new-type needs a name').toBeGreaterThan(0);
       expect(nt.shape.length, `${nt.name} needs a shape`).toBeGreaterThan(0);
+      expect(shippedIds.has(nt.catalogId), `${nt.name} is in newTypes but already shipped`).toBe(
+        false,
+      );
     }
   });
 
