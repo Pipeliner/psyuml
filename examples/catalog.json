@@ -504,14 +504,19 @@
       "school": "narrative (Ncube)",
       "note": "A strengths-forward life portrait by botanical zone — roots (origins), ground (present), trunk (skills/values), branches (hopes), leaves (people), fruits (gifts). A widely-used, culturally-adaptable, client-led practice tool — co-created, not an assessment.",
       "audience": "L"
+    },
+    {
+      "file": "schema-grid.psyuml",
+      "type": "schema-grid",
+      "family": "Parts",
+      "name": "Schema 18-EMS / 5-domains sorter",
+      "catalogId": 16,
+      "school": "Schema Therapy (Young)",
+      "note": "Young's 18 Early Maladaptive Schemas grouped into the 5 schema domains; a person's active schemas are highlighted. The schema labels are validated; the grid is a teaching convention (layout varies by trainer), not a diagnosis.",
+      "audience": "C"
     }
   ],
   "newTypes": [
-    {
-      "name": "Schema 18-EMS / 5-domains sorter",
-      "shape": "sorter/grid",
-      "catalogId": 16
-    },
     {
       "name": "Decisional balance",
       "shape": "2x2-sorter",

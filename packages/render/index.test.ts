@@ -24,6 +24,7 @@ import {
   renderVenn,
   renderBullseye,
   renderTreeOfLife,
+  renderSchemaGrid,
 } from './index';
 
 const read = (name: string): string =>
@@ -870,10 +871,11 @@ describe('REQ-EXAMPLE-LIBRARY showcase — one feature-dense model per diagram t
     ['showcase-venn.psyuml', renderVenn],
     ['showcase-bullseye.psyuml', renderBullseye],
     ['showcase-tree-of-life.psyuml', renderTreeOfLife],
+    ['showcase-schema-grid.psyuml', renderSchemaGrid],
   ];
 
-  it('covers all 17 diagram types', () => {
-    expect(showcases.length).toBe(17);
+  it('covers all 18 diagram types', () => {
+    expect(showcases.length).toBe(18);
   });
 
   it.each(showcases)('%s renders and matches its committed golden', (file, renderFn) => {

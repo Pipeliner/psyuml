@@ -180,6 +180,7 @@ describe('psyuml cli', () => {
                 'venn',
                 'bullseye',
                 'tree-of-life',
+                'schema-grid',
               ].map((t) => [t, 'ok']),
             ),
           },

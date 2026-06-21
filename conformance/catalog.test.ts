@@ -35,6 +35,7 @@ const KNOWN_TYPES = new Set([
   'venn',
   'bullseye',
   'tree-of-life',
+  'schema-grid',
 ]);
 
 interface CatalogEntry {

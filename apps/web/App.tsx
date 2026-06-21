@@ -276,6 +276,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: 'The narrative Tree of Life: six botanical zones (roots/ground/trunk/branches/leaves/fruits) holding a strengths-forward life portrait, with a canopy/trunk/roots silhouette and client labels — co-created, not an assessment.',
   },
+  {
+    key: 'showcase-schema-grid',
+    label: '★ Schema grid — full showcase',
+    family: 'parts',
+    school: 'capability demo',
+    note: "Young's full 18 Early Maladaptive Schemas sorted into the 5 schema domains, with a person's active schemas highlighted (bold outline + wedge) — a psychoeducation map, not a diagnosis.",
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

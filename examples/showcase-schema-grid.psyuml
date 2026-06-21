@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "language": "en",
+  "diagram": "schema-grid",
+  "meta": {
+    "title": "Schema domains — Young's 18 (full showcase)",
+    "disclaimer": "Young's 18 Early Maladaptive Schemas in 5 domains — a psychoeducation map, not a diagnosis; schema labels are validated, the layout is a teaching convention.",
+    "safety": { "psychosisFlag": false, "acuteRiskFlag": false }
+  },
+  "nodes": [
+    { "id": "ab", "kind": "state", "stereotype": "disconnection", "label": { "clinician": { "en": "Abandonment / Instability" } }, "properties": {} },
+    { "id": "ma", "kind": "state", "stereotype": "disconnection", "label": { "clinician": { "en": "Mistrust / Abuse" } }, "properties": { "intensity": 0.7 } },
+    { "id": "ed", "kind": "state", "stereotype": "disconnection", "label": { "clinician": { "en": "Emotional Deprivation" } }, "properties": { "intensity": 0.8 } },
+    { "id": "ds", "kind": "state", "stereotype": "disconnection", "label": { "clinician": { "en": "Defectiveness / Shame" } }, "properties": {} },
+    { "id": "si", "kind": "state", "stereotype": "disconnection", "label": { "clinician": { "en": "Social Isolation" } }, "properties": {} },
+    { "id": "di", "kind": "state", "stereotype": "autonomy", "label": { "clinician": { "en": "Dependence / Incompetence" } }, "properties": {} },
+    { "id": "vh", "kind": "state", "stereotype": "autonomy", "label": { "clinician": { "en": "Vulnerability to Harm" } }, "properties": {} },
+    { "id": "en", "kind": "state", "stereotype": "autonomy", "label": { "clinician": { "en": "Enmeshment / Undeveloped Self" } }, "properties": {} },
+    { "id": "fa", "kind": "state", "stereotype": "autonomy", "label": { "clinician": { "en": "Failure" } }, "properties": { "intensity": 0.6 } },
+    { "id": "eg", "kind": "state", "stereotype": "limits", "label": { "clinician": { "en": "Entitlement / Grandiosity" } }, "properties": {} },
+    { "id": "sc", "kind": "state", "stereotype": "limits", "label": { "clinician": { "en": "Insufficient Self-Control" } }, "properties": {} },
+    { "id": "su", "kind": "state", "stereotype": "other-directed", "label": { "clinician": { "en": "Subjugation" } }, "properties": { "intensity": 0.7 } },
+    { "id": "ss", "kind": "state", "stereotype": "other-directed", "label": { "clinician": { "en": "Self-Sacrifice" } }, "properties": {} },
+    { "id": "as", "kind": "state", "stereotype": "other-directed", "label": { "clinician": { "en": "Approval-Seeking" } }, "properties": {} },
+    { "id": "np", "kind": "state", "stereotype": "overvigilance", "label": { "clinician": { "en": "Negativity / Pessimism" } }, "properties": {} },
+    { "id": "ei", "kind": "state", "stereotype": "overvigilance", "label": { "clinician": { "en": "Emotional Inhibition" } }, "properties": {} },
+    { "id": "us", "kind": "state", "stereotype": "overvigilance", "label": { "clinician": { "en": "Unrelenting Standards" } }, "properties": { "intensity": 0.75 } },
+    { "id": "pu", "kind": "state", "stereotype": "overvigilance", "label": { "clinician": { "en": "Punitiveness" } }, "properties": {} }
+  ],
+  "edges": []
+}

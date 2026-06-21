@@ -487,6 +487,7 @@ export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
   venn: 'parts',
   bullseye: 'change',
   'tree-of-life': 'journey',
+  'schema-grid': 'parts',
   ritual: 'ritual',
 };
 

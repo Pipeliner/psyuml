@@ -243,6 +243,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderBullseye(model, o);
     case 'tree-of-life':
       return renderTreeOfLife(model, o);
+    case 'schema-grid':
+      return renderSchemaGrid(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -255,6 +257,7 @@ const TC_W = 620;
 const VENN_W = 600;
 const BULLSEYE_W = 640;
 const TREE_W = 760;
+const SCHEMA_W = 880;
 const NODE_W = 220;
 const NODE_H = 40;
 const BAND_H = 96;
@@ -3520,6 +3523,120 @@ export function renderTreeOfLife(model: PsyumlModel, options: RenderOptions = {}
     title +
     deco.join('') +
     body.join('') +
+    '</svg>';
+
+  return { svg, altText };
+}
+
+/**
+ * Schema-domains grid / sorter (REQ-NEW-DIAGRAM-TYPES, ADR-0034) — Young's schema-therapy framework:
+ * the 18 Early Maladaptive Schemas grouped into the **5 canonical schema domains**. The load-bearing
+ * structure is the GROUPING — which domain a schema belongs to — so the renderer is a five-column
+ * sorter: a fixed domain header per column (renderer copy, like the Tree-of-Life zones), with each
+ * schema a cell beneath its domain. A schema is placed by `stereotype` (the domain key); a schema the
+ * person endorses is flagged via `properties.intensity` ≥ 0.5 and drawn ACTIVE — a bold outline + a
+ * corner wedge + bold label + an alt-text note (redundant, never colour alone). Edge-free + no schema
+ * growth. Honest scope: this is a grouped grid (the weakest topology of the ◇ set), but the 5-domain
+ * clustering is the schema model's own structure and the active-schema highlight carries the signal.
+ */
+export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+
+  const W = SCHEMA_W;
+  const DOMAINS: { key: string; name: string }[] = [
+    { key: 'disconnection', name: 'Disconnection & Rejection' },
+    { key: 'autonomy', name: 'Impaired Autonomy & Performance' },
+    { key: 'limits', name: 'Impaired Limits' },
+    { key: 'other-directed', name: 'Other-Directedness' },
+    { key: 'overvigilance', name: 'Overvigilance & Inhibition' },
+  ];
+
+  const leftPad = 16;
+  const rightPad = 16;
+  const colGap = 12;
+  const colW = Math.round(
+    (W - leftPad - rightPad - colGap * (DOMAINS.length - 1)) / DOMAINS.length,
+  );
+  const titleH = model.meta.title ? 34 : 12;
+  const headerY = titleH + 8;
+  const headerH = 48;
+  const boxTop = headerY + headerH + 10;
+  const rowH = 56;
+  const vGap = 8;
+
+  const parts: string[] = [];
+  const altDomains: string[] = [];
+  let maxBottom = boxTop;
+
+  DOMAINS.forEach((d, ci) => {
+    const x = leftPad + ci * (colW + colGap);
+    parts.push(
+      `<rect x="${x}" y="${headerY}" width="${colW}" height="${headerH}" rx="6" ry="6" fill="#eceff3" stroke="#8a93a3" stroke-width="1.2" />`,
+      wrapLabel(d.name, x + colW / 2, headerY + headerH / 2, {
+        size: 11,
+        weight: 700,
+        maxWidth: colW - 12,
+        maxLines: 2,
+        fill: '#2a2f3a',
+      }),
+    );
+
+    const items = model.nodes.filter((n) => (n.stereotype ?? '') === d.key);
+    const names: string[] = [];
+    items.forEach((n, ri) => {
+      const y = boxTop + ri * (rowH + vGap);
+      const name = getText(n.label, layer, lang);
+      const active = (n.properties.intensity ?? 0) >= 0.5;
+      parts.push(
+        `<rect data-el="node:${esc(n.id)}" x="${x}" y="${y}" width="${colW}" height="${rowH}" rx="6" ry="6" fill="#fff" stroke="#000" stroke-width="${active ? 2.6 : 1.3}" />`,
+      );
+      if (active) {
+        parts.push(`<path d="M${x} ${y + 14} L${x} ${y} L${x + 14} ${y} Z" fill="#000" />`);
+      }
+      parts.push(
+        wrapLabel(name, x + colW / 2, y + rowH / 2, {
+          size: 11,
+          maxWidth: colW - 16,
+          maxLines: 3,
+          weight: active ? 700 : 400,
+          dataEl: `nodelabel:${n.id}`,
+        }),
+      );
+      names.push(active ? `${name} (active)` : name);
+      maxBottom = Math.max(maxBottom, y + rowH);
+    });
+    altDomains.push(`${d.name} — ${names.join(', ') || 'none listed'}`);
+  });
+
+  let h = maxBottom + 18;
+  parts.push(
+    `<text x="${leftPad}" y="${h}" font-family="sans-serif" font-size="11">Columns are Young's 5 schema domains; a bold-outlined cell (▟) is a schema active for this person.</text>`,
+  );
+  h += 16;
+  if (model.meta.disclaimer) {
+    parts.push(
+      `<text x="${leftPad}" y="${h}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+    );
+    h += 14;
+  }
+  const height = h + 6;
+
+  const altText =
+    `Schema-domains grid${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
+    `Young's 18 schemas in 5 domains; bold cells are active for this person. ${altDomains.join('; ')}.`;
+
+  const title = model.meta.title
+    ? `<text x="${leftPad}" y="26" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    : '';
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Schema-domains grid')}</title><desc>${esc(altText)}</desc>` +
+    `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
+    title +
+    parts.join('') +
     '</svg>';
 
   return { svg, altText };

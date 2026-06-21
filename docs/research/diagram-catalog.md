@@ -14,7 +14,7 @@ This catalog drives the help-site **example library**. Each row maps a diagram t
 and a **renderer** (or flags a renderer PsyUML doesn't have yet). Build status:
 - **✅ existing** — realizable now on a shipped renderer (becomes an example `.psyuml`).
 - **◐ approx** — expressible on a shipped renderer with some loss (becomes an example, noted).
-- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. sorter/grid, decisional-balance 2×2,
+- **◇ new-type** — needs a renderer PsyUML doesn't have (e.g. decisional-balance 2×2,
   circle-of-security); catalogued, not yet an example.
 
 Audience key: **C** = clinician-facing, **L** = client-facing, **B** = both (co-created) — these map to
@@ -176,7 +176,7 @@ help site must teach them, not just the pictures:
 |---|---|---|---|---|---|---|
 | 14 | **IFS parts map** | IFS (Schwartz) | Self (8 Cs) + managers / firefighters / exiles | **Popularity ≫ evidence** — a 2025 scoping review found ~2 RCTs; the "SAMHSA evidence-based" badge rests on a **discontinued (2017–18) registry**. Reifying parts can destabilise dissociative clients | ✅ parts-map | B |
 | 15 | **Schema mode map** | Schema Therapy (Young) | child / coping / parent modes + Healthy Adult "in the driver's seat" | **Among the better-evidenced** here — RCTs for BPD/PD | ✅ mode-map | B |
-| 16 | **Schema 18-EMS / 5-domains sorter** | Schema Therapy | 18 early maladaptive schemas grouped in 5 domains | Schema *labels* validated; layout varies by trainer | ◇ new (sorter/grid) | C(+psychoed) |
+| 16 | **Schema 18-EMS / 5-domains sorter** | Schema Therapy | 18 early maladaptive schemas grouped in 5 domains | Schema *labels* validated; layout varies by trainer | ✅ schema-grid | C(+psychoed) |
 | 17 | **Structural dissociation (ANP/EP)** | structural dissociation theory | personality split into Apparently-Normal + Emotional parts; primary/secondary/tertiary | Influential in complex-trauma; supporting neuroimaging is **small-n/few-study**; high-stakes population | ◐ parts-map (barrier) | C |
 | 18 | **Karpman drama triangle** | TA (Karpman) | Persecutor / Rescuer / Victim role-switching | Widely taught heuristic; not an outcome measure | ✅ relational-field (drama-triangle) | B |
 | 19 | **Winner's / empowerment triangle** | TA (Choy) | the positive reframe: Creator / Challenger / Coach | Heuristic; the hopeful counterpart to #18 | ◐ relational-field | B |
@@ -244,7 +244,7 @@ help site must teach them, not just the pictures:
 
 - **The shipped example set is the machine-verified manifest `examples/catalog.json`** (the source of
   truth; `conformance/catalog.test.ts` asserts every row is a real, catalogued, correctly-typed
-  `.psyuml` and no example is un-catalogued — ADR-0027). **50 non-showcase examples ship today** on the
+  `.psyuml` and no example is un-catalogued — ADR-0027). **51 non-showcase examples ship today** on the
   shipped renderers, spanning all 8 families — each real and rendered, golden-stable under the overlap
   / legibility / layout-quality / edge↔edge invariants. Reused base examples (state-map, parts-map,
   mode-map, relational-field, drama-triangle, body-map, decision-nav, resource-anchor, process-loop,
@@ -258,8 +258,8 @@ help site must teach them, not just the pictures:
   narrative-externalising** (White). The catalogued **composite** board is rendered live
   (`renderComposite` over several views) rather than a single `.psyuml`; the ◇ new-type rows stay
   catalogued-not-faked pending their renderers.
-- **◇ new-type rows are catalogued, not faked** (schema-domains sorter, decisional-balance 2×2,
-  circle-of-security). Each is a candidate
+- **◇ new-type rows are catalogued, not faked** (decisional-balance 2×2, circle-of-security). Each is
+  a candidate
   **new renderer** — a future milestone, recorded here so the help site can show them as "planned"
   rather than mis-render them on a renderer that distorts their meaning.
 - Every shipped example carries its **honest evidence note** (the table above) in the help-site
@@ -277,7 +277,7 @@ can never drift from what actually ships. To change it, edit the manifest and ru
 
 <!-- BEGIN catalog:generated -->
 
-_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 50 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
+_Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do not edit by hand. 51 shipped examples across 8 families, each a verified row (ADR-0027/0028). Audience: **C** clinician · **L** client · **B** both._
 
 ### Cycle
 
@@ -314,6 +314,7 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 | Schema mode map | Schema Therapy (Young) | B | Modes + Healthy Adult "in the driver’s seat". Among the better-evidenced models here (RCTs for personality disorder). | `mode-map.psyuml` |
 | Structural dissociation (ANP/EP) | structural dissociation theory | C | An Apparently-Normal Part that runs daily life, dissociated by a barrier from trauma-fixed Emotional Parts. Influential in complex trauma; supporting neuroimaging is small-n — a high-stakes map, pace it. | `structural-dissociation.psyuml` |
 | DBT states of mind | DBT (Linehan) | B | Reasonable ∩ Emotion = Wise Mind. Core DBT psychoeducation — a heuristic (not a brain model) inside an evidenced programme. | `dbt-states-of-mind.psyuml` |
+| Schema 18-EMS / 5-domains sorter | Schema Therapy (Young) | C | Young's 18 Early Maladaptive Schemas grouped into the 5 schema domains; a person's active schemas are highlighted. The schema labels are validated; the grid is a teaching convention (layout varies by trainer), not a diagnosis. | `schema-grid.psyuml` |
 
 ### Field
 
@@ -371,9 +372,9 @@ _Generated from `examples/catalog.json` by `scripts/build-catalog.mjs` — do no
 ## Showcase examples — one feature-dense model per diagram type
 
 Beyond the simple per-school examples, the gallery ships **one "full showcase" model for each of the
-17 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
+18 diagram types** (marked ★ in the picker, `examples/showcase-*.psyuml`). Each is a deliberately
 dense, validated model that exercises as much of the notation as that type sensibly carries — so you
-can see, and live-edit, the system's full range in one place. All seventeen are corpus-lint clean,
+can see, and live-edit, the system's full range in one place. All eighteen are corpus-lint clean,
 overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by a golden render.
 
 | Type (★ showcase) | Capabilities it exercises |
@@ -395,6 +396,7 @@ overlap-clean (ADR-0012), legibility/dual-coding clean (ADR-0011), and pinned by
 | **Venn (DBT states of mind)** | two overlapping circles · the lens labelled (Wise Mind = both) · per-region contents (containment) · haloed labels · client labels |
 | **Bull's-eye (ACT values)** | 6 life domains plotted by `intensity` (on-/off-target radius) · evenly-spaced angles · perimeter labels + leaders · decorative concentric rings · edge-free model · client labels |
 | **Tree of Life (narrative)** | 6 botanical zones by `stereotype` (roots/ground/trunk/branches/leaves/fruits) · canopy + trunk + soil + root-fan silhouette · `separate1D` item rows · edge-free model · client labels |
+| **Schema grid (Young)** | Young's 18 EMS in the 5 schema domains (column sorter) · domain headers · `stereotype` grouping · active schemas highlighted (bold outline + wedge + bold, `intensity`) · label-in-box · edge-free model |
 
 ---
 
@@ -431,11 +433,11 @@ meaning?* If it is fundamentally fill-in / score-it / list-it / ask-these-questi
   (2×2 pros/cons table) · **Readiness ruler** (0–10 scale) · **5 Ps** & **biopsychosocial grid** (matrices) ·
   activity/mood/gratitude **logs**.
 
-The remaining ◇ rows (schema-domains sorter, decisional-balance 2×2, circle-of-security) are candidate
-**new renderers** — catalogued, not mis-rendered. (Shipped so far: the **ranked ladder** as `ladder`
-(ADR-0029), the **CFT three circles** as `three-circles` (ADR-0030), **DBT states of mind** as `venn`
-(ADR-0031), the **ACT values bull's-eye** as `bullseye` (ADR-0032), and the narrative **Tree of Life**
-as `tree-of-life` (ADR-0033).)
+The remaining ◇ rows (decisional-balance 2×2, circle-of-security) are candidate **new renderers** —
+catalogued, not mis-rendered. (Shipped so far: the **ranked ladder** as `ladder` (ADR-0029), the **CFT
+three circles** as `three-circles` (ADR-0030), **DBT states of mind** as `venn` (ADR-0031), the **ACT
+values bull's-eye** as `bullseye` (ADR-0032), the narrative **Tree of Life** as `tree-of-life`
+(ADR-0033), and the **schema-domains sorter** as `schema-grid` (ADR-0034).)
 
 ## Safety & cultural caveats (consolidated)
 

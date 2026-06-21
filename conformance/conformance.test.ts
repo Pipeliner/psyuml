@@ -37,6 +37,7 @@ const RENDERERS: Record<string, Renderer> = {
   venn: render.renderVenn,
   bullseye: render.renderBullseye,
   'tree-of-life': render.renderTreeOfLife,
+  'schema-grid': render.renderSchemaGrid,
 };
 
 const load = (f: string): PsyumlModel =>

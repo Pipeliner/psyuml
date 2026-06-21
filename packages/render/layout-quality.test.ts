@@ -48,6 +48,7 @@ const RENDERERS: Record<string, Renderer> = {
   venn: render.renderVenn,
   bullseye: render.renderBullseye,
   'tree-of-life': render.renderTreeOfLife,
+  'schema-grid': render.renderSchemaGrid,
 };
 const load = (f: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${f}`, import.meta.url), 'utf8'));
@@ -77,6 +78,7 @@ const LABEL_IN_BOX = new Set([
   'process-loop',
   'ladder',
   'three-circles',
+  'schema-grid',
 ]);
 
 /** Is point (cx,cy) inside box `b`? An INTERIOR label has its centre in its node box; a CAPTION
