@@ -2,7 +2,7 @@
 
 **Purpose:** turn a model (under a profile) into SVG, with layers, monochrome, legend, and
 alt-text — plus a longitudinal diff "progress card".
-**Status:** active (M1–M6 — 11 diagram renderers + the diff card)
+**Status:** active — 20 diagram renderers (M1–M6 core + the M20 ◇ new-types, ADR-0029–0036) + the diff card
 **Spec anchor / REQ:** REQ-NOTATION, REQ-ACCESSIBILITY, REQ-EPISTEMIC-STATUS, REQ-LAYOUT-QUALITY, REQ-EDGE-ROUTER
 
 ## Upstream (this depends on)
