@@ -16,27 +16,34 @@ const publicFile = (p: string): string => fileURLToPath(new URL(`./public/${p}`,
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 
 beforeAll(() => {
-  // generate the published (gitignored) docs so the on-disk checks below see them
+  // generate the published (gitignored) docs + the showcase so the on-disk checks below see them
   execSync('node scripts/build-docs.mjs', { cwd: repoRoot, stdio: 'ignore' });
+  execSync('node scripts/build-showcase.mjs', { cwd: repoRoot, stdio: 'ignore' });
 });
 
 describe('in-app doc links resolve and are served rendered (not raw markdown)', () => {
   it('the published docs are generated as standalone HTML pages with tables rendered', () => {
-    for (const out of ['handbook.html', 'diagram-catalog.html']) {
+    for (const out of ['handbook.html', 'diagram-catalog.html', 'showcase.html']) {
       expect(existsSync(publicFile(out))).toBe(true);
       // a real HTML document (not text/markdown a browser would show as plain text)
       expect(readFileSync(publicFile(out), 'utf8').startsWith('<!doctype html>')).toBe(true);
     }
     // the 40+ catalogue is table-heavy — its Markdown tables must come through as HTML <table>s
     expect(readFileSync(publicFile('diagram-catalog.html'), 'utf8')).toContain('<table');
+    // the showcase inlines its diagrams as <svg> (no external <img>) — it's a self-contained page
+    const showcase = readFileSync(publicFile('showcase.html'), 'utf8');
+    expect(showcase).toContain('<svg');
+    expect(showcase).not.toMatch(/<img\b/i);
   });
 
   it('every base-relative href in App.tsx points at a shipped public/ file', () => {
     const targets = [...appSrc.matchAll(/\$\{import\.meta\.env\.BASE_URL\}([^`]+)`/g)].map(
       (m) => m[1],
     );
-    // the handbook + the catalogue are both linked from the editor
-    expect(targets).toEqual(expect.arrayContaining(['handbook.html', 'diagram-catalog.html']));
+    // the handbook, the catalogue + the showcase are all linked from the editor
+    expect(targets).toEqual(
+      expect.arrayContaining(['handbook.html', 'diagram-catalog.html', 'showcase.html']),
+    );
     for (const t of targets) expect(existsSync(publicFile(t))).toBe(true);
   });
 

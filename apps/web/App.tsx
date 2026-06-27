@@ -592,6 +592,14 @@ export function App() {
           replace, professional care; it does not diagnose. Editing is local-first — nothing leaves
           your device.{' '}
           <a
+            href={`${import.meta.env.BASE_URL}showcase.html`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Diagram showcase
+          </a>{' '}
+          ·{' '}
+          <a
             href={`${import.meta.env.BASE_URL}handbook.html`}
             target="_blank"
             rel="noopener noreferrer"

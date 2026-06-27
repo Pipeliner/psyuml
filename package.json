@@ -8,8 +8,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "dev": "node scripts/build-docs.mjs && vite",
-    "build": "node scripts/build-docs.mjs && vite build",
+    "dev": "node scripts/build-docs.mjs && node scripts/build-showcase.mjs && vite",
+    "build": "node scripts/build-docs.mjs && node scripts/build-showcase.mjs && vite build",
     "build:cli": "node scripts/build-cli.mjs",
     "catalog": "node scripts/build-catalog.mjs",
     "e2e": "playwright test",
