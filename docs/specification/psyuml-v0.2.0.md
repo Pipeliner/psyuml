@@ -19,7 +19,7 @@ v0.1 began from *notation*; v0.2 names the true centre: **collaborative psycholo
 
 ## 2. Diagram families and audience profiles (§E-extended)
 
-v0.1 shipped 12 diagram *types* (now 20). v0.2 groups them into **eight families** (a cognitive map for users; the type is the concrete renderer, the family is the *question it answers*). The research confirms diagrams converge on a small set of archetypes; families make that explicit.
+v0.1 shipped 12 *types* (the language now has 20). v0.2 groups them into **eight families** (a cognitive map for users; the type is the concrete renderer, the family is the *question it answers*). The research confirms diagrams converge on a small set of archetypes; families make that explicit.
 
 | Family | Question it answers | v0.1 types in this family | Archetype |
 |---|---|---|---|

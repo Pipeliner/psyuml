@@ -2,9 +2,11 @@
 
 **Purpose:** the executable spec-conformance suite (§J) — round-trip, validation,
 accessible-SVG, and monochrome invariants over the whole example corpus and every
-diagram type. Runs under `pnpm test` / CI.
+diagram type; **+ catalog↔corpus and docs↔system drift guards** (the catalogue and the
+prose docs can't fall behind the language). Runs under `pnpm test` / CI.
 **Status:** active (M10 track)
-**Spec anchor / REQ:** REQ-CONFORMANCE (§J), REQ-CROSS-SCHOOL (round-trip), REQ-ACCESSIBILITY
+**Spec anchor / REQ:** REQ-CONFORMANCE (§J), REQ-CROSS-SCHOOL (round-trip), REQ-ACCESSIBILITY,
+REQ-CATALOG-CONFORMANCE, REQ-DOC-CONFORMANCE
 
 ## Upstream (this depends on)
 - `@psyuml/model`, `@psyuml/render`, `@psyuml/validate`, `@psyuml/profiles` (the things it conforms-checks).
@@ -21,6 +23,7 @@ diagram type. Runs under `pnpm test` / CI.
 | `package.json` | Workspace member manifest (`@psyuml/conformance`) declaring the packages it checks | — | pnpm resolution | — | low |
 | `conformance.test.ts` | Per-example: round-trip, validation (both layers), accessible-SVG, monochrome; + type coverage; + §K extension invariants (CFT profile clean; `CORE_BASES` == model elements; the four rules fire) | model, render, validate, profiles, `examples/*.psyuml` | CI `test` | §J, §K / REQ-CONFORMANCE, REQ-EXTENSION-MECH | low |
 | `catalog.test.ts` | **Catalog ↔ corpus conformance (ADR-0027/0028)** — validates the `../examples/catalog.json` manifest against the shipped corpus: every `diagrams[].file` exists, parses, `model.diagram === type`; every non-showcase example listed exactly once; each `showcase-<type>` matches its model; count matches; ◇ `newTypes` never shipped. **+ schema** (every row has non-empty `school`/`note` + a valid `audience` C\|L\|B) **+ drift check** (the generated "Shipped example library" table in `diagram-catalog.md` is parsed back and asserted equal to the manifest, content-compared — so prose can't drift, ADR-0028). Makes the catalog + the editor gallery VERIFIED, single-source artifacts | model, `../examples/catalog.json`, `../examples/*.psyuml`, `../docs/research/diagram-catalog.md` | CI `test` | §E, §J / REQ-CATALOG-CONFORMANCE, REQ-CATALOG-METADATA, REQ-EXAMPLE-LIBRARY | low |
+| `docs-conformance.test.ts` | **Docs ↔ system conformance (ADR-0043)** — the prose analogue of `catalog.test.ts`: derives the load-bearing facts from the SYSTEM (`DiagramType.options` count + exact type list, `FAMILIES.length`, the `examples/` corpus) and asserts the live docs match — the format-reference quick-guide table lists EXACTLY `DiagramType.options`; every digit-form "N diagram types/renderers" equals the renderer count; every "N families" equals the family count; one `showcase-<type>` per type. So a doc saying "12 diagram types" or a quick-guide missing a renderer fails CI — the hand-fixed drift can't return. Digit-form counts only; a `(?<![.\w])` lookbehind skips version/identifier digits ("v0.1 diagram types", "M15"); `docs/research/**` + `sdd/adr/**` out of scope | model, profiles, `../docs/**/*.md`, `../examples/*.psyuml` | CI `test` | §J, §E / REQ-DOC-CONFORMANCE | low |
 | `README.md` | What the suite checks and how it maps to §J; the v1.0 gate | spec §J | readers | §J | low |
 
 ## Change checklist

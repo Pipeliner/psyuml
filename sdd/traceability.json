@@ -116,6 +116,11 @@
       "id": "M22",
       "phase": 9,
       "title": "Diagram-catalog completeness + auditability — verified catalog↔corpus fidelity, full coverage, consistent metadata"
+    },
+    {
+      "id": "M23",
+      "phase": 11,
+      "title": "Documentation consistency + drift-proofing + the printable HTML showcase"
     }
   ],
   "requirements": [
@@ -1216,6 +1221,28 @@
       "impl": ["apps/web/App.tsx", "apps/web/styles.css"],
       "tests": ["e2e/onboarding.spec.ts"],
       "notes": "Implemented dependency-free (ADR-0038). `downloadPng` rasterizes the deterministic SVG IN THE BROWSER — read the viewBox, draw into an <Image>, paint onto a <canvas> at 2× over an opaque white ground, `canvas.toBlob('image/png')` → download (the SVG has no external refs → untainted canvas); an Export PNG button beside Export SVG, behind the same `exportBlocked` health gate, filename from the title slug. A Print button + an `@media print` block (styles.css) hide the editor chrome and print the diagram + its honest 'about' caption — the diagram SVG already draws the disclaimer, so the standing disclaimer/crisis copy travels onto the page (§L.2 gating unchanged); browser Save-as-PDF is the PDF path (NO rasterizer/PDF library bundled — ADR-0013 no-new-dep). The active audience profile is preserved (export uses the on-screen `svg`). HONEST SCOPE: PNG is browser-only (canvas) — the CLI still emits SVG only; 'PDF' is print-to-PDF, not a generated file. A Playwright e2e captures the download + asserts a real PNG (8-byte signature + non-trivial size)."
+    },
+    {
+      "id": "REQ-DOC-CONFORMANCE",
+      "title": "Documentation factual claims stay consistent with the system + with itself (un-driftable)",
+      "spec": ["§J", "§E"],
+      "source": "docs/ROADMAP.md",
+      "milestone": "M23",
+      "status": "implemented",
+      "impl": ["conformance/docs-conformance.test.ts", "docs/format-reference.md", "docs/specification/psyuml-v0.2.0.md", "docs/specification/roadmap-to-v1.md", "docs/ROADMAP.md", "docs/ARCHITECTURE.md"],
+      "tests": ["conformance/docs-conformance.test.ts"],
+      "notes": "Implemented (ADR-0043) as a machine-checked drift guard, mirroring the catalog↔corpus pattern (ADR-0027/0028) but for the PROSE docs. `conformance/docs-conformance.test.ts` derives the load-bearing facts from the SYSTEM — `DiagramType.options` (the renderer count + the exact type list), `FAMILIES.length` (the family count), and the `examples/` corpus (one `showcase-<type>.psyuml` per type) — and asserts the docs match: (1) the format-reference 'Diagram types — authoring quick-guide' table lists EXACTLY `DiagramType.options` (a missing/extra renderer row fails CI); (2) every digit-form 'N diagram types/renderers' claim across the live docs + package IMPACTs equals the renderer count; (3) every digit-form 'N families' claim equals `FAMILIES.length`; (4) there is exactly one `showcase-<type>` per type. So the drift a human had to reconcile by hand (a doc saying '12 diagram types', a quick-guide missing the 8 new ◇ renderers) can never silently return. Also reconciled the pre-existing drift the audit found (format-reference quick-guide completed to 20 rows; the v0.2 spec, roadmap-to-v1, ROADMAP, ARCHITECTURE, render/profiles IMPACTs counts + statuses brought current). HONEST SCOPE: the guard checks DIGIT-form counts (`12`, `20`), not spelled-out words ('eight families' is prose, unchecked — catching it risks false positives like 'one of the families'); a `(?<![.\\w])` lookbehind excludes version/identifier digits ('v0.1 diagram types', 'v0.2 families', 'M15') which are not counts; the dated cited-research archive (`docs/research/**`, its own drift check) and append-only ADR history (`sdd/adr/**`) are out of scope by design."
+    },
+    {
+      "id": "REQ-SHOWCASE-PAGE",
+      "title": "A polished, drift-proof printable HTML showcase: worked diagrams + explanations + an on-paper usage guide",
+      "spec": ["§E"],
+      "source": "docs/ROADMAP.md",
+      "milestone": "M23",
+      "status": "planned",
+      "impl": [],
+      "tests": [],
+      "notes": "PLANNED (Phase B of the documentation goal). A self-contained `apps/web/public/showcase.html` presenting complex worked diagrams with per-diagram explanations and a usage guide that covers drawing them on PAPER (not only in the software), with strong UX. To stay un-driftable it will be GENERATED from a single manifest + the committed golden SVGs (`examples/showcase-*.svg`) by a `scripts/build-showcase.mjs`, drift-checked by a conformance test, and framed JTBD (read it / draw it on paper / choose the right diagram / use it honestly). ADR + IMPACT + traceability flip to implemented when it lands."
     }
   ]
 }
