@@ -152,6 +152,62 @@ export function boxesFromSvg(svg: string): ElBox[] {
   return out;
 }
 
+/** A reconstructed `<text>` element: its AABB, the visible string, and its `data-el` tag if any. */
+export interface TextBox extends Box {
+  content: string;
+  el?: string;
+}
+
+/**
+ * Extract an AABB for EVERY `<text>` element in the SVG — tagged or not — so the text-legibility
+ * invariant (ADR-0045) can reason about ALL rendered words, not just the `data-el` node/edge labels
+ * that `boxesFromSvg` returns. Chrome text (the title, band/lane headers, per-region contents,
+ * captions, footnotes, legends) carries no `data-el`, so it is invisible to `boxesFromSvg`; this is
+ * how it becomes visible to a check. Multi-line `<tspan>` stacks union to one box; halos are a white
+ * stroke on the same `<text>` (no duplicate element), so each label is counted once. Measurement uses
+ * the SAME `textWidth` metric / `textLength` honouring as `boxesFromSvg`.
+ */
+export function textBoxesFromSvg(svg: string): TextBox[] {
+  const out: TextBox[] = [];
+  for (const m of svg.matchAll(TEXT_RE)) {
+    const a = attrs(m[1]);
+    const size = a['font-size'] ? num(a['font-size']) : 11;
+    const anchor = a['text-anchor'] ?? 'start';
+    const inner = m[3] ?? '';
+    const tspans = [...inner.matchAll(TSPAN_RE)];
+    if (tspans.length) {
+      const boxes: Box[] = [];
+      const parts: string[] = [];
+      for (const ts of tspans) {
+        const ta = attrs(ts[1]);
+        const content = unesc((ts[2] ?? '').replace(/<[^>]*>/g, ''));
+        parts.push(content);
+        boxes.push(textLineBox(content, num(ta.x), num(ta.y), size, anchor, ta.textLength));
+      }
+      const minX = Math.min(...boxes.map((b) => b.x));
+      const minY = Math.min(...boxes.map((b) => b.y));
+      const maxX = Math.max(...boxes.map((b) => b.x + b.w));
+      const maxY = Math.max(...boxes.map((b) => b.y + b.h));
+      out.push({
+        content: parts.join(' ').trim(),
+        el: a['data-el'],
+        x: minX,
+        y: minY,
+        w: maxX - minX,
+        h: maxY - minY,
+      });
+    } else {
+      const content = unesc(inner.replace(/<[^>]*>/g, ''));
+      out.push({
+        content: content.trim(),
+        el: a['data-el'],
+        ...textLineBox(content, num(a.x), num(a.y), size, anchor, a.textLength),
+      });
+    }
+  }
+  return out;
+}
+
 export function viewBoxOf(svg: string): Box {
   const m = svg.match(/viewBox="(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+)"/);
   if (!m) throw new Error('no viewBox');

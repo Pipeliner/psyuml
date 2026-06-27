@@ -121,6 +121,11 @@
       "id": "M23",
       "phase": 11,
       "title": "Documentation consistency + drift-proofing + the printable HTML showcase"
+    },
+    {
+      "id": "M24",
+      "phase": 12,
+      "title": "Text-legibility + containment invariants — close the chrome/caption overlap & clipping gaps"
     }
   ],
   "requirements": [
@@ -1243,6 +1248,28 @@
       "impl": ["examples/showcase.json", "scripts/build-showcase.mjs", "apps/web/App.tsx", "package.json"],
       "tests": ["conformance/showcase.test.ts", "apps/web/links.test.ts"],
       "notes": "Implemented (ADR-0044) as a single-source, drift-locked, self-contained page. `examples/showcase.json` is the single source — per diagram type, editorial prose only (`oneLiner`/`whatItShows`/`whenToUse`/`onPaper`/`evidenceNote`/`school`/`audience`/`family`) + page-level content (the four JTBD jobs, a reading guide, an ON-PAPER drawing guide, the honesty notes, and a family chooser). It does NOT duplicate system facts: each diagram's TITLE is pulled from its model, the RENDER from the committed golden `examples/showcase-<type>.svg`, and `family`/the chooser are checked against `FAMILY_OF`/`FAMILIES`. `scripts/build-showcase.mjs` (pure `renderShowcase` + `esc` exported for the test; `main()` does the IO) emits `apps/web/public/showcase.html` — inline CSS + inline SVG, NO external assets — framed as four jobs-to-be-done (read it / draw it on paper / choose the right one / use it honestly), grouped by family, with a sticky family nav, per-diagram cards (the render is the hero; explanation, when-to-use, on-paper steps + a green honest note below), light/dark theming, and a PRINT stylesheet so the page itself prints onto paper. Runs in `dev`/`build` after build-docs.mjs; output gitignored like handbook.html/diagram-catalog.html. Linked from the editor's intro note (base-aware). TDD: `conformance/showcase.test.ts` (written first, red before the generator) checks the manifest vs the system (`diagrams` == `DiagramType.options` one-per-type; `family` == `FAMILY_OF`; chooser == `FAMILIES`; substantive prose + committed golden/model per entry) AND the generated page vs the manifest (self-contained; inlines every render + each REAL model title; carries every explanation/on-paper guide/JTBD job/chooser question/honesty note); `apps/web/links.test.ts` generates + link-checks it. HONEST SCOPE: one example per type (the feature-dense `showcase-<type>` models), not the 40+ catalogue; the drift guard locks structure + coverage, not the hand-authored wording (evidence notes deliberately separate well-evidenced therapies from useful-but-unproven diagrams); `pattern`/`composite` have no renderer yet and are shown honestly in the chooser; no new runtime dependency."
+    },
+    {
+      "id": "REQ-TEXT-LEGIBILITY",
+      "title": "No two rendered words collide — the chrome/caption text overlap gap is machine-checked",
+      "spec": ["§D", "§J"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M24",
+      "status": "implemented",
+      "impl": ["packages/render/index.ts", "packages/render/introspect.ts"],
+      "tests": ["packages/render/text-overlap.test.ts"],
+      "notes": "Implemented (ADR-0045). The overlap invariant (ADR-0012) only guards the `data-el` NODE/LABEL boxes, so UNTAGGED chrome text — the diagram title, band/lane headers, per-region contents, captions, provenance footnotes, legends — could collide unseen (a visual audit of the showcase found 14 such pairs across 12 corpus files, in 5 classes). `introspect.textBoxesFromSvg` now reconstructs the AABB of EVERY `<text>` element (halos are a white stroke on the same element, so each word is counted once), and `packages/render/text-overlap.test.ts` asserts no two text boxes overlap for every `examples/*.psyuml` in BOTH audience layers. Five renderer fixes made the corpus clean: (1) `renderInterventionSeq` reserves a title band so the title can't overlap the lane headers (6 files); (2) `renderLoopMap` reserves the centre R/B + loop-topology badge as a `deCollide` obstacle so chord-midpoint edge labels avoid it (3 files); (3) `renderVenn` caps each region's contents descriptor to its zone's share of the centre-spacing (textLength); (4) `renderPartsMap` widens the gap between the provenance footnote and the legend; (5) `renderResourceMap` caps each column header to its column. 11 goldens regenerated; the full render+conformance suite stays green. HONEST SCOPE: text↔text only — text drawn OVER decoration (a region banner on a circle, a sensation label on a body outline, an edge label on its own connector) is intentional labelling and is NOT a collision (decoration is not a `<text>`); text staying inside its own container shape is the separate containment guarantee (REQ-TEXT-CONTAINMENT, ADR-0046)."
+    },
+    {
+      "id": "REQ-TEXT-CONTAINMENT",
+      "title": "Rendered text stays inside its own container shape — no caption/label clipped by its box/circle/oval",
+      "spec": ["§D", "§J"],
+      "source": "docs/specification/psyuml-v0.1.0.md",
+      "milestone": "M24",
+      "status": "planned",
+      "impl": [],
+      "tests": [],
+      "notes": "PLANNED (ADR-0046). The companion to REQ-TEXT-LEGIBILITY for the OTHER class the showcase audit found: text overflowing / bisected by its own container shape — the decision-nav crisis caption clipped by its node box, a mode-map node label overflowing its dominance-sized circle, and the parts-map exile-oval provenance label clipped by the oval edge. Will extend the layout-quality containment check (ADR-0021 (A)) beyond the box renderers to circle/ellipse-shaped nodes and node captions, fix the three renderers, and regenerate the affected goldens. Text-over-DECORATION (secure-base banner on the circle, body-map labels on the body outline) stays intentional and out of scope."
     }
   ]
 }

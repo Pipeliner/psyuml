@@ -791,7 +791,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
         )
         .map((n) => `⚖ ${getText(n.label, layer, lang)}: ${n.properties.provenanceNote!.trim()}`)
     : [];
-  const narrH = provNarr.length ? provNarr.length * 13 + 8 : 0;
+  // +20 (not +8) leaves a real gap between the last footnote line and the legend below it so the two
+  // never touch (ADR-0045) — the term cancels in the footnote's own y, so it only widens that gap.
+  const narrH = provNarr.length ? provNarr.length * 13 + 20 : 0;
   const partsH = Math.max(PARTS_H + titleH, exileY + radialDown + 60) + narrH;
 
   const parts: string[] = [];
@@ -1463,8 +1465,16 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
     const items = itemsOf(cat.id);
     maxItems = Math.max(maxItems, items.length);
     const hx = c * colW + 16;
+    // Cap the header to its column so a wide one can't run into the next column's header (ADR-0045);
+    // compressed via textLength only when it would otherwise overflow (the item labels already fit).
+    const hLabel = getText(cat.label, layer, lang);
+    const hCap = colW - 22;
+    const hTl =
+      textWidth(hLabel, 13) > hCap
+        ? ` textLength="${r1(hCap)}" lengthAdjust="spacingAndGlyphs"`
+        : '';
     parts.push(
-      `<text x="${hx}" y="58" font-family="sans-serif" font-size="13" font-weight="700">${esc(getText(cat.label, layer, lang))}</text>`,
+      `<text x="${hx}" y="58" font-family="sans-serif" font-size="13" font-weight="700"${hTl}>${esc(hLabel)}</text>`,
     );
     items.forEach((it, i) => {
       const y = 86 + i * 28;
@@ -1621,6 +1631,31 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     w: LNODE_W,
     h: LNODE_H,
   }));
+  // Centre badge (R/B disc + CAT loop-topology marker) reserved up front so the chord-midpoint edge
+  // labels de-collide OFF it too (ADR-0045), not only off the node boxes — previously the badge was
+  // emitted AFTER the labels, so a central label could land on the R/B / TRAP marker. The badge is
+  // drawn below at this same centre.
+  const loopEdge = model.edges.find((e) => e.loop);
+  const topoMark = model.edges.find((e) => e.loopTopology)?.loopTopology;
+  let badgeCx = 0;
+  let badgeCy = 0;
+  const badgeObstacles: { x: number; y: number; w: number; h: number }[] = [];
+  if (loopEdge || topoMark) {
+    let sx = 0;
+    let sy = 0;
+    for (const p of pos.values()) {
+      sx += p.x;
+      sy += p.y;
+    }
+    badgeCx = r1(sx / pos.size);
+    badgeCy = r1(sy / pos.size);
+    if (loopEdge) badgeObstacles.push({ x: badgeCx - 20, y: badgeCy - 20, w: 40, h: 40 });
+    if (topoMark) {
+      const ty = badgeCy + (loopEdge ? 36 : 0);
+      const ww = Math.max(40, textWidth(topoMark.toUpperCase(), 11) + 8);
+      badgeObstacles.push({ x: badgeCx - ww / 2, y: ty - 16, w: ww, h: 48 });
+    }
+  }
   const loopLabels: TaggedBox[] = [];
   for (const e of model.edges) {
     const s = pos.get(e.source);
@@ -1633,7 +1668,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     const w = textWidth(txt, 10);
     loopLabels.push({ id: e.id, x: (s.x + t.x) / 2 - w / 2, y: (s.y + t.y) / 2 - 3 - 8, w, h: 10 });
   }
-  const loopLblOff = deCollide(loopLabels, loopNodeBoxes, 1);
+  const loopLblOff = deCollide(loopLabels, [...loopNodeBoxes, ...badgeObstacles], 1);
 
   // Edges (chords, endpoints pulled to the node boundary)
   const loopEdgeStrings: string[] = [];
@@ -1674,29 +1709,22 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     ...addCrossingBridges(loopEdgeStrings, edgeIncidence(model), focalEdges(model, ['exit'])),
   );
 
-  // Reinforcing / balancing loop badge + CAT loop-topology marker in the centre (spec §C, v0.2 §4).
-  const loop = model.edges.find((e) => e.loop);
-  const topo = model.edges.find((e) => e.loopTopology)?.loopTopology;
-  if (loop || topo) {
-    let sx = 0;
-    let sy = 0;
-    for (const p of pos.values()) {
-      sx += p.x;
-      sy += p.y;
-    }
-    const bx = r1(sx / pos.size);
-    const by = r1(sy / pos.size);
-    if (loop) {
+  // Reinforcing / balancing loop badge + CAT loop-topology marker in the centre (spec §C, v0.2 §4);
+  // drawn here above the edges, at the centre reserved as a label obstacle above (ADR-0045).
+  if (loopEdge || topoMark) {
+    const bx = badgeCx;
+    const by = badgeCy;
+    if (loopEdge) {
       parts.push(
         `<circle cx="${bx}" cy="${by}" r="18" fill="#fff" stroke="#000" stroke-width="2" />`,
-        `<text x="${bx}" y="${by + 5}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loop.loop ?? '')}</text>`,
+        `<text x="${bx}" y="${by + 5}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loopEdge.loop ?? '')}</text>`,
       );
     }
-    if (topo) {
-      const ty = by + (loop ? 36 : 0);
+    if (topoMark) {
+      const ty = by + (loopEdge ? 36 : 0);
       parts.push(
-        loopTopologyGlyph(topo, bx, ty),
-        `<text x="${bx}" y="${ty + 28}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">${esc(topo.toUpperCase())}</text>`,
+        loopTopologyGlyph(topoMark, bx, ty),
+        `<text x="${bx}" y="${ty + 28}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">${esc(topoMark.toUpperCase())}</text>`,
       );
     }
   }
@@ -1761,7 +1789,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     snag: 'a snag — a self-truncating loop that sabotages legitimate success',
   } as const;
   const extra: string[] = [];
-  if (topo) extra.push(`This maintaining pattern is ${TOPO_MEANING[topo]}.`);
+  if (topoMark) extra.push(`This maintaining pattern is ${TOPO_MEANING[topoMark]}.`);
   // The standing / confidence lines are the clinician-analytic surface — hidden for the
   // client / picture profiles (§2); the structural topology line above always shows.
   if (showInterpretive) {
@@ -1992,7 +2020,11 @@ export function renderInterventionSeq(
     }
   }
 
-  const TOP = 72;
+  // Reserve a title band so the title never overlaps the lane headers (ADR-0045): with a title, the
+  // headers, dividers and the whole node stack shift down clear of it.
+  const titlePad = model.meta.title ? 24 : 0;
+  const headerY = 28 + titlePad;
+  const TOP = 72 + titlePad;
   const GAP = 80;
   const pos = new Map<string, { x: number; y: number }>();
   let maxDepth = 0;
@@ -2010,11 +2042,11 @@ export function renderInterventionSeq(
   // Lane headers + dividers
   lanes.forEach((l, i) => {
     parts.push(
-      `<text x="${laneX(i)}" y="28" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700">${esc(getText(l.label, layer, lang))}</text>`,
+      `<text x="${laneX(i)}" y="${headerY}" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700">${esc(getText(l.label, layer, lang))}</text>`,
     );
     if (i > 0) {
       parts.push(
-        `<line x1="${r1(i * laneW)}" y1="38" x2="${r1(i * laneW)}" y2="${height - 10}" stroke="#ccc" stroke-width="1" stroke-dasharray="4 4" />`,
+        `<line x1="${r1(i * laneW)}" y1="${headerY + 10}" x2="${r1(i * laneW)}" y2="${height - 10}" stroke="#ccc" stroke-width="1" stroke-dasharray="4 4" />`,
       );
     }
   });
@@ -3281,8 +3313,14 @@ export function renderVenn(model: PsyumlModel, options: RenderOptions = {}): Ren
       )
       .map((n) => getText(n.label, layer, lang));
     if (items.length) {
+      // Cap each descriptor to its zone's share of the 140px centre-spacing so adjacent contents
+      // can't collide (ADR-0045) — compressed via textLength only when it would otherwise overflow.
+      const descr = items.join(' · ');
+      const CAP = 128;
+      const tl =
+        textWidth(descr, 10) > CAP ? ` textLength="${CAP}" lengthAdjust="spacingAndGlyphs"` : '';
       parts.push(
-        `<text x="${z.x}" y="${cy + 15}" font-family="sans-serif" font-size="10" text-anchor="middle" fill="#333" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(items.join(' · '))}</text>`,
+        `<text x="${z.x}" y="${cy + 15}" font-family="sans-serif" font-size="10" text-anchor="middle" fill="#333" stroke="#fff" stroke-width="2.5" paint-order="stroke"${tl}>${esc(descr)}</text>`,
       );
     }
     altZones.push(items.length ? `${name} (${items.join(', ')})` : name);
