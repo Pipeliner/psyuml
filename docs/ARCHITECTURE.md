@@ -128,7 +128,7 @@ adopted wholesale, spec §C), `psychodynamic` (**Malan Two Triangles**),
 package and powers the profile switcher.
 
 **Views vs. profiles.** Source 3 frames diagrams as *views* (reversible projections of
-the one graph). PsyUML's nine diagram types are those views; a profile chooses glyphs/
+the one graph). PsyUML's twenty diagram types are those views; a profile chooses glyphs/
 layout/vocabulary within a view. Source 3's six views map onto PsyUML's types, with one
 addition — a **Body Map** view (somatic: body-located sensations, arousal curve, sensory
 channels), new in §13 — which fills a gap (PsyUML has polyvagal *State* but no body map).

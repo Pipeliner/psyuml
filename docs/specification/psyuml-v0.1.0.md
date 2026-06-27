@@ -13,7 +13,7 @@
 
 ## TL;DR
 
-- **PsyUML is a complete, three-tier visual modeling language** that gives psychotherapy what UML gave software: a small hand-drawable core ontology (8 element types, 8 core symbols) that ALL nine diagram types instantiate, progressively enrichable with clinician annotations and school-specific overlays — directly answering the documented 94%-absent case-formulation gap (Abbas et al. 2013, Rotherham).
+- **PsyUML is a complete, three-tier visual modeling language** that gives psychotherapy what UML gave software: a small hand-drawable core ontology (8 element types, 8 core symbols) that every diagram type instantiates, progressively enrichable with clinician annotations and school-specific overlays — directly answering the documented 94%-absent case-formulation gap (Abbas et al. 2013, Rotherham).
 - **It is genuinely cross-school and genuinely dual-audience:** the same map renders in IFS, schema, structural-dissociation, CAT, CBT, somatic, and ritual vocabularies via provenance tags and a translation table that *preserves* (never flattens) real theoretical disagreements, and every diagram has a plain-language, non-pathologizing client layer plus a crisis-usable Decision/Navigation Chart.
 - **Magical ritual is a first-class modality with full ontology parity** to clinical interventions (a grief rite functions as both an Intervention node and a trajectory transition trigger), framed honestly per the evidence: ritual reliably affects *subjective* anxiety, felt control, and meaning (open-label placebo SMD ≈ 0.72; von Wernsdorff et al. 2021) but NOT *objective* disease markers (SMD = −0.02; Spille et al. 2023) — so the spec forbids any claim that a ritual cures medical disease.
 

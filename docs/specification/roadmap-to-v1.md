@@ -1,8 +1,16 @@
 # PsyUML — gap analysis & the road to v1.0 (what's missing, specified)
 
-**Status:** forward spec (planned scope). **Not normative for v0.x** — it specifies what is *missing*
-from the current build and the acceptance criteria to close each gap. Tracked by the `planned`
-`REQ-…` rows that cite this file; nothing here is implemented.
+**Status:** forward spec. **Not normative for v0.x** — it specifies what was *missing* from the build
+and the acceptance criteria to close each gap. Tracked by the `REQ-…` rows that cite this file.
+
+> **Update (live status).** Most of this has since LANDED. **Phase 9 (M20)** and **Phase 10 (M21)**
+> are implemented: `REQ-NEW-DIAGRAM-TYPES`, `REQ-EDGE-ROUTER`, `REQ-EDGE-CROSSING`,
+> `REQ-PICTURE-PICTOGRAPHS` (M20); `REQ-EXPORT-RASTER`, `REQ-CASE-FILE`, `REQ-LIVE-PROFILES`,
+> `REQ-PROVENANCE-NARRATIVE`, `REQ-I18N-LOCALIZATION` (M21) — see ADR-0023–0042. `sdd/traceability.json`
+> + `docs/ROADMAP.md` carry the live status; the per-REQ "planned" wording below is historical. The
+> **only** REQs still open are the validation-gate ones — `REQ-STUDY-PREREG` (planned) + the gated
+> eval REQs (`REQ-EVAL-SUITE`, `REQ-NOTATION-TESTING`, in-progress) — exactly as the honesty clause
+> predicted: the dominant remaining gap is validation, not features.
 
 > **Honesty clause (the dominant gap).** PsyUML is an **unvalidated v0.x** communication aid. The
 > single largest missing thing is **validation**, not features. Every glyph — including the CAT
@@ -11,9 +19,9 @@ from the current build and the acceptance criteria to close each gap. Tracked by
 > claims "validated" is impossible until the human studies run. Building more renderers does not move
 > the project toward validity; running the studies does. This document keeps that ordering explicit.
 
-The current build (v0.x): 12 diagram types in 8 families × 3 audience profiles; a deterministic
+The current build (v0.x): 20 diagram types in 8 families × 3 audience profiles; a deterministic
 SVG renderer with machine-checked non-overlap (ADR-0012) + layout-quality (ADR-0021) invariants; a
-browser editor that *is* the help site (39 examples + a 59-entry catalogue); text-DSL + CLI; §K
+browser editor that *is* the help site (74 examples + a 59-entry catalogue); text-DSL + CLI; §K
 validated profiles; lossy FHIR **export**; privacy de-identification. What follows is what it is
 **not** yet.
 

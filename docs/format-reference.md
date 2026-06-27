@@ -21,7 +21,7 @@ node dist/cli/psyuml.mjs convert examples/state-map.psyuml     # JSON ⇄ text D
 |---|---|---|---|---|
 | `version` | string | yes | — | model version, currently `0.1.0` |
 | `language` | string (BCP-47) | no | `en` | default language key for labels |
-| `diagram` | enum | yes | — | one of the 12 diagram types below |
+| `diagram` | enum | yes | — | one of the 20 diagram types below |
 | `meta` | object | no | `{}` | see Meta |
 | `bands` | Band[] | no | `[]` | ordered zones / swimlanes / phases |
 | `nodes` | Node[] | no | `[]` | the elements |
@@ -99,6 +99,14 @@ node dist/cli/psyuml.mjs convert examples/state-map.psyuml     # JSON ⇄ text D
 | `decision-nav` | crisis/decision chart | `state`, `intervention`, `resource` | `sequential` | yes | **`meta.crisisResources` required; no dead-ends** |
 | `resource-anchor` | categorized supports | `context`(category), `resource` | `containment` | yes | grow the soothing system |
 | `two-triangles` | Malan psychodynamic formulation | `state` in two `bands` | `excitatory`/`inhibitory`, `transference` | no (clinician aid) | — |
+| `ladder` | exposure/fear hierarchy, ranked goals | nodes ranked by `properties.intensity` (SUDS) | — | yes | hardest-first; bottom rung is where to start |
+| `three-circles` | CFT threat / drive / soothing systems | `stereotype` system, sized by `properties.weight` | `containment` (contents) | yes | grow the soothing system |
+| `venn` | DBT states of mind (overlapping circles) | region by `stereotype` (left/overlap/right) | `containment` (contents) | yes | the lens = both; the circles are decoration |
+| `bullseye` | ACT values / circles of control | life domain plotted by `properties.intensity` | — (edge-free) | yes | closer to centre = on target |
+| `tree-of-life` | narrative strengths-forward life portrait | item by `stereotype` (roots/ground/trunk/branches/leaves/fruits) | — (edge-free) | yes | co-created, not an assessment |
+| `schema-grid` | Young's 18 EMS in the 5 schema domains | schema by `stereotype` (domain) | — (edge-free) | clinician (+psychoed) | active schemas highlighted via `properties.intensity` |
+| `decisional-balance` | MI 2×2: change/stay × benefit/cost | item by `stereotype` (quadrant) | — (edge-free) | yes | a reflection, not a persuasion tool (MI caveat) |
+| `secure-base` | attachment secure base & safe haven | by `stereotype` (explore/comfort/base) | — (edge-free) | yes (caregiver) | a generic graphic, **not** the trademarked Circle of Security® |
 
 ## Worked example — the text DSL
 

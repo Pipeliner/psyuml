@@ -19,7 +19,7 @@ v0.1 began from *notation*; v0.2 names the true centre: **collaborative psycholo
 
 ## 2. Diagram families and audience profiles (§E-extended)
 
-v0.1 ships 12 diagram *types*. v0.2 groups them into **eight families** (a cognitive map for users; the type is the concrete renderer, the family is the *question it answers*). The research confirms diagrams converge on a small set of archetypes; families make that explicit.
+v0.1 shipped 12 diagram *types* (now 20). v0.2 groups them into **eight families** (a cognitive map for users; the type is the concrete renderer, the family is the *question it answers*). The research confirms diagrams converge on a small set of archetypes; families make that explicit.
 
 | Family | Question it answers | v0.1 types in this family | Archetype |
 |---|---|---|---|
@@ -78,7 +78,7 @@ The instruments + protocol live in the adoption pack / evaluation suite; v0.2 sh
 - **Audience-scoped exports + redaction (`SHOULD`):** exports `SHOULD` support client-facing / record / research / teaching scopes with de-identification and explicit consent status (v0.1 privacy/`redact` exists; v0.2 generalizes to audience scopes). Genograms especially may be reread as records and viewed differently by different family members.
 - **The honesty clause** (top) `MUST` appear on every client-facing export.
 
-## 7. Interoperability — a *lossy* FHIR export (§M, new, planned)
+## 7. Interoperability — a *lossy* FHIR export (§M, new, _implemented — M15/ADR-0018_)
 
 FHIR has **no native formulation or genogram resource**; v0.2 specs an export (not a round-trip source of truth) so PsyUML content can enter a record:
 
@@ -113,7 +113,7 @@ Stated limits (`MUST` be documented in any FHIR-export feature): no native formu
 
 Ordering follows the research: **semantics → tested symbols → assets → studies** (don't freeze symbols before testing them).
 
-- **M11 — Families & profiles foundation** *(this release: the registry + API + tests + spec).* Group the 12 types into 8 families; define the 3 audience profiles. ✔ shipping now.
+- **M11 — Families & profiles foundation** *(this release: the registry + API + tests + spec).* Group the types into 8 families; define the 3 audience profiles. ✔ shipping now.
 - **M12 — Pattern family + provenance/confidence surfacing.** Loop-topology tags (trap/dilemma/snag) + exits as first-class; `contested` provenance + confidence rendered; ontology-neutral `as-if`. Gated by the overlap invariant + monochrome redundancy.
 - **M13 — Audience-profile rendering + editor.** Client/picture profiles in the renderers + the editor's family-grouped picker and profile switch. Picture symbols enter the **comprehension-testing** pipeline.
 - **M14 — Notation comprehension testing (Tier-B).** Run the ISO-9186 + participatory protocol with clients/trainees/laypeople; iterate symbols; record results in the evaluation suite. (Gates leaving v0.x.)
