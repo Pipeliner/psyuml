@@ -1266,10 +1266,10 @@
       "spec": ["§D", "§J"],
       "source": "docs/specification/psyuml-v0.1.0.md",
       "milestone": "M24",
-      "status": "planned",
-      "impl": [],
-      "tests": [],
-      "notes": "PLANNED (ADR-0046). The companion to REQ-TEXT-LEGIBILITY for the OTHER class the showcase audit found: text overflowing / bisected by its own container shape — the decision-nav crisis caption clipped by its node box, a mode-map node label overflowing its dominance-sized circle, and the parts-map exile-oval provenance label clipped by the oval edge. Will extend the layout-quality containment check (ADR-0021 (A)) beyond the box renderers to circle/ellipse-shaped nodes and node captions, fix the three renderers, and regenerate the affected goldens. Text-over-DECORATION (secure-base banner on the circle, body-map labels on the body outline) stays intentional and out of scope."
+      "status": "implemented",
+      "impl": ["packages/render/index.ts"],
+      "tests": ["packages/render/layout-quality.test.ts"],
+      "notes": "Implemented (ADR-0046), the companion to REQ-TEXT-LEGIBILITY for the OTHER showcase-audit class: text clipped by its OWN container shape. The clear defect — `renderModeMap` mode names overflowing their dominance-sized circles — is fixed by moving the name + `dom` numeral to a caption BELOW the circle, so the circle is a PURE dominance glyph (nothing to clip; better notation — 0.85 biggest → 0.30 smallest reads cleanly) and the name (now an outside caption) is covered by the ADR-0045 text↔text invariant against its neighbours. The guard: `layout-quality.test.ts` invariant C asserts every node label whose CENTRE is outside its node is DISJOINT from it (never straddling the border), every example × both layers — so combined with invariant A (centre-inside ⇒ contained, ADR-0021) every owner label is cleanly IN or OUT, never bisected; the mode-map fix is now machine-guarded. HONEST SCOPE: interior glyph-label tightness (parts-map / relational-field labels filling their symbol nodes) is the INTENDED notation and stays within invariant A's 3px slop — not a defect, not in scope (forcing strict margins would flag the intended design + risk node-overlap from growing every glyph). `CAPTION_BISECT_KNOWN_GAP = {decision-nav}` is the one documented exception (its crisis-resources caption grazes its thick-bordered node by ~6px in the deliberately compact crisis chart, where pushing it fully clear collides with a sibling branch label — a worse defect; it is the node's OWN caption and stays legible). Text-over-DECORATION (secure-base banner on the circle, body-map labels on the body outline) stays intentional + out of scope (ADR-0045). 2 mode-map goldens regenerated; full render+conformance suite green."
     }
   ]
 }

@@ -2457,7 +2457,8 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     maxY = Math.max(maxY, p.y);
   }
   const width = Math.max(560, maxX + 120);
-  const height = Math.max(300, maxY + 80) + 40;
+  // Names + dominance numerals now sit BELOW the circles (ADR-0046), so reserve more vertical room.
+  const height = Math.max(360, maxY + 160);
 
   const radius = (n: MNode): number =>
     MODE_MIN_R + (n.properties.dominance ?? 0.4) * MODE_MAX_EXTRA;
@@ -2517,18 +2518,26 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
         `<polygon points="${p.x},${r1(ty - 9)} ${p.x + 8},${r1(ty + 3)} ${p.x - 8},${r1(ty + 3)}" fill="#fff" stroke="#000" stroke-width="1.5" />`,
       );
     }
+    // Name + dominance numeral sit BELOW the circle as a caption (ADR-0046): the circle is then a
+    // PURE dominance glyph that can never clip its label, and the name (wrapped narrow) stays clear of
+    // its neighbours. `wrapLabel` centres a multi-line block on `cy`, so offset `cy` down by the
+    // block's half-height to put the FIRST line clear below the circle.
+    const name = getText(n.label, layer, lang);
+    const nameLines = wrapLines(name, Math.max(6, Math.floor(108 / (10 * CHAR_W))), 2);
+    const nameCy = p.y + r + 14 + ((nameLines.length - 1) * 13) / 2;
     parts.push(
-      wrapLabel(getText(n.label, layer, lang), p.x, p.y + 3, {
+      wrapLabel(name, p.x, nameCy, {
         size: 10,
         anchor: 'middle',
-        maxWidth: 120,
+        maxWidth: 108,
+        maxLines: 2,
         dataEl: `nodelabel:${n.id}`,
       }),
     );
     const dom = n.properties.dominance;
     if (dom !== undefined) {
       parts.push(
-        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${r1(p.y + r + 12)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555">dom ${dom.toFixed(2)}</text>`,
+        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${r1(nameCy + ((nameLines.length - 1) * 13) / 2 + 14)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555">dom ${dom.toFixed(2)}</text>`,
       );
     }
   }

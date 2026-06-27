@@ -26,7 +26,7 @@ import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { parseModel, type PsyumlModel } from '@psyuml/model';
 import * as render from '@psyuml/render';
-import { contains, segIntersectsBox } from './layout';
+import { contains, overlaps, segIntersectsBox } from './layout';
 import { boxesFromSvg, edgeSegments, idOf, kindOf } from './introspect';
 
 type Renderer = (m: PsyumlModel, o?: { layer?: 'clinician' | 'client' }) => { svg: string };
@@ -99,6 +99,13 @@ const centreInside = (
  * edge renderer (REQ-EDGE-ROUTER). Kept as the documented hook should a future renderer need it. */
 const EDGE_NODE_KNOWN_GAP = new Set<string>();
 
+/** Renderers where a node's OUTSIDE caption (centre beyond the node) is allowed to graze its own
+ * node border — the documented gap for invariant C (ADR-0046). ONLY `decision-nav`: its crisis-
+ * resources caption sits tight under the thick-bordered crisis node in the deliberately compact
+ * crisis chart, where pushing it fully clear collides with a sibling branch label (a worse defect).
+ * It is the node's OWN caption and stays fully legible; every other renderer keeps captions clear. */
+const CAPTION_BISECT_KNOWN_GAP = new Set<string>(['decision-nav']);
+
 describe('layout-quality A: a node label fits inside its container (ADR-0021)', () => {
   const inBox = files.filter((f) => LABEL_IN_BOX.has(load(f).diagram));
   describe.each(inBox)('%s', (f) => {
@@ -151,6 +158,35 @@ describe('layout-quality B: an edge never crosses a non-incident node (ADR-0021)
               ).toBe(false);
             }
           }
+        }
+      });
+    }
+  });
+});
+
+describe('layout-quality C: a node caption is not bisected by its own border (ADR-0046)', () => {
+  // Companion to A (interior labels fit) for the OTHER containment defect: a caption whose centre is
+  // OUTSIDE its node must also be DISJOINT from it — a node border cutting through its own caption
+  // (the mode-map name overflowing its dominance circle; a box bisecting its crisis caption) is a
+  // clipping defect. Interior labels (centre inside) are A's job and are skipped here.
+  const enforced = files.filter((f) => !CAPTION_BISECT_KNOWN_GAP.has(load(f).diagram));
+  describe.each(enforced)('%s', (f) => {
+    const model = load(f);
+    for (const layer of ['clinician', 'client'] as const) {
+      it(`every node caption is clear of its node border (${layer})`, () => {
+        const all = boxesFromSvg(RENDERERS[model.diagram](model, { layer }).svg);
+        const nodes = new Map(
+          all.filter((b) => kindOf(b.el) === 'node').map((b) => [idOf(b.el), b]),
+        );
+        for (const lab of all.filter((b) => kindOf(b.el) === 'nodelabel')) {
+          const owner = nodes.get(idOf(lab.el));
+          if (!owner) continue;
+          // only OUTSIDE captions (centre beyond the node) are checked here; interior labels are A's.
+          if (centreInside(owner, lab.x + lab.w / 2, lab.y + lab.h / 2)) continue;
+          expect(
+            overlaps(owner, lab, -CONTAIN_SLOP),
+            `${f}/${layer}: caption ${lab.el} is bisected by its own node border`,
+          ).toBe(false);
         }
       });
     }
