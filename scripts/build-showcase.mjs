@@ -72,6 +72,15 @@ a { color: var(--accent); }
 .hero .tagline { font-size:1.15rem; color:var(--fg); margin:0 0 .9rem; max-width:48rem; }
 .hero .lede { color:var(--muted); max-width:48rem; margin:0 0 1rem; }
 .backlink { display:inline-block; font-weight:600; text-decoration:none; }
+.herobar { display:flex; gap:1rem; align-items:center; justify-content:space-between; flex-wrap:wrap; margin:0 0 .5rem; }
+.printbtn { font:inherit; font-size:.9rem; font-weight:600; cursor:pointer; color:var(--accent);
+  background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:.4rem .8rem; }
+.printbtn:hover { border-color:var(--accent); }
+.totop { position:fixed; right:1rem; bottom:1rem; z-index:15; font-size:.85rem; font-weight:600;
+  text-decoration:none; color:var(--accent); background:var(--bg); border:1px solid var(--line);
+  border-radius:999px; padding:.45rem .8rem; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+.totop:hover { border-color:var(--accent); }
+@media print { .printbtn, .totop { display:none !important; } }
 .banner { margin:1rem 0; padding:.7rem 1rem; border:1px solid var(--line); border-left:4px solid var(--accent);
   border-radius:0 8px 8px 0; background:var(--panel); font-size:.95rem; }
 .jobs { list-style:none; padding:0; margin:1.5rem 0; display:grid; gap:.9rem;
@@ -225,9 +234,12 @@ export function renderShowcase(manifest, { svgs, titles }) {
     <a href="./" style="margin-left:auto;font-weight:600;color:var(--accent)">← Editor</a>
   </div>
 </nav>
-<div class="wrap">
+<div class="wrap" id="top">
 <header class="hero">
-  <a class="backlink" href="./">← Back to the PsyUML editor</a>
+  <p class="herobar">
+    <a class="backlink" href="./">← Back to the PsyUML editor</a>
+    <button class="printbtn" type="button" onclick="window.print()">🖨 Print / Save as PDF</button>
+  </p>
   <h1>${esc(intro.title)}</h1>
   <p class="tagline">${esc(intro.tagline)}</p>
   <p class="lede">${esc(intro.lede)}</p>
@@ -275,6 +287,7 @@ professional care. <a href="./">Back to the editor</a> · <a href="./handbook.ht
 <a href="./diagram-catalog.html">Full diagram catalogue</a>.</p>
 </footer>
 </div>
+<a class="totop" href="#top" aria-label="Back to top">↑ Top</a>
 </body>
 </html>
 `;

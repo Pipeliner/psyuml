@@ -125,5 +125,12 @@ describe('showcase ↔ system conformance (REQ-SHOWCASE-PAGE, ADR-0044)', () => 
     it('links back to the editor so the page is reachable both ways', () => {
       expect(html, 'a relative back-link to the editor root').toMatch(/href="\.\/"/);
     });
+
+    it('offers print-to-paper and back-to-top affordances (UX, M25)', () => {
+      expect(html, 'a Print / Save-as-PDF control for the on-paper use case').toMatch(
+        /onclick="window\.print\(\)"/,
+      );
+      expect(html, 'a back-to-top link for the long page').toContain('href="#top"');
+    });
   });
 });
