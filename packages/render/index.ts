@@ -21,6 +21,7 @@ import {
 } from './layout';
 import { routeToPath, type RouterObstacle } from './router';
 import { BespokeRouter } from './router-bespoke';
+import { layeredLayout } from './layered';
 import { attrs, boxesFromSvg, edgeCrossings, edgeSegments, textLineBox } from './introspect';
 
 // Edge routing (REQ-EDGE-ROUTER, ADR-0023/0024): export the EdgeRouter interface + both backends.
@@ -1058,86 +1059,6 @@ const DNODE_GAP = 36;
 /** Side margin around the laid-out content (content-fit frame, ADR-0010). */
 const DEC_PAD = 16;
 
-/**
- * Break cycles by a DFS from the roots, then longest-path layer the FORWARD edges only.
- * A realistic crisis plan loops back ("still not safe → go back to the crisis step"); that
- * cycle leaves every node on it (and downstream of it) with in-degree>0 forever, so a plain
- * Kahn pass never dequeues them and they all collapse onto depth 0 (one overlapping row).
- * Classifying back-edges (those reaching a node currently on the DFS stack) and layering the
- * rest gives every node a sensible rank. Standard layered-graph cycle handling.
- *
- * Returns `{ depth, forward }`: each node's longest-path depth and the set of non-back edges.
- */
-function layerWithCycleBreak(
-  nodeIds: string[],
-  edges: { source: string; target: string }[],
-): { depth: Map<string, number>; forward: Set<{ source: string; target: string }> } {
-  const adj = new Map<string, { source: string; target: string }[]>(nodeIds.map((id) => [id, []]));
-  const indeg = new Map<string, number>(nodeIds.map((id) => [id, 0]));
-  for (const e of edges) {
-    if (!adj.has(e.source) || !adj.has(e.target)) continue;
-    adj.get(e.source)?.push(e);
-    indeg.set(e.target, (indeg.get(e.target) ?? 0) + 1);
-  }
-
-  // DFS to find back-edges (target currently on the recursion stack).
-  const back = new Set<{ source: string; target: string }>();
-  const state = new Map<string, 0 | 1 | 2>(); // 0 unseen, 1 on-stack, 2 done
-  const visit = (start: string): void => {
-    // Iterative DFS (avoids deep recursion on long crisis chains).
-    const stack: { id: string; i: number }[] = [{ id: start, i: 0 }];
-    state.set(start, 1);
-    while (stack.length) {
-      const frame = stack[stack.length - 1];
-      const out = adj.get(frame.id) ?? [];
-      if (frame.i < out.length) {
-        const e = out[frame.i];
-        frame.i += 1;
-        const s = state.get(e.target) ?? 0;
-        if (s === 1) {
-          back.add(e); // reaches a node still on the stack → cycle edge
-        } else if (s === 0) {
-          state.set(e.target, 1);
-          stack.push({ id: e.target, i: 0 });
-        }
-      } else {
-        state.set(frame.id, 2);
-        stack.pop();
-      }
-    }
-  };
-  // Start from in-degree-0 roots; if there are none (all in a cycle), start anywhere.
-  const roots = nodeIds.filter((id) => (indeg.get(id) ?? 0) === 0);
-  for (const id of roots.length ? roots : nodeIds.slice(0, 1)) {
-    if ((state.get(id) ?? 0) === 0) visit(id);
-  }
-  // Any node not reached from a root (a separate component) still needs a depth.
-  for (const id of nodeIds) if ((state.get(id) ?? 0) === 0) visit(id);
-
-  // Longest-path layering on the forward edges only (now a DAG).
-  const forward = new Set(
-    edges.filter((e) => !back.has(e) && adj.has(e.source) && adj.has(e.target)),
-  );
-  const fAdj = new Map<string, string[]>(nodeIds.map((id) => [id, []]));
-  const fIndeg = new Map<string, number>(nodeIds.map((id) => [id, 0]));
-  for (const e of forward) {
-    fAdj.get(e.source)?.push(e.target);
-    fIndeg.set(e.target, (fIndeg.get(e.target) ?? 0) + 1);
-  }
-  const depth = new Map<string, number>(nodeIds.map((id) => [id, 0]));
-  const work = new Map(fIndeg);
-  const queue = nodeIds.filter((id) => (fIndeg.get(id) ?? 0) === 0);
-  while (queue.length) {
-    const id = queue.shift() as string;
-    for (const t of fAdj.get(id) ?? []) {
-      depth.set(t, Math.max(depth.get(t) ?? 0, (depth.get(id) ?? 0) + 1));
-      work.set(t, (work.get(t) ?? 0) - 1);
-      if ((work.get(t) ?? 0) === 0) queue.push(t);
-    }
-  }
-  return { depth, forward };
-}
-
 /** Shape by decision-chart stereotype: question = diamond, crisis = thick box, else rounded box. */
 function decShape(stereotype: string | undefined, cx: number, cy: number, dataEl: string): string {
   const hw = DNODE_W / 2;
@@ -1160,71 +1081,54 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   const nodes = model.nodes;
   const edges = model.edges;
 
-  // Cycle-aware longest-path layering (ADR-0010): break back-edges first so a plan that
-  // loops back doesn't collapse the cycle (and everything below it) onto one overlapping row.
-  const { depth } = layerWithCycleBreak(
-    nodes.map((n) => n.id),
-    edges,
-  );
-  const layers = new Map<number, string[]>();
-  for (const n of nodes) {
-    const d = depth.get(n.id) ?? 0;
-    const arr = layers.get(d);
-    if (arr) arr.push(n.id);
-    else layers.set(d, [n.id]);
-  }
-  let maxDepth = 0;
-  for (const d of layers.keys()) maxDepth = Math.max(maxDepth, d);
-
   // Per-node half-width on the x-axis. The box is DNODE_W wide; the crisis node also carries a
-  // wrapped contact line (up to DEC_CRISIS_W) below it, so it claims that half-width too — this
-  // is what `separate1D` uses to guarantee neither the boxes NOR the crisis text touch a sibling.
+  // wrapped contact line (up to DEC_CRISIS_W) below it, so it claims that half-width too — what the
+  // layered layout's VPSC separation uses to guarantee neither boxes NOR crisis text touch a sibling.
   const halfW = (id: string): number => {
     const n = nodes.find((x) => x.id === id);
     return Math.max(DNODE_W / 2, n?.stereotype === 'crisis' ? DEC_CRISIS_W / 2 : 0);
   };
 
-  // Vertical room each depth needs BELOW its box centre. A crisis node also carries up to 3
-  // wrapped contact lines, so its row must be taller — accumulate row Y's so the next row clears
-  // the crisis text (cross-layer separation, ADR-0012), instead of a fixed DLAYER_GAP.
+  // SOTA layered layout (ADR-0049): the full Sugiyama pipeline in `layeredLayout` — cycle-break +
+  // longest-path ranking (a plan that loops back doesn't collapse the cycle onto one row),
+  // **crossing-minimised within-layer ordering** (median heuristic + transpose, which the old
+  // model-order layout skipped) and **median-aligned x** (straightening parent→child edges) with
+  // the VPSC `separate1D` enforcing separation. Deterministic, so the goldens stay stable.
+  const laid = layeredLayout(
+    nodes.map((n) => n.id),
+    edges,
+    { half: halfW, gap: DNODE_GAP },
+  );
+  const depth = laid.depth;
+  const maxDepth = Math.max(0, laid.layers.length - 1);
+
+  // Vertical room each depth needs BELOW its box centre — a crisis node carries up to 3 wrapped
+  // contact lines, so its row must be taller (cross-layer separation, ADR-0012); a fixed gap else.
   const hasCrisis = (ids: string[]): boolean =>
     ids.some((id) => nodes.find((x) => x.id === id)?.stereotype === 'crisis');
   const rowY = new Map<number, number>();
   let yCursor = DEC_TOP;
   for (let d = 0; d <= maxDepth; d += 1) {
     rowY.set(d, yCursor);
-    const below = hasCrisis(layers.get(d) ?? []) ? DNODE_H / 2 + 13 + 3 * 12 : DNODE_H / 2;
+    const below = hasCrisis(laid.layers[d] ?? []) ? DNODE_H / 2 + 13 + 3 * 12 : DNODE_H / 2;
     yCursor += Math.max(DLAYER_GAP, below + DNODE_H / 2 + 24);
   }
 
-  // Grow the drawing width to fit the widest layer, then spread each layer's siblings with
-  // `separate1D` (VPSC 1-D core, ADR-0012) so sized slots never collide. The frame never shrinks
-  // below DEC_W (small charts keep their familiar look). Content is laid out from x=0; the
-  // viewBox is fit below. A single deterministic pass: place evenly, separate, measure the
-  // widest separated extent, then re-centre every layer within that final width.
-  let widest = DEC_W;
-  for (const ids of layers.values()) {
-    let span = DNODE_GAP;
-    for (const id of ids) span += 2 * halfW(id) + DNODE_GAP;
-    widest = Math.max(widest, span);
-  }
+  // Place each node at its assigned x (the layout left-aligns x to 0), centred in a frame at least
+  // DEC_W wide; y comes from the crisis-aware row cursor. The content-fit frame below refines bounds.
+  let contentRight = 0;
+  for (const n of nodes)
+    contentRight = Math.max(contentRight, (laid.x.get(n.id) ?? 0) + halfW(n.id));
+  const drawInner = Math.max(DEC_W - 2 * DEC_PAD, contentRight);
+  const xShift = DEC_PAD + (drawInner - contentRight) / 2;
   const pos = new Map<string, { x: number; y: number }>();
-  let contentW = widest;
-  for (const [d, ids] of layers) {
-    const slot = widest / (ids.length + 1);
-    const centers = separate1D(
-      ids.map((id, i) => ({ center: slot * (i + 1), half: halfW(id) })),
-      DNODE_GAP,
-    );
-    // separate1D centres the block on its mean; shift the whole row so its left edge clears the
-    // margin, and track the true content width so nothing pokes past the frame.
-    const leftEdge = Math.min(...ids.map((id, i) => centers[i] - halfW(id)));
-    const shift = leftEdge < DEC_PAD ? DEC_PAD - leftEdge : 0;
-    const y = rowY.get(d) ?? DEC_TOP + d * DLAYER_GAP;
-    ids.forEach((id, i) => pos.set(id, { x: r1(centers[i] + shift), y }));
-    const rightEdge = Math.max(...ids.map((id, i) => centers[i] + shift + halfW(id)));
-    contentW = Math.max(contentW, rightEdge + DEC_PAD);
+  for (const n of nodes) {
+    pos.set(n.id, {
+      x: r1((laid.x.get(n.id) ?? 0) + xShift),
+      y: rowY.get(depth.get(n.id) ?? 0) ?? DEC_TOP,
+    });
   }
+  const contentW = drawInner + 2 * DEC_PAD;
 
   const nodeName = (id: string): string => {
     const n = nodes.find((x) => x.id === id);
