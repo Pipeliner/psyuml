@@ -36,6 +36,34 @@ describe('Tier-A legibility floor (pilot 3 flagged small State-Map text)', () =>
   });
 });
 
+describe('legibility: every edge label is haloed so its connector never strikes through it (ADR-0047)', () => {
+  // An edge label sits ON or beside its connector line; without a white under-glyph halo the line
+  // reads straight through the text. The renderers emit a `paint-order="stroke"` white halo on every
+  // edge label (via `fitText`/`wrapLabel`'s `halo` option or inline); this guards that so the
+  // legibility fix can't silently regress. Other labels over decoration are haloed too, but EDGE
+  // labels are the universal case (every connector-borne word), so they are the asserted contract.
+  const edgeLabelTags = (svg: string): string[] =>
+    [...svg.matchAll(/<text\b[^>]*>/g)]
+      .map((m) => m[0])
+      .filter((t) => /data-el="edgelabel:/.test(t));
+
+  let totalChecked = 0;
+  it.each(models)('%s — every edge label carries a white halo (both layers)', (_f, model) => {
+    for (const audience of ['clinician', 'client'] as const) {
+      for (const tag of edgeLabelTags(render(model, { audience }).svg)) {
+        totalChecked += 1;
+        expect(tag, `an edge label is drawn without a paint-order="stroke" halo: ${tag}`).toMatch(
+          /paint-order="stroke"/,
+        );
+      }
+    }
+  });
+
+  it('the corpus actually exercises this (some examples carry edge labels)', () => {
+    expect(totalChecked).toBeGreaterThan(0);
+  });
+});
+
 describe('Tier-A safety dual-coding (pilots 2+3: the way-out is unsafe glyph-only)', () => {
   // The bare exit arrow read as "escape/avoidance"; with its word it read as "the way out". So a
   // renderer MUST NOT draw a way-out (`exit` edge) without its word (v0.2 §5).

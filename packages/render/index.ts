@@ -294,9 +294,17 @@ interface TextOpts {
   /** Verification tag (ADR-0012): emitted as `data-el="…"` on the `<text>` so the overlap
    * invariant can find this logical element and build its AABB. Purely a hook; no visual effect. */
   dataEl?: string;
+  /** White legibility halo width (ADR-0047): when set, paint a white stroke UNDER the glyphs
+   * (`paint-order="stroke"`) so any connector line or decoration the label sits over doesn't strike
+   * through it. Invisible on the blank background; only shows where text crosses a line/shape. */
+  halo?: number;
 }
 
 const elAttr = (dataEl?: string): string => (dataEl ? ` data-el="${esc(dataEl)}"` : '');
+
+/** White under-glyph halo for legibility over lines/decoration (ADR-0047); no-op when unset. */
+const haloAttr = (halo?: number): string =>
+  halo ? ` stroke="#fff" stroke-width="${halo}" paint-order="stroke"` : '';
 
 /**
  * Emit a `<text>` that *compresses* into `maxWidth` when the label would overflow
@@ -314,7 +322,7 @@ function fitText(s: string, x: number, y: number, o: TextOpts = {}): string {
     o.maxWidth && textWidth(s, size) > o.maxWidth
       ? ` textLength="${r1(o.maxWidth)}" lengthAdjust="spacingAndGlyphs"`
       : '';
-  return `<text x="${r1(x)}" y="${r1(y)}" font-family="sans-serif" font-size="${size}"${a}${w}${f}${elAttr(o.dataEl)}${fit}>${esc(s)}</text>`;
+  return `<text x="${r1(x)}" y="${r1(y)}" font-family="sans-serif" font-size="${size}"${a}${w}${f}${haloAttr(o.halo)}${elAttr(o.dataEl)}${fit}>${esc(s)}</text>`;
 }
 
 interface WrapOpts extends TextOpts {
@@ -371,7 +379,7 @@ function wrapLabel(s: string, cx: number, cy: number, o: WrapOpts = {}): string 
       return `<tspan x="${r1(cx)}" y="${r1(top + i * lh)}"${over}>${esc(ln)}</tspan>`;
     })
     .join('');
-  return `<text text-anchor="${anchor}" font-family="sans-serif" font-size="${size}"${w}${f}${elAttr(o.dataEl)}>${tspans}</text>`;
+  return `<text text-anchor="${anchor}" font-family="sans-serif" font-size="${size}"${w}${f}${haloAttr(o.halo)}${elAttr(o.dataEl)}>${tspans}</text>`;
 }
 
 const patternId = (p: MBand['pattern']): string | null => (p === 'none' ? null : `p-${p}`);
@@ -1320,6 +1328,7 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
         anchor: 'middle',
         maxWidth: ELBL_W,
         maxLines: 2,
+        halo: 3.5,
         dataEl: `edgelabel:${bl.id}`,
       }),
     );
@@ -1697,7 +1706,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     if (txt) {
       const off = loopLblOff.get(e.id) ?? { dx: 0, dy: 0 };
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2 + off.dx)}" y="${r1((y1 + y2) / 2 - 3 + off.dy)}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(txt)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2 + off.dx)}" y="${r1((y1 + y2) / 2 - 3 + off.dy)}" font-family="sans-serif" font-size="10" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(txt)}</text>`,
       );
     }
   }
@@ -2067,6 +2076,7 @@ export function renderInterventionSeq(
         fitText(lbl, (s.x + t.x) / 2 + 4, (sy + ty) / 2, {
           size: 10,
           maxWidth: Math.max(40, laneW - 16),
+          halo: 3,
           dataEl: `edgelabel:${e.id}`,
         }),
       );
@@ -2376,7 +2386,7 @@ export function renderRelationalField(
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 4}" text-anchor="middle" font-family="sans-serif" font-size="9">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 4}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
@@ -2491,7 +2501,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
@@ -2508,7 +2518,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     if (isHealthy) {
       parts.push(
         `<circle cx="${p.x}" cy="${p.y}" r="${r1(r - 4)}" fill="none" stroke="#000" stroke-width="2" />`,
-        `<text x="${p.x}" y="${r1(p.y - r - 6)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700">↑ grow</text>`,
+        `<text x="${p.x}" y="${r1(p.y - r - 6)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" stroke="#fff" stroke-width="3" paint-order="stroke">↑ grow</text>`,
       );
     }
     const st = n.stereotype ?? '';
@@ -2531,13 +2541,14 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
         anchor: 'middle',
         maxWidth: 108,
         maxLines: 2,
+        halo: 3,
         dataEl: `nodelabel:${n.id}`,
       }),
     );
     const dom = n.properties.dominance;
     if (dom !== undefined) {
       parts.push(
-        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${r1(nameCy + ((nameLines.length - 1) * 13) / 2 + 14)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555">dom ${dom.toFixed(2)}</text>`,
+        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${r1(nameCy + ((nameLines.length - 1) * 13) / 2 + 14)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">dom ${dom.toFixed(2)}</text>`,
       );
     }
   }
@@ -2645,6 +2656,7 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
         size: fit,
         anchor: onLeft ? 'end' : 'start',
         maxWidth: cap,
+        halo: 3,
         dataEl: `nodelabel:${n.id}`,
       }),
     );
@@ -2846,7 +2858,7 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     const lbl = e.label ? getText(e.label, layer, lang) : '';
     if (lbl) {
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">${esc(lbl)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
@@ -3896,12 +3908,14 @@ export function renderSecureBase(model: PsyumlModel, options: RenderOptions = {}
       weight: 700,
       anchor: 'middle',
       maxWidth: 2 * R - 24,
+      halo: 4,
     }),
     fitText('SAFE HAVEN — welcome me back for comfort', cx, cy + R - 20, {
       size: 12,
       weight: 700,
       anchor: 'middle',
       maxWidth: 2 * R - 24,
+      halo: 4,
     }),
   );
 
