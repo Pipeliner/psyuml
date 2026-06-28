@@ -108,6 +108,10 @@ figure.diagram svg { width:100%; height:auto; max-width:100%; display:block; }
   color:var(--accent); margin:0 0 .15rem; }
 .field.note .k { color:var(--good); }
 .field p { margin:0; }
+.card .open { margin:1rem 0 0; }
+.card .open a { font-weight:600; text-decoration:none; }
+.card .open a:hover { text-decoration:underline; }
+@media print { .card .open { display:none; } }
 .honesty { border:1px solid var(--line); border-radius:14px; padding:1.1rem 1.3rem; background:var(--panel);
   margin:1rem 0; }
 .honesty ul { margin:.4rem 0 0; padding-left:1.2rem; }
@@ -147,6 +151,7 @@ function renderCard(d, svg, title) {
     ${field('On paper', d.onPaper)}
     ${field('Honest note', d.evidenceNote, 'note')}
   </div>
+  <p class="open"><a href="./?example=showcase-${esc(d.type)}">Open this diagram in the editor →</a></p>
 </article>`;
 }
 

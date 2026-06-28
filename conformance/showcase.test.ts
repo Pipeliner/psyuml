@@ -107,6 +107,14 @@ describe('showcase ↔ system conformance (REQ-SHOWCASE-PAGE, ADR-0044)', () => 
       }
     });
 
+    it('each diagram deep-links into the editor (ADR-0048: ?example=showcase-<type>)', () => {
+      for (const d of manifest.diagrams) {
+        // the editor opens `?example=<key>` when the key names a shipped example; showcase-<type>
+        // always exists (asserted above), so each link lands on that exact diagram, live.
+        expect(html, `editor deep-link for ${d.type}`).toContain(`./?example=showcase-${d.type}`);
+      }
+    });
+
     it('renders the JTBD jobs, the family chooser questions, and the honesty notes', () => {
       for (const j of manifest.jobs) expect(html, `job: ${j.id}`).toContain(esc(j.label));
       for (const f of FAMILIES)

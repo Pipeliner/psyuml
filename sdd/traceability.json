@@ -126,6 +126,11 @@
       "id": "M24",
       "phase": 12,
       "title": "Text-legibility + containment invariants — close the chrome/caption overlap & clipping gaps"
+    },
+    {
+      "id": "M25",
+      "phase": 13,
+      "title": "Usability & UX polish — editor deep-linking (browse → edit) and beyond"
     }
   ],
   "requirements": [
@@ -1281,6 +1286,17 @@
       "impl": ["packages/render/index.ts"],
       "tests": ["packages/render/legibility.test.ts"],
       "notes": "Implemented (ADR-0047). A pervasive low-grade legibility problem — a word drawn ON or beside a line read with the line striking through it (process-loop 'trigger', mode-map 'attacks'/'yields'/the dom numeral, two-triangles 'hides'/'stirs', intervention-sequence guards, relational-field ties, secure-base banners crossing the circle, body-map sensations crossing the outline) — fixed with the established white under-glyph halo (`paint-order=\"stroke\"`), previously applied only ad hoc (4 of 8 raw edge labels; `fitText`/`wrapLabel` had no halo at all). Made the halo a first-class `TextOpts.halo` option of the shared `fitText`/`wrapLabel` helpers (+ `haloAttr`) and applied it to every edge label + every over-decoration node label (secure-base banners, body-map sensations, mode-map name/dom/'↑ grow'). GUARD: `legibility.test.ts` asserts every `data-el=\"edgelabel:\"` carries `paint-order=\"stroke\"` for every example × both layers (edge labels are the universal connector-borne case), so a future bare edge label fails CI. Purely additive (white stroke under existing glyphs) — geometry unchanged, so overlap/containment/crossing invariants untouched and `legibility.test.ts`'s microtext floor still holds; 25 goldens regenerated. HONEST SCOPE: the guard asserts edge labels specifically; over-decoration node-label halos are applied but not separately asserted (they aren't a uniform enumerable class like `edgelabel:`)."
+    },
+    {
+      "id": "REQ-DEEP-LINK",
+      "title": "Open a specific diagram from a URL — the showcase's browse → edit flow",
+      "spec": ["§D"],
+      "source": "docs/ROADMAP.md",
+      "milestone": "M25",
+      "status": "implemented",
+      "impl": ["apps/web/editor.ts", "apps/web/App.tsx", "scripts/build-showcase.mjs"],
+      "tests": ["apps/web/editor.test.ts", "conformance/showcase.test.ts"],
+      "notes": "Implemented (ADR-0048). The showcase let a newcomer browse a worked example of every type, but its only path into the editor landed on the default `state-map`, not the diagram being read — browse → edit was broken, and the editor had no URL handling. A pure, node-tested helper `exampleKeyFromQuery(search, available, fallback)` (apps/web/editor.ts) returns the `?example=<key>` value IF it names a shipped example, else the fallback (unknown/garbage/path-injection-looking keys fall back safely — only exact known keys load); App.tsx resolves it once at mount from `window.location.search` for the initial model, and `loadModel` mirrors the current example into the URL via `history.replaceState` (a New/Open-file load clears the param) so the open diagram is shareable / bookmarkable / refresh-stable. Each showcase card gains an 'Open this diagram in the editor →' link to `./?example=showcase-<type>` (base-aware: from /psyuml/showcase.html → /psyuml/?example=…, the editor); `conformance/showcase.test.ts` asserts the link per diagram. Verified end-to-end (Playwright: loading ?example=showcase-parts-map opens the parts-map showcase). HONEST SCOPE: deep-links target the shipped EXAMPLE corpus only (no remote/file fetch, no off-corpus load); `replaceState` not `pushState` (no history stack); a single query param, not a full router or model-in-URL (privacy)."
     }
   ]
 }

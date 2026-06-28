@@ -16,6 +16,23 @@ import {
   type PsyumlModel,
 } from '@psyuml/model';
 
+/**
+ * Deep-link (ADR-0048): pick which example the editor should open from a URL query string. Returns
+ * the `example` parameter IF it names an available example, otherwise the `fallback` — so a link like
+ * `?example=showcase-parts-map` opens that diagram, and a missing/unknown/garbage key falls back
+ * safely to the default. Pure (no `window`) so it is unit-testable in node; the component passes
+ * `window.location.search`.
+ */
+export function exampleKeyFromQuery(
+  search: string,
+  available: Iterable<string>,
+  fallback: string,
+): string {
+  const key = new URLSearchParams(search).get('example');
+  const set = available instanceof Set ? available : new Set(available);
+  return key && set.has(key) ? key : fallback;
+}
+
 /** Plain-language relationship phrasing per edge kind, for the edge's screen-reader label. */
 const EDGE_REL: Record<string, string> = {
   sequential: 'leads to',

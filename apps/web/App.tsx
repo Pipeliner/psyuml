@@ -45,6 +45,7 @@ import {
   addEdge,
   addNode,
   edgeAriaLabel,
+  exampleKeyFromQuery,
   removeEdge,
   removeNode,
   restoreVersion,
@@ -386,12 +387,19 @@ function downloadPng(filename: string, svgString: string, scale = 2): void {
  * local-first save/export. Built against docs/ux (UX-M1/M2/M3/M4/M5/M8).
  */
 export function App() {
-  const [model, setModel] = useState<PsyumlModel>(() => parseModel(EXAMPLES['state-map']!));
-  const [example, setExample] = useState('state-map');
+  // Deep-link (ADR-0048): open `?example=<key>` if it names a shipped example, else the default —
+  // so the showcase's "Open in the editor" links land on the exact diagram. Resolved once at mount.
+  const startExample = exampleKeyFromQuery(
+    typeof window !== 'undefined' ? window.location.search : '',
+    Object.keys(EXAMPLES),
+    'state-map',
+  );
+  const [model, setModel] = useState<PsyumlModel>(() => parseModel(EXAMPLES[startExample]!));
+  const [example, setExample] = useState(startExample);
   // Serialized model as last loaded (sample switch / New / Open / Restore), to detect unsaved
   // edits so switching away can confirm before discarding work (eval finding).
   const [loadedJson, setLoadedJson] = useState<string>(() =>
-    serializeModel(parseModel(EXAMPLES['state-map']!)),
+    serializeModel(parseModel(EXAMPLES[startExample]!)),
   );
   // v0.2 §2 audience profile drives both the label layer and the interpretive surface; `layer`
   // is derived from it for validate/diff (clinician → clinician labels; client/picture → client).
@@ -486,6 +494,14 @@ export function App() {
     setCompareWith(null);
     setCompareError(null);
     setVersions([]);
+    // Keep the URL in sync so the current diagram is shareable / bookmarkable / survives refresh
+    // (ADR-0048). A non-example load (New / Open file) clears the param.
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (exampleKey in EXAMPLES) url.searchParams.set('example', exampleKey);
+      else url.searchParams.delete('example');
+      window.history.replaceState(null, '', url);
+    }
     return true;
   };
 

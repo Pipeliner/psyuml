@@ -5,6 +5,7 @@ import {
   addEdge,
   addNode,
   edgeAriaLabel,
+  exampleKeyFromQuery,
   nextId,
   removeEdge,
   removeNode,
@@ -200,5 +201,23 @@ describe('editor', () => {
     expect(edgeAriaLabel(stateModel, 'x1')).toContain('way out to');
     // a missing edge id degrades to the id, never throws.
     expect(edgeAriaLabel(stateModel, 'nope')).toBe('nope');
+  });
+});
+
+describe('exampleKeyFromQuery (deep-link, ADR-0048)', () => {
+  const avail = ['state-map', 'showcase-parts-map', 'panic-cycle'];
+  it('returns the example param when it names an available example', () => {
+    expect(exampleKeyFromQuery('?example=showcase-parts-map', avail, 'state-map')).toBe(
+      'showcase-parts-map',
+    );
+  });
+  it('falls back when the param is missing, unknown, or empty', () => {
+    expect(exampleKeyFromQuery('', avail, 'state-map')).toBe('state-map');
+    expect(exampleKeyFromQuery('?example=', avail, 'state-map')).toBe('state-map');
+    expect(exampleKeyFromQuery('?example=does-not-exist', avail, 'state-map')).toBe('state-map');
+    expect(exampleKeyFromQuery('?other=1', avail, 'state-map')).toBe('state-map');
+  });
+  it('ignores a path-injection-looking key (only exact known keys load)', () => {
+    expect(exampleKeyFromQuery('?example=../../etc/passwd', avail, 'state-map')).toBe('state-map');
   });
 });
