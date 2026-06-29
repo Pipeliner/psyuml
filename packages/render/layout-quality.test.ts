@@ -100,11 +100,13 @@ const centreInside = (
 const EDGE_NODE_KNOWN_GAP = new Set<string>();
 
 /** Renderers where a node's OUTSIDE caption (centre beyond the node) is allowed to graze its own
- * node border — the documented gap for invariant C (ADR-0046). ONLY `decision-nav`: its crisis-
- * resources caption sits tight under the thick-bordered crisis node in the deliberately compact
- * crisis chart, where pushing it fully clear collides with a sibling branch label (a worse defect).
- * It is the node's OWN caption and stays fully legible; every other renderer keeps captions clear. */
-const CAPTION_BISECT_KNOWN_GAP = new Set<string>(['decision-nav']);
+ * node border — the documented gap for invariant C (ADR-0046). Now EMPTY: `decision-nav`'s crisis-
+ * resources caption used to sit tight under the thick-bordered crisis node, but `wrapLabel` centres
+ * its block, so a fixed offset rode the TOP line up under the border when the caption wrapped to 3
+ * lines; shifting the block down by half its height (ADR-0050 follow-up) clears the border for every
+ * line count, with room to spare (the depth-2 boxes are at the centre/right lanes, not below the
+ * left crisis node). Every renderer now keeps its captions fully clear — invariant C is universal. */
+const CAPTION_BISECT_KNOWN_GAP = new Set<string>();
 
 describe('layout-quality A: a node label fits inside its container (ADR-0021)', () => {
   const inBox = files.filter((f) => LABEL_IN_BOX.has(load(f).diagram));

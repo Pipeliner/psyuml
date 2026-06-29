@@ -1260,16 +1260,24 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
     );
     // Put the actual crisis contact right on the crisis node, not only in the bottom banner.
     if (isCrisis) {
+      // The crisis-resources reminder is a caption BELOW the node (ADR-0010). `wrapLabel` CENTRES
+      // its block on the given cy, so a fixed `+13` offset rode the TOP line up under the thick
+      // crisis border when the caption wrapped to 3 lines (the old caption-bisection graze, ADR-0046
+      // CAPTION_BISECT_KNOWN_GAP). Shift the block down by half its height so the FIRST line always
+      // clears the border by the same gap, whatever the line count — the caption is now wholly below
+      // the box (ADR-0050 follow-up). It keeps the crisis `nodelabel:` id (so the overlap invariant
+      // lets it sit against its OWN node yet still checks it vs others); with the centre now clearly
+      // outside the box, the containment + caption-not-bisected invariants pass it cleanly.
+      const capLh = 12;
+      const capLines = wrapLines(crisis, Math.max(4, Math.floor(DEC_CRISIS_W / (9 * CHAR_W))), 3);
+      const capCy = p.y + DNODE_H / 2 + 13 + ((capLines.length - 1) * capLh) / 2;
       parts.push(
-        // The crisis-resources reminder is a caption BELOW the node (ADR-0010). It keeps the crisis
-        // id (so the overlap invariant lets it sit against its own node yet still checks it vs
-        // others); the containment invariant (ADR-0021) skips it automatically because its CENTRE
-        // is outside the node box (a caption, not the node's interior label).
-        wrapLabel(crisis, p.x, p.y + DNODE_H / 2 + 13, {
+        wrapLabel(crisis, p.x, capCy, {
           size: 9,
           anchor: 'middle',
           maxWidth: DEC_CRISIS_W,
           maxLines: 3,
+          lineHeight: capLh,
           fill: '#333',
           dataEl: `nodelabel:${n.id}`,
         }),
