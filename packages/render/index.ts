@@ -1642,25 +1642,41 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     }
   }
 
-  // Nodes (resources = diamonds, CAT observing-eye = eye glyph, others = rounded rects)
+  // Ring vertical centroid — a resource diamond sits on the ring hull, so the side of it FACING
+  // AWAY from this centroid is always open exterior, and the side facing the centroid is where its
+  // incoming exit chord (and that chord's midpoint label) lives. A long resource label is placed on
+  // the outward vertical side so it never lands on the exit-edge label (ADR-0050).
+  let ringCy = 0;
+  for (const q of pos.values()) ringCy += q.y;
+  ringCy /= pos.size || 1;
+
+  // Nodes (resources = diamonds, CAT observing-eye = eye glyph, others = rounded rects).
+  // A flat 140×44 rhombus has almost no usable width off its centre line, so a multi-line label
+  // placed INSIDE it always pokes the slanted edges (the diamond can't grow without breaking the
+  // ring spacing → overlap). The resource label is therefore placed OUTSIDE the glyph (above it
+  // when the diamond is in the upper half of the ring, below it otherwise) — full node width,
+  // white-haloed so it stays legible over any chord it crosses — and the frame is grown to keep it
+  // in view (ADR-0049 follow-up; the same outside-the-glyph remedy used for mode-map names).
+  let resLabelMinY = Infinity;
+  let resLabelMaxY = -Infinity;
   for (const node of nodes) {
     const p = pos.get(node.id);
     if (!p) continue;
-    let labelDy = 4;
     // v0.2 §3: interpretive content (inferred / clinician-inferred / contested / symbolic)
     // is drawn dashed; descriptive content stays solid.
     const dash = isInterpretive(node.properties.epistemicStatus) ? ' stroke-dasharray="5 4"' : '';
-    if (node.kind === 'resource') {
+    const isDiamond = node.kind === 'resource';
+    const isEye = !isDiamond && node.stereotype === 'observing-eye';
+    if (isDiamond) {
       parts.push(
         `<polygon data-el="node:${esc(node.id)}" points="${p.x},${p.y - LNODE_H / 2} ${p.x + LNODE_W / 2},${p.y} ${p.x},${p.y + LNODE_H / 2} ${p.x - LNODE_W / 2},${p.y}" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
       );
-    } else if (node.stereotype === 'observing-eye') {
+    } else if (isEye) {
       // CAT observing eye/I — the self-reflective stance that watches the trap (spec §B).
       parts.push(
         `<ellipse data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" rx="26" ry="15" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
         `<circle cx="${p.x}" cy="${p.y}" r="6" fill="#000" />`,
       );
-      labelDy = 30;
     } else {
       parts.push(
         `<rect data-el="node:${esc(node.id)}" x="${p.x - LNODE_W / 2}" y="${p.y - LNODE_H / 2}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
@@ -1673,14 +1689,61 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     if (showInterpretive && node.properties.epistemicStatus === 'contested')
       labelText = `⚖ ${labelText}`;
     if (showInterpretive && node.properties.asIf) labelText += ' (as-if)';
-    parts.push(
-      wrapLabel(labelText, p.x, p.y + labelDy, {
-        size: 11,
-        anchor: 'middle',
-        maxWidth: LNODE_W - 16,
-        dataEl: `nodelabel:${node.id}`,
-      }),
-    );
+    if (isDiamond) {
+      // A short label fits ON one line within the rhombus' widest band (≈100px at the cap-height
+      // offset from centre), so it sits INSIDE the diamond — filling the glyph as a normal node.
+      // A longer label can't (a flat 140×44 rhombus has almost no width off its centre line, so a
+      // multi-line label inside would poke the slanted edges, and the diamond can't grow without
+      // breaking the ring spacing → overlap). It is therefore placed OUTSIDE, on the outward
+      // (away-from-centroid) vertical side — full node width, white-haloed so it stays legible over
+      // any chord it crosses, frame grown past it (ADR-0049 follow-up; the same outside-the-glyph
+      // remedy used for mode-map names).
+      const INSIDE_W = 100;
+      if (textWidth(labelText, 11) <= INSIDE_W) {
+        parts.push(
+          wrapLabel(labelText, p.x, p.y + 4, {
+            size: 11,
+            anchor: 'middle',
+            maxWidth: 116,
+            maxLines: 1,
+            dataEl: `nodelabel:${node.id}`,
+          }),
+        );
+      } else {
+        const lh = 14;
+        const maxW = LNODE_W - 4;
+        const maxChars = Math.max(4, Math.floor(maxW / (11 * CHAR_W)));
+        const lines = wrapLines(labelText, maxChars, 3);
+        const span = (lines.length - 1) * lh;
+        const above = p.y <= ringCy;
+        const labelCy = above
+          ? p.y - LNODE_H / 2 - 6 - span / 2 // bottom line just above the top vertex
+          : p.y + LNODE_H / 2 + 12 + span / 2; // top line just below the bottom vertex
+        parts.push(
+          wrapLabel(labelText, p.x, labelCy, {
+            size: 11,
+            anchor: 'middle',
+            maxWidth: maxW,
+            maxLines: 3,
+            lineHeight: lh,
+            halo: 3,
+            dataEl: `nodelabel:${node.id}`,
+          }),
+        );
+        resLabelMinY = Math.min(resLabelMinY, labelCy - span / 2 - 9);
+        resLabelMaxY = Math.max(resLabelMaxY, labelCy + span / 2 + 4);
+      }
+    } else {
+      parts.push(
+        wrapLabel(labelText, p.x, p.y + (isEye ? 30 : 4), {
+          size: 11,
+          anchor: 'middle',
+          maxWidth: LNODE_W - 16,
+          maxLines: 2,
+          dataEl: `nodelabel:${node.id}`,
+        }),
+      );
+    }
   }
 
   const links = model.edges
@@ -1757,6 +1820,9 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     minY = Math.min(minY, p.y - LNODE_H / 2);
     maxY = Math.max(maxY, p.y + LNODE_H / 2);
   }
+  // Resource labels sit outside their diamond (above) — grow the frame so they never clip.
+  if (Number.isFinite(resLabelMinY)) minY = Math.min(minY, resLabelMinY);
+  if (Number.isFinite(resLabelMaxY)) maxY = Math.max(maxY, resLabelMaxY);
   if (!Number.isFinite(minX)) {
     minX = 0;
     minY = 0;
