@@ -2308,6 +2308,7 @@ export function renderRelationalField(
           size: 10,
           anchor: 'middle',
           maxWidth: 120,
+          halo: 3,
           dataEl: `nodelabel:${n.id}`,
         }) +
         `</g>`,
