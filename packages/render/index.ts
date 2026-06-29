@@ -326,6 +326,26 @@ function fitText(s: string, x: number, y: number, o: TextOpts = {}): string {
   return `<text x="${r1(x)}" y="${r1(y)}" font-family="sans-serif" font-size="${size}"${a}${w}${f}${haloAttr(o.halo)}${elAttr(o.dataEl)}${fit}>${esc(s)}</text>`;
 }
 
+/**
+ * A bottom chrome line (caption / footer / disclaimer / legend) kept WITHIN the frame so it never
+ * spills past the viewBox and clips on export or in an embed (ADR-0052). Compresses to `frameW − x −
+ * rightPad` via `fitText` — short lines render unchanged. The companion to the box/shape labels'
+ * `fitText`/`wrapLabel`, for the untagged chrome text the overlap in-frame check doesn't cover.
+ */
+function chromeLine(
+  s: string,
+  x: number,
+  y: number,
+  frameW: number,
+  o: { size?: number; fill?: string } = {},
+): string {
+  return fitText(s, x, y, {
+    size: o.size ?? 10,
+    fill: o.fill,
+    maxWidth: Math.max(40, frameW - x - 8),
+  });
+}
+
 interface WrapOpts extends TextOpts {
   /** Max number of lines before the remainder is crammed onto the last line (then compressed). */
   maxLines?: number;
@@ -1420,9 +1440,7 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
     `<text x="16" y="${fy}" font-family="sans-serif" font-size="11">CFT systems: Threat · Drive · Soothing — grow the soothing system.</text>`,
   );
   if (model.meta.disclaimer) {
-    parts.push(
-      `<text x="16" y="${fy + 16}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
-    );
+    parts.push(chromeLine(model.meta.disclaimer, 16, fy + 16, RES_W, { size: 10, fill: '#333' }));
   }
 
   const altText =
@@ -1839,11 +1857,18 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   }
   const fx = r1(minX - pad);
   const fy = r1(minY - pad - titleH);
-  const fw = r1(maxX + pad - fx);
+  let fw = r1(maxX + pad - fx);
   const fh = r1(maxY + pad - fy);
+  // The ring content-fit ignores the title row, so a long title would spill past the right edge —
+  // grow the frame to contain it (ADR-0052; titles get room, not compression).
+  if (model.meta.title) fw = Math.max(fw, r1(8 + textWidth(model.meta.title, 16) + pad));
 
   const titleText = model.meta.title
-    ? `<text x="${r1(fx + 8)}" y="${r1(fy + 20)}" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? fitText(model.meta.title, r1(fx + 8), r1(fy + 20), {
+        size: 16,
+        weight: 700,
+        maxWidth: fw - 16,
+      })
     : '';
   const defs =
     '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
@@ -2339,7 +2364,16 @@ export function renderRelationalField(
     maxX = Math.max(maxX, p.x);
     maxY = Math.max(maxY, p.y);
   }
-  const width = Math.max(560, maxX + 90);
+  // The legend is a fixed reference strip wider than the node spread; grow the frame to fit it (and
+  // the title) at full size rather than squeezing a glyph legend (ADR-0052).
+  const RF_LEGEND =
+    '□ male · ○ female · ◇ other · ▭ system · ═ fused · zigzag = conflict · dashed = distant · ‖ cutoff · ⋯○ = origin (nested)';
+  const width = Math.max(
+    560,
+    maxX + 90,
+    24 + textWidth(RF_LEGEND, 10),
+    model.meta.title ? 24 + textWidth(model.meta.title, 16) : 0,
+  );
   const height = Math.max(300, maxY + 70) + 44;
 
   const parts: string[] = [];
@@ -2390,12 +2424,10 @@ export function renderRelationalField(
   }
 
   const ly = height - 26;
-  parts.push(
-    `<text x="12" y="${ly}" font-family="sans-serif" font-size="10">□ male · ○ female · ◇ other · ▭ system · ═ fused · zigzag = conflict · dashed = distant · ‖ cutoff · ⋯○ = origin (nested)</text>`,
-  );
+  parts.push(fitText(RF_LEGEND, 12, ly, { size: 10, maxWidth: width - 24 }));
   if (model.meta.disclaimer) {
     parts.push(
-      `<text x="12" y="${ly + 14}" font-family="sans-serif" font-size="9" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+      fitText(model.meta.disclaimer, 12, ly + 14, { size: 9, fill: '#333', maxWidth: width - 24 }),
     );
   }
 
@@ -2410,7 +2442,7 @@ export function renderRelationalField(
     `Relationships: ${rels.join('; ') || 'none'}.`;
 
   const titleText = model.meta.title
-    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? fitText(model.meta.title, 12, 22, { size: 16, weight: 700, maxWidth: width - 24 })
     : '';
 
   const svg =
@@ -2534,12 +2566,16 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   const ly = height - 24;
   parts.push(
-    `<text x="12" y="${ly}" font-family="sans-serif" font-size="10">Circle size = mode dominance (number shown). Goal: grow the Healthy Adult, shrink maladaptive modes.</text>`,
+    chromeLine(
+      'Circle size = mode dominance (number shown). Goal: grow the Healthy Adult, shrink maladaptive modes.',
+      12,
+      ly,
+      width,
+      { size: 10 },
+    ),
   );
   if (model.meta.disclaimer) {
-    parts.push(
-      `<text x="12" y="${ly + 14}" font-family="sans-serif" font-size="9" fill="#333">${esc(model.meta.disclaimer)}</text>`,
-    );
+    parts.push(chromeLine(model.meta.disclaimer, 12, ly + 14, width, { size: 9, fill: '#333' }));
   }
 
   const altText =
@@ -2641,15 +2677,35 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     );
   });
 
-  const fy = BODY_H - 30;
-  parts.push(
-    `<text x="12" y="${fy}" font-family="sans-serif" font-size="10">Marker size = intensity (number shown). Body sensations are meaningful but not self-explanatory — pace and titrate.</text>`,
+  // Bottom chrome — a fixed guidance caption + the model disclaimer. They are long sentences while
+  // the body art is only BODY_W wide, so each is WRAPPED to the frame width (never spilling past the
+  // viewBox) and the frame HEIGHT grows to fit the wrapped lines (ADR-0006 content-fit; the title is
+  // compressed by `fitText` below for the same reason).
+  const CHROME_W = BODY_W - 24;
+  const capChars = Math.max(8, Math.floor(CHROME_W / (10 * CHAR_W)));
+  const capLines = wrapLines(
+    'Marker size = intensity (number shown). Body sensations are meaningful but not self-explanatory — pace and titrate.',
+    capChars,
+    3,
   );
-  if (model.meta.disclaimer) {
+  const discChars = Math.max(8, Math.floor(CHROME_W / (9 * CHAR_W)));
+  const discLines = model.meta.disclaimer ? wrapLines(model.meta.disclaimer, discChars, 2) : [];
+  const fy = BODY_H - 30;
+  capLines.forEach((ln, i) => {
     parts.push(
-      `<text x="12" y="${fy + 14}" font-family="sans-serif" font-size="9" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+      `<text x="12" y="${r1(fy + i * 12)}" font-family="sans-serif" font-size="10">${esc(ln)}</text>`,
     );
-  }
+  });
+  const discTop = fy + capLines.length * 12 + 2;
+  discLines.forEach((ln, i) => {
+    parts.push(
+      `<text x="12" y="${r1(discTop + i * 11)}" font-family="sans-serif" font-size="9" fill="#333">${esc(ln)}</text>`,
+    );
+  });
+  const chromeBottom = discLines.length
+    ? discTop + (discLines.length - 1) * 11
+    : fy + (capLines.length - 1) * 12;
+  const bodyH = Math.max(BODY_H, Math.ceil(chromeBottom + 12));
 
   const altText =
     `Body map${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
@@ -2657,13 +2713,13 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     `Pace and titrate.`;
 
   const titleText = model.meta.title
-    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? fitText(model.meta.title, 12, 22, { size: 16, weight: 700, maxWidth: BODY_W - 24 })
     : '';
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BODY_W} ${BODY_H}" role="img" aria-label="${esc(altText)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BODY_W} ${bodyH}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Body map')}</title><desc>${esc(altText)}</desc>` +
-    `<rect x="0" y="0" width="${BODY_W}" height="${BODY_H}" fill="#fff" />` +
+    `<rect x="0" y="0" width="${BODY_W}" height="${bodyH}" fill="#fff" />` +
     titleText +
     parts.join('') +
     '</svg>';
@@ -3131,12 +3187,18 @@ export function renderLadder(model: PsyumlModel, options: RenderOptions = {}): R
 
   const footY = bottom + 22;
   parts.push(
-    `<text x="${boxX}" y="${footY}" font-family="sans-serif" font-size="11">Climb at your own pace — master a rung before moving up; the bottom rung is where to start.</text>`,
+    chromeLine(
+      'Climb at your own pace — master a rung before moving up; the bottom rung is where to start.',
+      boxX,
+      footY,
+      LADDER_W,
+      { size: 11 },
+    ),
   );
   let h = footY + 10;
   if (model.meta.disclaimer) {
     parts.push(
-      `<text x="${boxX}" y="${h + 6}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+      chromeLine(model.meta.disclaimer, boxX, h + 6, LADDER_W, { size: 10, fill: '#333' }),
     );
     h += 16;
   }
@@ -3234,11 +3296,17 @@ export function renderThreeCircles(model: PsyumlModel, options: RenderOptions = 
 
   const height = 560;
   parts.push(
-    `<text x="20" y="${height - 26}" font-family="sans-serif" font-size="11">Three systems (Gilbert): grow the soothing system — it balances threat and drive.</text>`,
+    chromeLine(
+      'Three systems (Gilbert): grow the soothing system — it balances threat and drive.',
+      20,
+      height - 26,
+      TC_W,
+      { size: 11 },
+    ),
   );
   if (model.meta.disclaimer) {
     parts.push(
-      `<text x="20" y="${height - 10}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+      chromeLine(model.meta.disclaimer, 20, height - 10, TC_W, { size: 10, fill: '#333' }),
     );
   }
 
@@ -3328,11 +3396,17 @@ export function renderVenn(model: PsyumlModel, options: RenderOptions = {}): Ren
 
   const height = 470;
   parts.push(
-    `<text x="20" y="${height - 26}" font-family="sans-serif" font-size="11">Two circles, one overlap: the middle region is what both share.</text>`,
+    chromeLine(
+      'Two circles, one overlap: the middle region is what both share.',
+      20,
+      height - 26,
+      VENN_W,
+      { size: 11 },
+    ),
   );
   if (model.meta.disclaimer) {
     parts.push(
-      `<text x="20" y="${height - 10}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
+      chromeLine(model.meta.disclaimer, 20, height - 10, VENN_W, { size: 10, fill: '#333' }),
     );
   }
 
@@ -3684,13 +3758,17 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
 
   let h = maxBottom + 18;
   parts.push(
-    `<text x="${leftPad}" y="${h}" font-family="sans-serif" font-size="11">Columns are Young's 5 schema domains; a bold-outlined cell (▟) is a schema active for this person.</text>`,
+    chromeLine(
+      "Columns are Young's 5 schema domains; a bold-outlined cell (▟) is a schema active for this person.",
+      leftPad,
+      h,
+      W,
+      { size: 11 },
+    ),
   );
   h += 16;
   if (model.meta.disclaimer) {
-    parts.push(
-      `<text x="${leftPad}" y="${h}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
-    );
+    parts.push(chromeLine(model.meta.disclaimer, leftPad, h, W, { size: 10, fill: '#333' }));
     h += 14;
   }
   const height = h + 6;
@@ -3815,13 +3893,17 @@ export function renderDecisionalBalance(
 
   let h = gridBottom + 20;
   parts.push(
-    `<text x="${gridLeft}" y="${h}" font-family="sans-serif" font-size="10" fill="#333">Use when genuinely weighing both sides — dwelling on reasons to stay can deepen ambivalence (MI-3), so it is not a persuasion tool.</text>`,
+    chromeLine(
+      'Use when genuinely weighing both sides — dwelling on reasons to stay can deepen ambivalence (MI-3), so it is not a persuasion tool.',
+      gridLeft,
+      h,
+      W,
+      { size: 10, fill: '#333' },
+    ),
   );
   h += 15;
   if (model.meta.disclaimer) {
-    parts.push(
-      `<text x="${gridLeft}" y="${h}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
-    );
+    parts.push(chromeLine(model.meta.disclaimer, gridLeft, h, W, { size: 10, fill: '#333' }));
     h += 14;
   }
   const height = h + 6;
@@ -3930,13 +4012,17 @@ export function renderSecureBase(model: PsyumlModel, options: RenderOptions = {}
 
   let h = baseY + Math.max(1, base.length) * 22 + 30;
   body.push(
-    `<text x="20" y="${h}" font-family="sans-serif" font-size="10" fill="#333">A trusted caregiver is both — somewhere safe to go FROM, and somewhere safe to come BACK to.</text>`,
+    chromeLine(
+      'A trusted caregiver is both — somewhere safe to go FROM, and somewhere safe to come BACK to.',
+      20,
+      h,
+      W,
+      { size: 10, fill: '#333' },
+    ),
   );
   h += 15;
   if (model.meta.disclaimer) {
-    body.push(
-      `<text x="20" y="${h}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
-    );
+    body.push(chromeLine(model.meta.disclaimer, 20, h, W, { size: 10, fill: '#333' }));
     h += 14;
   }
   const height = h + 6;

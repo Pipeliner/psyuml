@@ -79,3 +79,43 @@ describe('text-legibility invariant — no two words collide (ADR-0045)', () => 
     }
   });
 });
+
+/**
+ * Companion in-frame guarantee for ALL text (ADR-0052). `overlap.test.ts`'s in-frame check only
+ * covers `data-el` boxes, so UNTAGGED chrome text — a long title, a guidance caption, the disclaimer —
+ * could spill past the viewBox and be clipped on export / in an embed (found: the body-map title +
+ * caption + disclaimer overflowing its fixed 460px frame by up to ~220px). This asserts every
+ * reconstructed `<text>` AABB sits inside the SVG's own viewBox, for every example × both layers.
+ * Tolerance is a few px: the shared text metric is an estimate, while real overflow is tens of px.
+ */
+const FRAME_SLOP = 4;
+function viewBoxOf(svg: string): { x: number; y: number; w: number; h: number } {
+  const m = svg.match(/viewBox="([\d.-]+) ([\d.-]+) ([\d.-]+) ([\d.-]+)"/)!;
+  return { x: Number(m[1]), y: Number(m[2]), w: Number(m[3]), h: Number(m[4]) };
+}
+function assertTextInFrame(label: string, svg: string): void {
+  const vb = viewBoxOf(svg);
+  for (const t of textBoxesFromSvg(svg).filter((b) => b.content.length > 0)) {
+    const within =
+      t.x >= vb.x - FRAME_SLOP &&
+      t.y >= vb.y - FRAME_SLOP &&
+      t.x + t.w <= vb.x + vb.w + FRAME_SLOP &&
+      t.y + t.h <= vb.y + vb.h + FRAME_SLOP;
+    expect(
+      within,
+      `${label}: text "${t.content.slice(0, 30)}" at (${t.x.toFixed(0)},${t.y.toFixed(0)} ${t.w.toFixed(0)}x${t.h.toFixed(0)}) spills outside viewBox ${vb.x} ${vb.y} ${vb.w} ${vb.h}`,
+    ).toBe(true);
+  }
+}
+
+describe('text-in-frame invariant — no text spills past the viewBox (ADR-0052)', () => {
+  describe.each(files)('%s', (f) => {
+    const model = load(f);
+    const renderer = RENDERERS[model.diagram];
+    for (const layer of ['clinician', 'client'] as const) {
+      it(`every text box is inside the frame (${layer})`, () => {
+        assertTextInFrame(`${f}/${layer}`, renderer(model, { layer }).svg);
+      });
+    }
+  });
+});
