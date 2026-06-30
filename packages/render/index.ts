@@ -2758,14 +2758,20 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     `Sensations: ${model.nodes.map((n) => `${getText(n.label, layer, lang)} (intensity ${(n.properties.intensity ?? 0.5).toFixed(1)})`).join(', ') || 'none'}. ` +
     `Pace and titrate.`;
 
+  // Grow the frame width to fit the title at FULL size rather than compressing it (a heading
+  // shouldn't be squished — ADR-0052/0053); the body art + labels already fit within BODY_W, so the
+  // extra width is just title headroom on the right.
+  const bodyW = model.meta.title
+    ? Math.max(BODY_W, Math.ceil(24 + textWidth(model.meta.title, 16)))
+    : BODY_W;
   const titleText = model.meta.title
-    ? fitText(model.meta.title, 12, 22, { size: 16, weight: 700, maxWidth: BODY_W - 24 })
+    ? fitText(model.meta.title, 12, 22, { size: 16, weight: 700, maxWidth: bodyW - 24 })
     : '';
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BODY_W} ${bodyH}" role="img" aria-label="${esc(altText)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${bodyW} ${bodyH}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? 'Body map')}</title><desc>${esc(altText)}</desc>` +
-    `<rect x="0" y="0" width="${BODY_W}" height="${bodyH}" fill="#fff" />` +
+    `<rect x="0" y="0" width="${bodyW}" height="${bodyH}" fill="#fff" />` +
     titleText +
     parts.join('') +
     '</svg>';

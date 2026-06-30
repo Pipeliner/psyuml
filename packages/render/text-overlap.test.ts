@@ -133,6 +133,7 @@ describe('text-in-frame invariant — no text spills past the viewBox (ADR-0052)
     ['process-loop', 'panic-cycle.psyuml'],
     ['two-triangles', 'two-triangles.psyuml'],
     ['decision-nav', 'decision-nav.psyuml'],
+    ['body-map', 'body-map.psyuml'],
   ];
   it.each(CONTENT_FIT)('%s grows its frame so a long title never clips', (_diagram, file) => {
     const model = load(file);
