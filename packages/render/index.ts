@@ -315,31 +315,21 @@ const haloAttr = (halo?: number): string =>
  */
 /** The legibility floor (ADR-0045): no rendered text below this px size. */
 const LEG_FLOOR = 8;
-/** Below this width ratio, horizontal `textLength` squishing is illegible — shrink the font instead. */
+/**
+ * Squish policy (ADR-0053, refined): a single line that overflows its box is compressed horizontally
+ * (`textLength`) — uniform, and a single compressed line stays legible; shrinking it would just make
+ * it look smaller than its peers (a header row, a ring of labels). But a MULTI-LINE wrapped label
+ * whose widest line would squish below this ratio is shrunk + re-wrapped instead (in `wrapLabel`),
+ * because a crammed wrapped line crushed to a sliver is genuinely illegible.
+ */
 const SQUISH_FLOOR = 0.8;
 
-/**
- * The font size to actually render `s` at to fit `maxWidth` (ADR-0053): a label that fits is
- * unchanged; one that only MILDLY overflows is left to `textLength` compression (≥ SQUISH_FLOOR, a
- * barely-perceptible squish, so the common case stays byte-identical); one that would be SEVERELY
- * squished is instead shrunk toward the 8px floor so glyphs keep their natural proportions (a small
- * legible label beats a half-width-crushed one — the body-map's shrink-to-fit, generalised).
- */
-function legibleFitSize(s: string, size: number, maxWidth?: number): number {
-  if (!maxWidth) return size;
-  const natural = textWidth(s, size);
-  if (natural <= maxWidth) return size;
-  if (maxWidth / natural >= SQUISH_FLOOR) return size; // mild — keep size, let textLength handle it
-  return Math.max(LEG_FLOOR, Math.floor(((maxWidth / natural) * size - 0.05) * 10) / 10);
-}
-
 function fitText(s: string, x: number, y: number, o: TextOpts = {}): string {
-  const size = legibleFitSize(s, o.size ?? 11, o.maxWidth);
+  const size = o.size ?? 11;
   const a = o.anchor ? ` text-anchor="${o.anchor}"` : '';
   const w = o.weight ? ` font-weight="${o.weight}"` : '';
   const f = o.fill ? ` fill="${o.fill}"` : '';
-  // The ONE text metric (layout.textWidth, ~0.58em/char); only compress when clearly over (after the
-  // legibility shrink above, this fires for the mild case or a label still over at the 8px floor).
+  // The ONE text metric (layout.textWidth, ~0.58em/char); only compress when clearly over.
   const fit =
     o.maxWidth && textWidth(s, size) > o.maxWidth
       ? ` textLength="${r1(o.maxWidth)}" lengthAdjust="spacingAndGlyphs"`
@@ -406,13 +396,16 @@ function wrapLabel(s: string, cx: number, cy: number, o: WrapOpts = {}): string 
   const wrapAt = (sz: number): string[] =>
     o.maxWidth ? wrapLines(s, Math.max(4, Math.floor(o.maxWidth / (sz * CHAR_W))), maxLines) : [s];
   let lines = wrapAt(size);
-  // Legibility (ADR-0053): if wrapping to `maxLines` at this size SEVERELY squishes the widest line
-  // (< SQUISH_FLOOR), shrink the font toward the 8px floor and re-wrap so the glyphs keep their
-  // proportions — a small legible label beats a half-width-crushed last line (the body-map's
-  // shrink-to-fit, for wrapped node/zone labels). Mild overflow is still left to per-line textLength.
-  if (o.maxWidth) {
+  // Legibility (ADR-0053): shrink-to-fit applies ONLY to a genuinely MULTI-LINE wrap. If wrapping
+  // severely squishes the widest line (< SQUISH_FLOOR), shrink the font toward the 8px floor and
+  // re-wrap so the glyphs keep their proportions — a small legible label beats a half-width-crushed
+  // last line. A SINGLE line is left to fitText's uniform horizontal compression below: shrinking one
+  // line of a peer row (column headers, a ring of perimeter labels) would just make it look smaller
+  // than its siblings, which the squish avoids (ADR-0053 follow-up, found in showcase visual audit).
+  if (o.maxWidth && lines.length > 1) {
     while (
       size > LEG_FLOOR &&
+      lines.length > 1 &&
       Math.max(...lines.map((l) => textWidth(l, size))) > o.maxWidth / SQUISH_FLOOR
     ) {
       size = Math.max(LEG_FLOOR, Math.round((size - 0.5) * 10) / 10);
@@ -1457,13 +1450,12 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
     // compressed via textLength only when it would otherwise overflow (the item labels already fit).
     const hLabel = getText(cat.label, layer, lang);
     const hCap = colW - 22;
-    const hsz = legibleFitSize(hLabel, 13, hCap); // shrink before squishing (ADR-0053)
     const hTl =
-      textWidth(hLabel, hsz) > hCap
+      textWidth(hLabel, 13) > hCap
         ? ` textLength="${r1(hCap)}" lengthAdjust="spacingAndGlyphs"`
         : '';
     parts.push(
-      `<text x="${hx}" y="58" font-family="sans-serif" font-size="${hsz}" font-weight="700"${hTl}>${esc(hLabel)}</text>`,
+      `<text x="${hx}" y="58" font-family="sans-serif" font-size="13" font-weight="700"${hTl}>${esc(hLabel)}</text>`,
     );
     items.forEach((it, i) => {
       const y = 86 + i * 28;
@@ -3443,11 +3435,10 @@ export function renderVenn(model: PsyumlModel, options: RenderOptions = {}): Ren
       // can't collide (ADR-0045) — compressed via textLength only when it would otherwise overflow.
       const descr = items.join(' · ');
       const CAP = 128;
-      const dsz = legibleFitSize(descr, 10, CAP); // shrink before squishing (ADR-0053)
       const tl =
-        textWidth(descr, dsz) > CAP ? ` textLength="${CAP}" lengthAdjust="spacingAndGlyphs"` : '';
+        textWidth(descr, 10) > CAP ? ` textLength="${CAP}" lengthAdjust="spacingAndGlyphs"` : '';
       parts.push(
-        `<text x="${z.x}" y="${cy + 15}" font-family="sans-serif" font-size="${dsz}" text-anchor="middle" fill="#333" stroke="#fff" stroke-width="2.5" paint-order="stroke"${tl}>${esc(descr)}</text>`,
+        `<text x="${z.x}" y="${cy + 15}" font-family="sans-serif" font-size="10" text-anchor="middle" fill="#333" stroke="#fff" stroke-width="2.5" paint-order="stroke"${tl}>${esc(descr)}</text>`,
       );
     }
     altZones.push(items.length ? `${name} (${items.join(', ')})` : name);
@@ -3939,9 +3930,8 @@ export function renderDecisionalBalance(
     items.forEach((n, i) => {
       const y = cellY + itemTopPad + i * itemH;
       const name = getText(n.label, layer, lang);
-      const nsz = legibleFitSize(name, 11, colW - 18); // shrink before squishing (ADR-0053)
       parts.push(
-        `<text data-el="nodelabel:${esc(n.id)}" x="${cellX + colW / 2}" y="${y}" font-family="sans-serif" font-size="${nsz}" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke"${textWidth(name, nsz) > colW - 18 ? ` textLength="${colW - 18}" lengthAdjust="spacingAndGlyphs"` : ''}>${esc(name)}</text>`,
+        `<text data-el="nodelabel:${esc(n.id)}" x="${cellX + colW / 2}" y="${y}" font-family="sans-serif" font-size="11" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke"${textWidth(name, 11) > colW - 18 ? ` textLength="${colW - 18}" lengthAdjust="spacingAndGlyphs"` : ''}>${esc(name)}</text>`,
       );
     });
     const colWord = q.col === 0 ? 'changing' : 'staying';

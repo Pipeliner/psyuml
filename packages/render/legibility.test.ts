@@ -171,13 +171,17 @@ describe('legibility: a loop-map resource label never straddles its diamond edge
 });
 
 describe('legibility: text is never SEVERELY horizontally squished (ADR-0053)', () => {
-  // `textLength`/`spacingAndGlyphs` compresses a label to fit its box — fine when mild, but a label
-  // crushed to half-width is illegible (a visual audit found node/zone labels squished to ~40%). The
-  // shared helpers now SHRINK the font (toward the 8px floor, keeping glyph proportions) before
-  // squishing, so a compressed label is either mildly compressed (≥ SQUISH_FLOOR) OR already at the
-  // floor (can't shrink further). This guards that contract: no `textLength` segment is below
-  // SQUISH_FLOOR unless its font is at the legibility floor.
-  const SQUISH_FLOOR = 0.8;
+  // `textLength`/`spacingAndGlyphs` compresses a label to fit its box. The policy (ADR-0053, refined
+  // in a showcase visual audit) is two-tier:
+  //   • a MULTI-LINE wrapped label (stacked `<tspan>`s) must not crush its widest line below
+  //     SQUISH_FLOOR — `wrapLabel` shrinks the font + re-wraps first, so a crammed line never becomes
+  //     an illegible sliver (the ~40% node labels the audit first found);
+  //   • a SINGLE line is compressed uniformly to fit (no shrink — shrinking one line of a peer row
+  //     just makes it smaller than its siblings), so it's allowed down to a looser egregious floor.
+  // Either way the font never drops below the 8px legibility floor, and nothing is crushed to a
+  // sliver. This guard pins both tiers so a regression (e.g. removing the wrapLabel shrink) fails.
+  const MULTILINE_FLOOR = 0.8;
+  const SINGLELINE_FLOOR = 0.5;
   const LEG_FLOOR = 8;
   const SLOP = 0.04; // metric estimate tolerance
 
@@ -189,37 +193,41 @@ describe('legibility: text is never SEVERELY horizontally squished (ADR-0053)', 
       .replace(/&gt;/g, '>')
       .replace(/&amp;/g, '&');
 
-  /** Every (font-size, textLength, content) triple — single-line `<text>` and stacked `<tspan>`s. */
-  function compressedSegments(svg: string): { size: number; tl: number; text: string }[] {
-    const out: { size: number; tl: number; text: string }[] = [];
+  /** Every compressed segment — single-line `<text>` (multiline:false) and stacked `<tspan>`s (true). */
+  function compressedSegments(
+    svg: string,
+  ): { size: number; tl: number; text: string; multiline: boolean }[] {
+    const out: { size: number; tl: number; text: string; multiline: boolean }[] = [];
     for (const block of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)) {
       const attrs = block[1];
       const size = Number(attrs.match(/font-size="([\d.]+)"/)?.[1] ?? 11);
       const tspans = [...block[2].matchAll(/<tspan\b([^>]*)>([^<]*)<\/tspan>/g)];
       if (tspans.length) {
+        const multiline = tspans.length > 1;
         for (const t of tspans) {
           const tl = t[1].match(/textLength="([\d.]+)"/);
-          if (tl) out.push({ size, tl: Number(tl[1]), text: decode(t[2]) });
+          if (tl) out.push({ size, tl: Number(tl[1]), text: decode(t[2]), multiline });
         }
       } else {
         const tl = attrs.match(/textLength="([\d.]+)"/);
-        if (tl) out.push({ size, tl: Number(tl[1]), text: decode(block[2]) });
+        if (tl) out.push({ size, tl: Number(tl[1]), text: decode(block[2]), multiline: false });
       }
     }
     return out;
   }
 
   let checked = 0;
-  it.each(models)('%s never crushes a label below the squish floor (both layers)', (_f, model) => {
+  it.each(models)('%s never crushes a label below its squish floor (both layers)', (_f, model) => {
     for (const audience of ['clinician', 'client'] as const) {
       for (const seg of compressedSegments(render(model, { audience }).svg)) {
         const natural = textWidth(seg.text, seg.size);
         if (natural <= 0) continue;
         checked += 1;
         const ratio = seg.tl / natural;
+        const floor = seg.multiline ? MULTILINE_FLOOR : SINGLELINE_FLOOR;
         expect(
-          ratio >= SQUISH_FLOOR - SLOP || seg.size <= LEG_FLOOR + SLOP,
-          `${_f}/${audience}: "${seg.text.slice(0, 30)}" squished to ${(ratio * 100).toFixed(0)}% at ${seg.size}px (shrink the font first)`,
+          ratio >= floor - SLOP || seg.size <= LEG_FLOOR + SLOP,
+          `${_f}/${audience}: ${seg.multiline ? 'wrapped' : 'single'} "${seg.text.slice(0, 30)}" squished to ${(ratio * 100).toFixed(0)}% at ${seg.size}px (floor ${floor})`,
         ).toBe(true);
       }
     }
