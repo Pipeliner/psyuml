@@ -7,7 +7,11 @@
  * (ADR-0027/0028): the manifest is checked against the SYSTEM, and the generated page is checked
  * against the manifest. So the showcase can never silently fall behind the language — adding the
  * 21st diagram type fails CI until the type has a showcase entry, and the page content can't drop a
- * diagram, its title, its render, or the honesty framing. Companion to `catalog.test.ts` and
+ * diagram, its title, its render, or the honesty framing. It goes further than presence: the page
+ * must embed each type's EXACT current golden SVG VERBATIM, and `index.test.ts` pins every golden to
+ * the live renderer — so the chain page <- golden <- renderer is enforced end to end (improve a
+ * renderer -> its golden regenerates -> the showcase shows the new render; a stale, rescaled,
+ * re-rendered, or dropped diagram fails CI). Companion to `catalog.test.ts` and
  * `docs-conformance.test.ts`. Traceability: REQ-SHOWCASE-PAGE, REQ-EXAMPLE-LIBRARY.
  */
 import { describe, expect, it } from 'vitest';
@@ -98,6 +102,23 @@ describe('showcase ↔ system conformance (REQ-SHOWCASE-PAGE, ADR-0044)', () => 
       }
       const svgCount = (html.match(/<svg\b/g) || []).length;
       expect(svgCount, 'one inline diagram per type').toBeGreaterThanOrEqual(TYPES.length);
+    });
+
+    it('embeds each type’s EXACT current golden SVG verbatim — the page can’t show a stale or re-rendered diagram', () => {
+      // The builder inlines the committed `showcase-<type>.svg` after stripping only the XML
+      // prolog/DOCTYPE (which the goldens don't carry), so the page must contain each golden BYTE FOR
+      // BYTE. `index.test.ts` in turn pins every golden to the live renderer (expectGolden), so this
+      // closes the chain page ← golden ← renderer: improve a renderer → its golden regenerates → the
+      // showcase shows the new render, all enforced. A builder change that rescaled, re-rendered, or
+      // dropped a diagram's SVG (while keeping its title) is caught here.
+      const stripProlog = (svg: string): string =>
+        svg.replace(/^\s*<\?xml[^>]*\?>\s*/i, '').replace(/^\s*<!DOCTYPE[^>]*>\s*/i, '');
+      for (const t of TYPES) {
+        expect(
+          html.includes(stripProlog(svgs[t])),
+          `showcase must embed the current golden SVG for ${t} verbatim (regenerate showcase-${t}.svg or rebuild the page)`,
+        ).toBe(true);
+      }
     });
 
     it('renders each diagram’s explanation, when-to-use, and on-paper guidance', () => {
