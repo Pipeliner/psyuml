@@ -122,9 +122,10 @@ describe('text-in-frame invariant — no text spills past the viewBox (ADR-0052)
   // A long user title must not clip in the live editor (where no in-frame test runs). The corpus
   // titles are short, so this plants a pathologically long one on each CONTENT-FIT renderer (whose
   // frame is sized to its nodes and would otherwise ignore the title row) and asserts it still fits.
-  // The renderers achieve that differently — most GROW the frame (ADR-0052); the loop-map and
-  // body-map WRAP the title within the content width instead (ADR-0054, which keeps the body centred)
-  // — but the contract this guards is the same: a long title never spills past the viewBox.
+  // The renderers achieve that differently — decision-nav GROWS + re-centres (ADR-0052); the loop-map
+  // and body-map WRAP within the content width; state-map/parts-map/mode-map/two-triangles SHRINK the
+  // title to fit (ADR-0054) — all so the body stays centred. The contract this guards is the same: a
+  // long title never spills past the viewBox.
   const LONG_TITLE =
     'A very long diagnostic formulation title that a clinician might plausibly type out in full here';
   const CONTENT_FIT: [string, string][] = [

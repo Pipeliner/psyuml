@@ -534,10 +534,9 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     colW = Math.max(colW, need);
   }
   const innerR = innerL + colW;
-  const width = Math.max(
-    innerR + Math.max(40, rightGutter),
-    model.meta.title ? 28 + textWidth(model.meta.title, 16) : 0,
-  );
+  // The frame is sized to the CONTENT only — a long title shrinks-to-fit on its line (below), it
+  // never widens the frame (which would push the bands off-centre — ADR-0054).
+  const width = innerR + Math.max(40, rightGutter);
   const height = TITLE_H + PAD_TOP + bandH + LEGEND_H;
 
   const center = new Map<string, { cx: number; cy: number }>();
@@ -759,7 +758,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     '</defs>';
 
   const titleText = model.meta.title
-    ? `<text x="20" y="23" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? fitText(model.meta.title, 20, 23, { size: 16, weight: 700, maxWidth: width - 40 })
     : '';
 
   const svg =
@@ -826,12 +825,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     : 0;
   const exileRx = Math.max(130, exileHalfSpan + 16);
   const margin = PROT_FW / 2 + 24;
-  const PARTS_W2 = Math.max(
-    PARTS_W,
-    2 * (orbitR + margin),
-    2 * (exileRx + 24),
-    model.meta.title ? 28 + textWidth(model.meta.title, 16) : 0,
-  );
+  // Frame sized to the orbit content only — a long title shrinks-to-fit, never widens the frame
+  // (which would push the centred Self/parts ring off-axis — ADR-0054).
+  const PARTS_W2 = Math.max(PARTS_W, 2 * (orbitR + margin), 2 * (exileRx + 24));
   const cx = PARTS_W2 / 2;
   const cy = titleH + ringTop + 24; // Self centre: leave room above for the top protector + title
 
@@ -1087,7 +1083,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       : '');
 
   const titleText = model.meta.title
-    ? `<text x="20" y="23" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? fitText(model.meta.title, 20, 23, { size: 16, weight: 700, maxWidth: PARTS_W2 - 40 })
     : '';
 
   const svg =
@@ -2518,11 +2514,9 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     maxX = Math.max(maxX, p.x);
     maxY = Math.max(maxY, p.y);
   }
-  const width = Math.max(
-    560,
-    maxX + 120,
-    model.meta.title ? 20 + textWidth(model.meta.title, 16) : 0,
-  );
+  // Frame sized to the mode circles only — a long title shrinks-to-fit, never widens the frame
+  // (which would push the centred circles off-axis — ADR-0054).
+  const width = Math.max(560, maxX + 120);
   // Names + dominance numerals now sit BELOW the circles (ADR-0046), so reserve more vertical room.
   const height = Math.max(360, maxY + 160);
 
@@ -2630,7 +2624,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     `Goal: grow the Healthy Adult.`;
 
   const titleText = model.meta.title
-    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? fitText(model.meta.title, 12, 22, { size: 16, weight: 700, maxWidth: width - 24 })
     : '';
   const defs =
     '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
@@ -2925,11 +2919,9 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     maxX = Math.max(maxX, p.x);
     maxY = Math.max(maxY, p.y);
   }
-  const width = Math.max(
-    TT_W,
-    maxX + TT_NODE_W / 2 + 20,
-    model.meta.title ? 20 + textWidth(model.meta.title, 16) : 0,
-  );
+  // Frame sized to the two triangles only — a long title shrinks-to-fit, never widens the frame
+  // (which would push the centred triangles off-axis — ADR-0054).
+  const width = Math.max(TT_W, maxX + TT_NODE_W / 2 + 20);
   const height = Math.max(320, maxY + 80) + 24;
 
   const bands = [...model.bands].sort((a, b) => a.order - b.order);
@@ -3000,7 +2992,7 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     `${groupAlt.join('. ')}. Transference links the same conflict across relationships.`;
 
   const titleText = model.meta.title
-    ? `<text x="12" y="22" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`
+    ? fitText(model.meta.title, 12, 22, { size: 16, weight: 700, maxWidth: width - 24 })
     : '';
 
   const svg =
