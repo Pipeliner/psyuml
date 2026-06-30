@@ -83,6 +83,7 @@
   --fs-lg: 1.125rem; /* 18px */
   --fs-xl: 1.375rem; /* 22px */
   --fs-2xl: 1.75rem; /* 28px */
+  --fs-mono: 0.75rem; /* 12px DSL code; bumped to 16px on touch (below) so iOS won't zoom on focus */
   --lh: 1.55;
 
   /* --- Controls --- */
@@ -116,6 +117,19 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* we draw our own WCAG focus ring (:focus-visible), so suppress the grey tap-flash on touch. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove the legacy double-tap-to-zoom delay on the controls (the canvas opts out separately when
+   it is draggable, via an inline touch-action: none). */
+button,
+select,
+a,
+summary,
+.chip,
+label {
+  touch-action: manipulation;
 }
 
 h1,
@@ -291,6 +305,16 @@ input[type='file'] {
   max-width: 100%;
   flex: 1 1 8rem;
   font-size: var(--fs-xs);
+}
+
+/* A native file input has a stubborn intrinsic min-width (its button + filename) that even
+   `min-width:0` can't always shrink, so a file-picker `.control` can poke ~25px past a phone. Give
+   any control that holds a file input its OWN full-width row in the toolbar — the input then fills
+   the row and clips its filename instead of overflowing the page (:has is already used in this
+   sheet). */
+.control:has(> input[type='file']) {
+  flex: 1 1 100%;
+  max-width: 100%;
 }
 
 input[type='text']:hover,
@@ -534,6 +558,9 @@ button:disabled {
 /* A row inside a saved-version / link list. */
 .row {
   display: flex;
+  /* wrap so a row of buttons/controls (composite board, saved versions, profile) never overflows a
+     phone — the comment-row's controls drop to the next line instead of running off-screen. */
+  flex-wrap: wrap;
   gap: var(--sp-2);
   align-items: center;
 }
@@ -573,6 +600,11 @@ button:disabled {
   border-radius: var(--r-lg);
   padding: var(--sp-5);
   overflow: auto;
+  /* a large diagram pans WITHIN this sheet (it stays at native size so text clears the 8px floor —
+     fit-to-width would shrink it below legibility on a phone); contain the scroll so panning it
+     doesn't rubber-band the page, and let the browser smooth-scroll the panned canvas on touch. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   max-height: 78vh;
   box-shadow: var(--shadow-md);
   background-image: radial-gradient(var(--c-border) 1.1px, transparent 1.3px);
@@ -799,7 +831,18 @@ details.disclose-inline > summary {
 /* ---------- Touch: comfortable >=44px targets (WCAG 2.5.8 / 2.5.5) ---------- */
 @media (pointer: coarse) {
   :root {
-    --control-h: 2.75rem; /* 44px */
+    --control-h: 2.75rem; /* 44px — WCAG 2.5.5 target size on touch */
+    /* the DSL textarea reads `var(--fs-mono)` inline, so lifting it here pushes that field to 16px
+       on touch too (so iOS won't zoom on focus). */
+    --fs-mono: 16px;
+  }
+  /* iOS Safari ZOOMS the page when a focused field's font is < 16px; keep every editable control at
+     ≥16px on touch so tapping an input never yanks the layout (ADR-0056). */
+  input,
+  select,
+  textarea,
+  input[type='file'] {
+    font-size: 16px;
   }
   input[type='checkbox'] {
     width: 1.4rem;
@@ -808,9 +851,18 @@ details.disclose-inline > summary {
   .btn-icon {
     min-width: 2.75rem;
   }
+  /* On a phone, give the file-action group (Open / Compare) its own FULL-WIDTH row so the stubborn
+     native file input has the whole row to shrink into rather than poking past the screen edge. */
+  .toolbar__group {
+    width: 100%;
+  }
+  /* Every disclosure summary is a tap target — give them all a full 44px touch row (a bare
+     `details.panel > summary` measured 43.4px otherwise). min-height keeps the native marker. */
+  summary {
+    min-height: 2.75rem;
+  }
   details.disclose-inline > summary {
-    min-height: 2rem;
-    padding: 0.4rem 0;
+    padding: 0.55rem 0;
   }
 }
 

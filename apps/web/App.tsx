@@ -1300,7 +1300,7 @@ export function App() {
           rows={12}
           spellCheck={false}
           aria-label="PsyUML text DSL"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-mono)' }}
         />
         <div className="row" style={{ marginTop: '0.5rem' }}>
           <button
