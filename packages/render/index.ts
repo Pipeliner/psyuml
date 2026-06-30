@@ -1875,7 +1875,6 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   // Fit the frame to the actual content (incl. negative coords) so nothing clips on screen or in export.
   const pad = 18;
-  const titleH = model.meta.title ? 28 : 0;
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -1896,20 +1895,22 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     maxY = 200;
   }
   const fx = r1(minX - pad);
+  const fw = r1(maxX + pad - fx);
+  // The title sits above the ring and WRAPS to ≤2 lines within the content width. It never grows the
+  // frame (that left the ring off-centre with an empty right margin — ADR-0054) nor compresses
+  // (ADR-0052/0053): a wide title simply takes a second line over the centred ring.
+  const titleLines = model.meta.title
+    ? wrapLines(model.meta.title, Math.max(8, Math.floor((fw - 16) / (16 * CHAR_W))), 2)
+    : [];
+  const titleH = titleLines.length ? titleLines.length * 20 + 6 : 0;
   const fy = r1(minY - pad - titleH);
-  let fw = r1(maxX + pad - fx);
   const fh = r1(maxY + pad - fy);
-  // The ring content-fit ignores the title row, so a long title would spill past the right edge —
-  // grow the frame to contain it (ADR-0052; titles get room, not compression).
-  if (model.meta.title) fw = Math.max(fw, r1(8 + textWidth(model.meta.title, 16) + pad));
 
-  const titleText = model.meta.title
-    ? fitText(model.meta.title, r1(fx + 8), r1(fy + 20), {
-        size: 16,
-        weight: 700,
-        maxWidth: fw - 16,
-      })
-    : '';
+  const titleText = titleLines
+    .map((ln, i) =>
+      fitText(ln, r1(fx + 8), r1(fy + 20 + i * 19), { size: 16, weight: 700, maxWidth: fw - 16 }),
+    )
+    .join('');
   const defs =
     '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
 

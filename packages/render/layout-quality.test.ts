@@ -205,3 +205,41 @@ describe('layout-quality: the corpus actually exercises both invariants', () => 
     expect(edgeSegments(RENDERERS[model.diagram](model).svg).length).toBeGreaterThan(0);
   });
 });
+
+describe('layout-quality D: the loop-map ring is horizontally centred (ADR-0054)', () => {
+  // A process-loop is a content-fit RING, centred by construction. Its title now WRAPS within the
+  // content width and never widens the frame — an earlier title-growth left the ring off-centre with
+  // a big empty right margin (a real lopsidedness a visual audit caught). This guards that the ring
+  // node bbox stays centred in the frame, so re-growing the frame for chrome can't recur unseen.
+  // Tolerance separates the real bug (the title-growth shifted rings 32–61px) from the small
+  // STRUCTURAL asymmetry a few SDR rings carry (cat-sdr's observing-eye + assert sit on one side,
+  // ~18px) — 24px passes those, catches a re-grown frame.
+  const TOL = 24;
+  const loops = files.filter((f) => load(f).diagram === 'process-loop');
+
+  it('the corpus has loop-maps to check', () => {
+    expect(loops.length).toBeGreaterThan(0);
+  });
+
+  describe.each(loops)('%s', (f) => {
+    const model = load(f);
+    for (const layer of ['clinician', 'client'] as const) {
+      it(`ring is centred in the frame (${layer})`, () => {
+        const svg = render.renderLoopMap(model, { layer }).svg;
+        const nodes = boxesFromSvg(svg).filter((b) => kindOf(b.el) === 'node');
+        expect(nodes.length, 'ring nodes are tagged').toBeGreaterThan(0);
+        const minX = Math.min(...nodes.map((b) => b.x));
+        const maxX = Math.max(...nodes.map((b) => b.x + b.w));
+        const vb = svg
+          .match(/viewBox="([\d.-]+) ([\d.-]+) ([\d.-]+) ([\d.-]+)"/)!
+          .slice(1)
+          .map(Number);
+        const off = (minX + maxX) / 2 - (vb[0] + vb[2] / 2);
+        expect(
+          Math.abs(off),
+          `${f}/${layer}: ring off-centre by ${off.toFixed(0)}px`,
+        ).toBeLessThanOrEqual(TOL);
+      });
+    }
+  });
+});
