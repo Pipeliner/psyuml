@@ -385,14 +385,14 @@ export const STUDY_CASES: StudyCase[] = [
           id: 'manager1',
           kind: 'agent',
           stereotype: 'manager',
-          label: en('Perfectionist manager: pre-empt all criticism'),
+          label: en('Perfectionist'),
           properties: { epistemicStatus: 'inferred', confidence: 'M', provenance: ['school:ifs'] },
         },
         {
           id: 'manager2',
           kind: 'agent',
           stereotype: 'manager',
-          label: en('Inner critic / driver'),
+          label: en('Inner critic'),
           properties: {
             epistemicStatus: 'contested',
             confidence: 'L',
@@ -405,7 +405,7 @@ export const STUDY_CASES: StudyCase[] = [
           id: 'firefighter',
           kind: 'agent',
           stereotype: 'firefighter',
-          label: en('Numb-out firefighter: scroll, snack, zone out'),
+          label: en('Numb-out part'),
           properties: { epistemicStatus: 'observed', provenance: ['school:ifs'] },
         },
         {
@@ -419,7 +419,7 @@ export const STUDY_CASES: StudyCase[] = [
           id: 'exile',
           kind: 'agent',
           stereotype: 'exile',
-          label: en('Young exile: "I am not enough", age 7'),
+          label: en('Young exile (age 7)'),
           properties: { epistemicStatus: 'inferred', confidence: 'M', provenance: ['school:ifs'] },
         },
         {
