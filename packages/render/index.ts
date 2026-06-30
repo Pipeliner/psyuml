@@ -2711,11 +2711,13 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     const onLeft = capL > capR + 8;
     const cap = Math.max(16, onLeft ? capL : capR);
     // Shrink the font (not fake-compress) so the label fits its cap at full glyph width — fully
-    // legible, no truncation, and the natural-width box clears the neighbour (ADR-0012). Floor the
-    // size so rounding never nudges the natural width back over the cap.
+    // legible, no truncation, and the natural-width box clears the neighbour (ADR-0012). Floor at the
+    // shared 8px legibility floor (ADR-0045/0053) so the renderer can never emit sub-floor microtext;
+    // a label too long for its cap even at the floor is caught loudly by the overlap invariant rather
+    // than silently shrunk to illegibility.
     const fit =
       textWidth(text, 11) > cap
-        ? Math.max(6, Math.floor((cap / (text.length * CHAR_W)) * 10) / 10)
+        ? Math.max(LEG_FLOOR, Math.floor((cap / (text.length * CHAR_W)) * 10) / 10)
         : 11;
     parts.push(
       `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#000" fill-opacity="0.15" stroke="#000" stroke-width="1.5" />`,
