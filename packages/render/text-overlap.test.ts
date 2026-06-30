@@ -118,4 +118,28 @@ describe('text-in-frame invariant — no text spills past the viewBox (ADR-0052)
       });
     }
   });
+
+  // A long user title must not clip in the live editor (where no in-frame test runs). The corpus
+  // titles are short, so this plants a pathologically long one on each CONTENT-FIT renderer (whose
+  // frame is sized to its nodes and would otherwise ignore the title row) and asserts it still fits —
+  // guarding the title-aware frame growth so a future regression that drops it fails CI (ADR-0052).
+  const LONG_TITLE =
+    'A very long diagnostic formulation title that a clinician might plausibly type out in full here';
+  const CONTENT_FIT: [string, string][] = [
+    ['state-map', 'state-map.psyuml'],
+    ['parts-map', 'parts-map.psyuml'],
+    ['mode-map', 'mode-map.psyuml'],
+    ['relational-field', 'relational-field.psyuml'],
+    ['process-loop', 'panic-cycle.psyuml'],
+    ['two-triangles', 'two-triangles.psyuml'],
+    ['decision-nav', 'decision-nav.psyuml'],
+  ];
+  it.each(CONTENT_FIT)('%s grows its frame so a long title never clips', (_diagram, file) => {
+    const model = load(file);
+    model.meta = { ...model.meta, title: LONG_TITLE };
+    const renderer = RENDERERS[model.diagram];
+    for (const layer of ['clinician', 'client'] as const) {
+      assertTextInFrame(`${file}/${layer} (long title)`, renderer(model, { layer }).svg);
+    }
+  });
 });

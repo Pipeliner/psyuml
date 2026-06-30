@@ -506,7 +506,10 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
     colW = Math.max(colW, need);
   }
   const innerR = innerL + colW;
-  const width = innerR + Math.max(40, rightGutter);
+  const width = Math.max(
+    innerR + Math.max(40, rightGutter),
+    model.meta.title ? 28 + textWidth(model.meta.title, 16) : 0,
+  );
   const height = TITLE_H + PAD_TOP + bandH + LEGEND_H;
 
   const center = new Map<string, { cx: number; cy: number }>();
@@ -795,7 +798,12 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     : 0;
   const exileRx = Math.max(130, exileHalfSpan + 16);
   const margin = PROT_FW / 2 + 24;
-  const PARTS_W2 = Math.max(PARTS_W, 2 * (orbitR + margin), 2 * (exileRx + 24));
+  const PARTS_W2 = Math.max(
+    PARTS_W,
+    2 * (orbitR + margin),
+    2 * (exileRx + 24),
+    model.meta.title ? 28 + textWidth(model.meta.title, 16) : 0,
+  );
   const cx = PARTS_W2 / 2;
   const cy = titleH + ringTop + 24; // Self centre: leave room above for the top protector + title
 
@@ -1139,7 +1147,11 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   let contentRight = 0;
   for (const n of nodes)
     contentRight = Math.max(contentRight, (laid.x.get(n.id) ?? 0) + halfW(n.id));
-  const drawInner = Math.max(DEC_W - 2 * DEC_PAD, contentRight);
+  const drawInner = Math.max(
+    DEC_W - 2 * DEC_PAD,
+    contentRight,
+    model.meta.title ? textWidth(model.meta.title, 16) + 12 : 0,
+  );
   const xShift = DEC_PAD + (drawInner - contentRight) / 2;
   const pos = new Map<string, { x: number; y: number }>();
   for (const n of nodes) {
@@ -2477,7 +2489,11 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     maxX = Math.max(maxX, p.x);
     maxY = Math.max(maxY, p.y);
   }
-  const width = Math.max(560, maxX + 120);
+  const width = Math.max(
+    560,
+    maxX + 120,
+    model.meta.title ? 20 + textWidth(model.meta.title, 16) : 0,
+  );
   // Names + dominance numerals now sit BELOW the circles (ADR-0046), so reserve more vertical room.
   const height = Math.max(360, maxY + 160);
 
@@ -2872,7 +2888,11 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
     maxX = Math.max(maxX, p.x);
     maxY = Math.max(maxY, p.y);
   }
-  const width = Math.max(TT_W, maxX + TT_NODE_W / 2 + 20);
+  const width = Math.max(
+    TT_W,
+    maxX + TT_NODE_W / 2 + 20,
+    model.meta.title ? 20 + textWidth(model.meta.title, 16) : 0,
+  );
   const height = Math.max(320, maxY + 80) + 24;
 
   const bands = [...model.bands].sort((a, b) => a.order - b.order);
