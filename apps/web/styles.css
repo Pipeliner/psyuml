@@ -323,6 +323,17 @@ textarea:hover {
   border-color: var(--oi-blue);
 }
 
+/* Placeholder text (ADR-0057). Without this rule browsers fall back to a fixed grey
+   (Chromium ships #757575), which on the *dark*-mode field (--c-surface #211b13) measures
+   only ~3.7:1 — below WCAG 1.4.3 AA (4.5:1) for the information a placeholder carries. Pin it
+   to --c-text-subtle (the "tertiary hint" role, authored AA on the surface in BOTH themes:
+   ~5.3:1 light, ~5.9:1 dark) so a placeholder is de-emphasised yet still legible. opacity:1
+   stops Firefox's default placeholder dimming from clawing the ratio back below AA. */
+::placeholder {
+  color: var(--c-text-subtle);
+  opacity: 1;
+}
+
 textarea {
   width: 100%;
   line-height: 1.5;
