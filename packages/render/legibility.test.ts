@@ -170,9 +170,9 @@ describe('legibility: a loop-map resource label never straddles its diamond edge
   );
 });
 
-describe('legibility: text is never SEVERELY horizontally squished (ADR-0053)', () => {
+describe('legibility: text is never SEVERELY horizontally squished (ADR-0053, ADR-0058)', () => {
   // `textLength`/`spacingAndGlyphs` compresses a label to fit its box. The policy (ADR-0053, refined
-  // in a showcase visual audit) is two-tier:
+  // by ADR-0058 after a showcase visual audit) is two-tier:
   //   • a MULTI-LINE wrapped label (stacked `<tspan>`s) must not crush its widest line below
   //     SQUISH_FLOOR — `wrapLabel` shrinks the font + re-wraps first, so a crammed line never becomes
   //     an illegible sliver (the ~40% node labels the audit first found);

@@ -316,7 +316,7 @@ const haloAttr = (halo?: number): string =>
 /** The legibility floor (ADR-0045): no rendered text below this px size. */
 const LEG_FLOOR = 8;
 /**
- * Squish policy (ADR-0053, refined): a single line that overflows its box is compressed horizontally
+ * Squish policy (ADR-0053, refined by ADR-0058): a single line that overflows its box is compressed horizontally
  * (`textLength`) — uniform, and a single compressed line stays legible; shrinking it would just make
  * it look smaller than its peers (a header row, a ring of labels). But a MULTI-LINE wrapped label
  * whose widest line would squish below this ratio is shrunk + re-wrapped instead (in `wrapLabel`),
@@ -396,12 +396,13 @@ function wrapLabel(s: string, cx: number, cy: number, o: WrapOpts = {}): string 
   const wrapAt = (sz: number): string[] =>
     o.maxWidth ? wrapLines(s, Math.max(4, Math.floor(o.maxWidth / (sz * CHAR_W))), maxLines) : [s];
   let lines = wrapAt(size);
-  // Legibility (ADR-0053): shrink-to-fit applies ONLY to a genuinely MULTI-LINE wrap. If wrapping
-  // severely squishes the widest line (< SQUISH_FLOOR), shrink the font toward the 8px floor and
-  // re-wrap so the glyphs keep their proportions — a small legible label beats a half-width-crushed
-  // last line. A SINGLE line is left to fitText's uniform horizontal compression below: shrinking one
-  // line of a peer row (column headers, a ring of perimeter labels) would just make it look smaller
-  // than its siblings, which the squish avoids (ADR-0053 follow-up, found in showcase visual audit).
+  // Legibility (ADR-0053, refined by ADR-0058): shrink-to-fit applies ONLY to a genuinely MULTI-LINE
+  // wrap. If wrapping severely squishes the widest line (< SQUISH_FLOOR), shrink the font toward the
+  // 8px floor and re-wrap so the glyphs keep their proportions — a small legible label beats a
+  // half-width-crushed last line. A SINGLE line is left to fitText's uniform horizontal compression
+  // below: shrinking one line of a peer row (column headers, a ring of perimeter labels) would just
+  // make it look smaller than its siblings, which the squish avoids (the ADR-0058 two-tier split,
+  // from the showcase visual audit).
   if (o.maxWidth && lines.length > 1) {
     while (
       size > LEG_FLOOR &&
