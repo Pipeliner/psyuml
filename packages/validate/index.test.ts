@@ -304,6 +304,41 @@ describe('validate', () => {
     });
     expect(validate(concrete).issues.some((i) => i.rule === 'safety.crisis-localize')).toBe(false);
   });
+
+  it('role procedure (ADR-0059): needs a way out, nudges toward a role pair + cross-plane internalization', () => {
+    const rp = read('showcase-role-procedure.psyuml');
+    expect(
+      validate(rp, { layer: 'client' }).issues.filter((i) => i.rule.startsWith('pattern.')),
+    ).toEqual([]);
+    const hopeless = parseModel({
+      ...rp,
+      nodes: rp.nodes.filter((n) => n.kind !== 'self' && n.kind !== 'resource'),
+      edges: rp.edges.filter((e) => e.kind !== 'exit' && e.source !== 'eye' && e.target !== 'eye'),
+    });
+    expect(
+      validate(hopeless, { layer: 'client' }).issues.some(
+        (i) => i.rule === 'safety.path-of-hope' && i.severity === 'error',
+      ),
+    ).toBe(true);
+    const unpaired = parseModel({ ...rp, edges: rp.edges.filter((e) => e.kind !== 'reciprocal') });
+    expect(validate(unpaired).issues.some((i) => i.rule === 'pattern.role-pair')).toBe(true);
+    const flat = parseModel({
+      ...rp,
+      edges: [
+        ...rp.edges,
+        {
+          id: 'z',
+          kind: 'sequential',
+          stereotype: 'internalizes',
+          source: 'burden',
+          target: 'crit',
+        },
+      ],
+    });
+    const r = validate(flat);
+    expect(r.issues.some((i) => i.rule === 'pattern.internalizes-plane')).toBe(true);
+    expect(r.ok).toBe(true); // nudges, never blocks
+  });
 });
 
 // CI corpus lint: every committed example must validate clean in both layers.

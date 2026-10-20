@@ -34,6 +34,15 @@ import {
   renderStateMap,
   renderTimeline,
   renderTwoTriangles,
+  renderLadder,
+  renderThreeCircles,
+  renderVenn,
+  renderBullseye,
+  renderTreeOfLife,
+  renderSchemaGrid,
+  renderDecisionalBalance,
+  renderSecureBase,
+  renderRoleProcedure,
 } from '@psyuml/render';
 
 export interface CliIO {
@@ -62,6 +71,15 @@ const RENDERERS: Record<string, Renderer> = {
   'decision-nav': renderDecisionChart,
   'resource-anchor': renderResourceMap,
   'two-triangles': renderTwoTriangles,
+  ladder: renderLadder,
+  'three-circles': renderThreeCircles,
+  venn: renderVenn,
+  bullseye: renderBullseye,
+  'tree-of-life': renderTreeOfLife,
+  'schema-grid': renderSchemaGrid,
+  'decisional-balance': renderDecisionalBalance,
+  'secure-base': renderSecureBase,
+  'role-procedure': renderRoleProcedure,
 };
 
 const HELP = `psyuml — PsyUML formulation tooling

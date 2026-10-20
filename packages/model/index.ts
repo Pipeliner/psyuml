@@ -165,6 +165,12 @@ export const Edge = z.object({
   kind: EdgeKind,
   source: z.string(),
   target: z.string(),
+  /**
+   * Optional Tier-3 stereotype tag on a connector (ADR-0059), e.g. `internalizes` — the §K
+   * mechanism already lets a profile specialize an EdgeKind, but until now an edge had nowhere to
+   * carry the tag. Adds constrained meaning to `kind`, never replaces it.
+   */
+  stereotype: z.string().optional(),
   label: Label.optional(),
   /** ⚑ precipitant on a transition (spec §B). */
   trigger: Label.optional(),
@@ -203,6 +209,7 @@ export const DiagramType = z.enum([
   'schema-grid',
   'decisional-balance',
   'secure-base',
+  'role-procedure',
 ]);
 export type DiagramType = z.infer<typeof DiagramType>;
 

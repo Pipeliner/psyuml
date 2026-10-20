@@ -5,6 +5,8 @@ import {
   audienceProfile,
   CFT_PROFILE,
   CULTURAL_PACK_EXAMPLE,
+  PATTERN_PROFILE,
+  TA_PROFILE,
   diagramsInFamily,
   familyOf,
   FAMILIES,
@@ -80,6 +82,19 @@ describe('extension mechanism (§K)', () => {
     const r = validateProfile(CFT_PROFILE);
     expect(r.ok).toBe(true);
     expect(r.issues.some((i) => i.severity === 'error')).toBe(false);
+  });
+
+  it('accepts the TA-messages and Pattern profiles (ADR-0059) with no errors', () => {
+    for (const p of [TA_PROFILE, PATTERN_PROFILE]) {
+      const r = validateProfile(p);
+      expect(r.issues.filter((i) => i.severity !== 'info')).toEqual([]);
+      expect(r.ok).toBe(true);
+    }
+    // internalizes specializes an EdgeKind — now carried by Edge.stereotype
+    expect(PATTERN_PROFILE.stereotypes.find((x) => x.id === 'internalizes')?.base).toBe(
+      'sequential',
+    );
+    expect(roleLabelsFromProfile(TA_PROFILE).injunction).toBe('injunction');
   });
 
   it('builds a roleLabels map from a profile (first synonym wins)', () => {
@@ -208,8 +223,8 @@ describe('diagram families + audience profiles (v0.2 §2)', () => {
       'schema-grid',
       'venn',
     ]);
-    // pattern + composite have no dedicated type yet (Pattern is realized via process-loop today)
-    expect(diagramsInFamily('pattern')).toEqual([]);
+    // Pattern gained its own type in ADR-0059; composite still has none
+    expect(diagramsInFamily('pattern')).toEqual(['role-procedure']);
     expect(diagramsInFamily('composite')).toEqual([]);
   });
 

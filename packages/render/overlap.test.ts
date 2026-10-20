@@ -104,6 +104,7 @@ const RENDERERS: Record<string, Renderer> = {
   'schema-grid': render.renderSchemaGrid,
   'decisional-balance': render.renderDecisionalBalance,
   'secure-base': render.renderSecureBase,
+  'role-procedure': render.renderRoleProcedure,
 };
 
 const load = (f: string): PsyumlModel =>

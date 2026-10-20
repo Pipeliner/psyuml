@@ -51,6 +51,7 @@ const RENDERERS: Record<string, Renderer> = {
   'schema-grid': render.renderSchemaGrid,
   'decisional-balance': render.renderDecisionalBalance,
   'secure-base': render.renderSecureBase,
+  'role-procedure': render.renderRoleProcedure,
 };
 const load = (f: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${f}`, import.meta.url), 'utf8'));

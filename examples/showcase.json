@@ -83,6 +83,17 @@
       "evidenceNote": "Maintenance-cycle formulation underpins evidenced CBT; the diagram itself is a shared heuristic for one hypothesis, not a measure, and a person usually has more than one loop."
     },
     {
+      "type": "role-procedure",
+      "family": "Pattern",
+      "school": "Cognitive Analytic Therapy (Ryle) reciprocal roles; Transactional Analysis messages (Goulding, Kahler)",
+      "audience": "L",
+      "oneLiner": "One reciprocal role pair, and every place it gets re-enacted — with the original figure, with yourself, with others.",
+      "whatItShows": "A CAT-style procedural formulation: a reciprocal role pair (e.g. dismissing ⇄ dismissed) at the top, and one lane per plane in which it is re-enacted — the original relationship, self-to-self, and with others. Quoted message cards (injunctions, drivers, attributions) show what was heard; dash-dot arrows show a message being internalized as a self-to-self stance; rows align so a message, its internalized form and its enactment read on one line. A presented-self shell separates the face shown to others from the self experienced, a lane lens (e.g. a neurotype or a sensory difference) records the condition a plane is lived under, and a strip of underlying needs sits beneath the whole procedure, where the way out usually starts.",
+      "whenToUse": "When the same relational pattern shows up with a parent, in how the person treats themself, and with others — and you want one picture that ties the three together, keeps competing explanations visibly apart, and names the exit.",
+      "onPaper": "Write the two poles of the role pair across the top with a double arrow between them. Rule three columns beneath: with the parent · self to self · with others. Put the remembered messages in quotes in the first column, draw a dash-dot arrow from each to the belief it became in the middle column, and carry the line on to how it is lived with others. Underneath everything, write the needs the pattern stands in for — and draw one arrow from the observing self to one of them.",
+      "evidenceNote": "Reciprocal-role formulation is the core of CAT and has practice-based support; the specific layout here is a design proposal (ADR-0059), not a validated instrument. Use it collaboratively, mark hypotheses as interpretive, and keep opposed explanations (e.g. a relational vs a neurodivergence reading) side by side rather than resolving them for the client."
+    },
+    {
       "type": "parts-map",
       "family": "Parts",
       "school": "Internal Family Systems (Schwartz)",

@@ -98,6 +98,19 @@ describe('grammar specifics', () => {
     expect(() => fromDSL('wibble foo bar')).toThrow();
   });
 
+  it('round-trips an edge stereotype (ADR-0059)', () => {
+    const src = [
+      'diagram role-procedure',
+      'node a state label="A"',
+      'node b state label="B"',
+      'edge e a sequential b stereotype=internalizes',
+      '',
+    ].join('\n');
+    const m = fromDSL(src);
+    expect(m.edges[0].stereotype).toBe('internalizes');
+    expect(toDSL(m)).toContain('edge e a sequential b stereotype=internalizes');
+  });
+
   it('round-trips a recorded consent block', () => {
     const m = parseModel({
       version: '0.1.0',
