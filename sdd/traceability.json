@@ -136,6 +136,11 @@
       "id": "M26",
       "phase": 14,
       "title": "Proper layered layout & edge routing — SOTA graph-drawing methods, deterministic"
+    },
+    {
+      "id": "M27",
+      "phase": 15,
+      "title": "Pattern family — role procedures, internalization, visible parallel + reflexive edges"
     }
   ],
   "requirements": [
@@ -1379,6 +1384,36 @@
       "impl": ["apps/web/styles.css"],
       "tests": ["apps/web/contrast.test.ts"],
       "notes": "Implemented (ADR-0057), a specific enforcement under REQ-ACCESSIBILITY's WCAG 2.2 AA posture. A live dark-mode contrast audit (Chromium @ prefers-color-scheme:dark, walking every visible text node and computing fg-over-composited-bg) came back clean for the chrome — the ADR-0026 tokens hit their documented ratios; the only text below AA was the diagram's own dark ink on its deliberately-light sheet (SVG `fill`, correct/legible, not chrome). The one REAL defect: FORM PLACEHOLDERS. styles.css had NO `::placeholder` rule, so placeholders inherited the browser default — Chromium's fixed `#757575`, which even with `<meta name=color-scheme content='light dark'>` set measures only 3.70:1 on the dark field (`--c-surface` #211b13), below the 4.5:1 WCAG 1.4.3 AA requires for a hint (light mode was a borderline ~4.5 on the near-white field). It hit every empty field (Title, the node/link editors' `label (clinician)…` / `plain words` / `origin/school` / `stereotype` hints, case-title) — the 'start here' affordances a new user reads first. FIX: one rule pinning placeholders to `--c-text-subtle` (the tertiary-hint role, authored AA on the field in both themes — light #736a58 ~5.3:1, dark #a3977e ~5.9:1) with `opacity:1` (Firefox otherwise dims placeholders below AA). Measured live after: 5.92:1 dark / 5.30:1 light, up from 3.70, still reading softer than typed input (`--c-text` ~13-15:1). GUARD: `apps/web/contrast.test.ts` parses the theme tokens straight from styles.css (first `:root{}` = light; the `:root{}` inside `@media (prefers-color-scheme:dark)` = dark), reads which token `::placeholder` pins and which token the text field uses as background, and RE-DERIVES the WCAG ratio (it computes, does not trust the comment) — failing if the placeholder or any body/muted/subtle text role drops below AA on the surface in either theme. TDD-proven to bite (darkening dark `--c-text-subtle` -> clean 'on --c-surface = 1.74:1' failure; deleting the rule -> the suite fails to load). Same browser-free-CI split as mobile-ux.test.ts (token math locked in CI, lived rendering spot-checked in a browser). HONEST SCOPE: token-parsing, not a full-page render audit — it protects the named text-on-field roles, not every colour pairing (accent-on-soft-panel combos stay comment-documented); a whole-DOM contrast test would belong in the e2e/browser tier."
+    },
+    {
+      "id": "REQ-ROLE-PROCEDURE",
+      "title": "Pattern-family role procedure: one reciprocal role pair re-enacted across planes, with TA messages, internalization, presented self, lane lenses and underlying needs; parallel + self edges always drawn",
+      "spec": [
+        "§2",
+        "§4",
+        "§K"
+      ],
+      "source": "docs/specification/psyuml-v0.2.0.md",
+      "milestone": "M27",
+      "status": "implemented",
+      "impl": [
+        "packages/model/index.ts",
+        "packages/grammar/index.ts",
+        "packages/render/index.ts",
+        "packages/validate/index.ts",
+        "packages/profiles/index.ts",
+        "packages/cli/index.ts",
+        "apps/web/App.tsx",
+        "examples/showcase-role-procedure.psyuml"
+      ],
+      "tests": [
+        "packages/render/index.test.ts",
+        "packages/validate/index.test.ts",
+        "packages/grammar/index.test.ts",
+        "packages/profiles/index.test.ts",
+        "conformance/conformance.test.ts"
+      ],
+      "notes": "ADR-0059. A 21st DiagramType `role-procedure` (family pattern — its first dedicated type) rendered by `renderRoleProcedure`: band-less `reciprocal-role` poles on top (+ the R/B and trap/dilemma/snag badge), one lane per band (a plane) with a `context` lens under its heading, rows aligned across lanes so message → internalized belief → enactment reads on one line, TA message speech-cards (injunction/driver/attribution), a `presented-self` dotted shell, an underlying-`need` strip, `internalizes` dash-dot edges, routed edges (BespokeRouter) + de-collided labels, a legend of only the conventions present and clinician-only `provenanceNote` footnotes for contested nodes. `Edge.stereotype` added (additive) + DSL `stereotype=` on `edge`. `TA_PROFILE` + `PATTERN_PROFILE` (§K, validate clean). Validate: client-facing + path-of-hope + info nudges `pattern.role-pair` / `pattern.internalizes-plane`. Bug fixes found on the way: anti-parallel / multi edges between one pair were drawn on one segment (labels hidden — `process-loop.svg` regenerated, it was exactly this), and a self-edge passed lint but was dropped by every renderer — both now drawn (`parallelOffsets`, `selfLoop`) in relational-field, process-loop and role-procedure. CLI render map completed (it lacked the 8 ◇ renderers). Honest scope: the row alignment is a greedy heuristic; an in-lane chain split by a cross-lane alignment is detoured by the router rather than kept straight."
     }
   ]
 }

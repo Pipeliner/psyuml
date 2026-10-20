@@ -310,6 +310,13 @@ const SHOWCASE_ITEMS: GalleryItem[] = [
     school: 'capability demo',
     note: 'A generic attachment circle (Bowlby/Ainsworth): a trusted caregiver as a secure base to explore from and a safe haven to return to, with the supporting and comforting needs around the ring. Deliberately NOT the trademarked Circle of Security® programme.',
   },
+  {
+    key: 'showcase-role-procedure',
+    label: '★ Role procedure — full showcase',
+    family: 'pattern',
+    school: 'capability demo',
+    note: 'One CAT reciprocal role pair and the three planes it is re-enacted in (with a parent · self to self · with others): quoted TA message cards, dash-dot internalization arrows aligned row by row, a presented-self shell, a lane lens, a self-to-self loop, a cross-plane trap, contested origins with their footnote, and the underlying-needs strip where the way out starts.',
+  },
 ];
 
 // The gallery = the non-showcase examples DERIVED from the catalog manifest (label/family/school/note

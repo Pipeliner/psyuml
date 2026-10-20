@@ -50,10 +50,18 @@ const CLIENT_FACING = new Set([
   'timeline',
   'intervention-sequence',
   'ritual',
+  'role-procedure',
 ]);
 // Path-of-hope applies to maintaining-cycle diagrams (spec §A.2-r5). Timelines are
 // trajectories whose preferred-future column is the structural hope, so they are excluded.
-const CYCLE_DIAGRAMS = new Set(['state-map', 'parts-map', 'process-loop', 'mode-map']);
+// A role procedure (ADR-0059) is a maintaining pattern too, so it needs a way out like the rest.
+const CYCLE_DIAGRAMS = new Set([
+  'state-map',
+  'parts-map',
+  'process-loop',
+  'mode-map',
+  'role-procedure',
+]);
 
 export function validate(model: PsyumlModel, options: ValidateOptions = {}): ValidationResult {
   const layer = options.layer ?? 'clinician';
@@ -147,6 +155,32 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
         layer === 'client' ? 'error' : 'warn',
         'No way out shown — add an exit, a resource, or the Self. A map of only problems can be harmful.',
       );
+    }
+  }
+
+  // --- Role procedure (ADR-0059): organized around ONE reciprocal role pair ---
+  if (model.diagram === 'role-procedure') {
+    const poles = model.nodes.filter((n) => n.stereotype === 'reciprocal-role' && !n.bandId);
+    const paired = model.edges.some(
+      (e) =>
+        e.kind === 'reciprocal' &&
+        poles.some((p) => p.id === e.source) &&
+        poles.some((p) => p.id === e.target),
+    );
+    if (!paired)
+      add(
+        'pattern.role-pair',
+        'info',
+        'A role procedure is organized around one reciprocal role pair — add two `reciprocal-role` nodes (no band) joined by a `reciprocal` edge.',
+      );
+    const bandOf = new Map(model.nodes.map((n) => [n.id, n.bandId]));
+    for (const e of model.edges) {
+      if (e.stereotype === 'internalizes' && bandOf.get(e.source) === bandOf.get(e.target))
+        add(
+          'pattern.internalizes-plane',
+          'info',
+          `Internalization "${e.id}" stays inside one plane — it usually carries a message from a relationship into the self-to-self plane.`,
+        );
     }
   }
 

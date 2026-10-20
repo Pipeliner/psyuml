@@ -27,6 +27,7 @@ import {
   renderSchemaGrid,
   renderDecisionalBalance,
   renderSecureBase,
+  renderRoleProcedure,
 } from './index';
 
 const read = (name: string): string =>
@@ -904,10 +905,11 @@ describe('REQ-EXAMPLE-LIBRARY showcase — one feature-dense model per diagram t
     ['showcase-schema-grid.psyuml', renderSchemaGrid],
     ['showcase-decisional-balance.psyuml', renderDecisionalBalance],
     ['showcase-secure-base.psyuml', renderSecureBase],
+    ['showcase-role-procedure.psyuml', renderRoleProcedure],
   ];
 
-  it('covers all 20 diagram types', () => {
-    expect(showcases.length).toBe(20);
+  it('covers all 21 diagram types', () => {
+    expect(showcases.length).toBe(21);
   });
 
   it.each(showcases)('%s renders and matches its committed golden', (file, renderFn) => {
@@ -1130,5 +1132,155 @@ describe('renderComposite — the Composite board (v0.2 §2)', () => {
     });
     expect(sharedNodeIds([a, b])).toEqual([]);
     expect(renderComposite([a, b]).altText).toContain('No shared threads');
+  });
+});
+
+describe('parallel edges + self-loops (ADR-0059)', () => {
+  const rel = parseModel({
+    version: '0.1.0',
+    diagram: 'relational-field',
+    meta: { disclaimer: 'x' },
+    nodes: [
+      { id: 'a', kind: 'agent', label: { clinician: { en: 'A' } }, position: { x: 100, y: 150 } },
+      { id: 'b', kind: 'agent', label: { clinician: { en: 'B' } }, position: { x: 360, y: 150 } },
+    ],
+    edges: [
+      {
+        id: 'ab',
+        kind: 'conflict',
+        source: 'a',
+        target: 'b',
+        label: { clinician: { en: 'cold' } },
+      },
+      {
+        id: 'ba',
+        kind: 'conflict',
+        source: 'b',
+        target: 'a',
+        label: { clinician: { en: 'fear' } },
+      },
+      {
+        id: 'bb',
+        kind: 'distant',
+        source: 'b',
+        target: 'b',
+        label: { clinician: { en: 'shame' } },
+      },
+    ],
+  });
+  const labelY = (svg: string, id: string): number =>
+    Number(svg.match(new RegExp(`data-el="edgelabel:${id}" x="[^"]+" y="([^"]+)"`))![1]);
+
+  it('fans an anti-parallel relation pair apart so neither label hides the other', () => {
+    const { svg } = renderRelationalField(rel);
+    // one label above the pair, one below — no longer stacked on one segment
+    expect(Math.abs(labelY(svg, 'ab') - labelY(svg, 'ba'))).toBeGreaterThan(20);
+    expect(svg).toContain('rf-arrow'); // direction is readable on a fanned pair
+  });
+
+  it('draws a self-relation as a loop instead of dropping it', () => {
+    const { svg, altText } = renderRelationalField(rel);
+    expect(svg).toContain('data-el="edge:bb"');
+    expect(svg).toContain('>shame</text>');
+    expect(altText).toContain('B (distant) B');
+  });
+
+  it('keeps a lone edge byte-identical (no offset, no arrow defs)', () => {
+    const lone = parseModel({ ...rel, edges: [rel.edges[0]] });
+    expect(renderRelationalField(lone).svg).not.toContain('rf-arrow');
+  });
+
+  it('draws a self-loop on the process-loop ring', () => {
+    const m = parseModel({
+      ...loopModel,
+      edges: [
+        ...loopModel.edges,
+        {
+          id: 'self',
+          kind: 'sequential',
+          source: loopModel.nodes[0].id,
+          target: loopModel.nodes[0].id,
+          label: { clinician: { en: 'rumination' } },
+        },
+      ],
+    });
+    const { svg } = renderLoopMap(m);
+    expect(svg).toMatch(/data-el="edge:self" d="M [\d.-]+,[\d.-]+ C /);
+    expect(svg).toContain('>rumination</text>');
+  });
+});
+
+describe('renderRoleProcedure (ADR-0059, Pattern family)', () => {
+  const rp = parseModel(read('showcase-role-procedure.psyuml'));
+  const box = (svg: string, id: string): { x: number; y: number; w: number; h: number } => {
+    const m = svg.match(
+      new RegExp(`data-el="node:${id}" x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"`),
+    )!;
+    return { x: +m[1], y: +m[2], w: +m[3], h: +m[4] };
+  };
+
+  it('dispatches through render() and draws the core pair, the lanes and the needs strip', () => {
+    const { svg } = render(rp);
+    expect(svg).toContain('RECIPROCAL ROLE PAIR');
+    for (const b of ['origin', 'self', 'others']) expect(svg).toContain(`data-el="band:${b}"`);
+    expect(svg).toContain('UNDERLYING NEEDS');
+    // the pair sits above every lane
+    expect(box(svg, 'pa').y).toBeLessThan(box(svg, 'm1').y);
+  });
+
+  it('draws TA messages as tagged, quoted cards', () => {
+    const { svg } = renderRoleProcedure(rp);
+    expect(svg).toContain('>INJUNCTION</text>');
+    expect(svg).toContain('>DRIVER</text>');
+    expect(svg).toContain('>ATTRIBUTION</text>');
+    expect(svg).toContain("“Don't need anything”");
+  });
+
+  it('aligns a message with the belief it is internalized as (one row, dash-dot)', () => {
+    const { svg } = renderRoleProcedure(rp);
+    const m1 = box(svg, 'm1');
+    const burden = box(svg, 'burden');
+    expect(m1.y + m1.h / 2).toBeCloseTo(burden.y + burden.h / 2, 0);
+    expect(svg).toMatch(/data-el="edge:i1"[^>]*stroke-dasharray="9 3 2 3"/);
+  });
+
+  it('shows the presented-self shell, the lane lens, the self-loop and the trap badge', () => {
+    const { svg } = renderRoleProcedure(rp);
+    expect(svg).toContain('>PRESENTED SELF</text>');
+    expect(svg).toContain('lens: Hearing loss');
+    expect(svg).toMatch(/data-el="edge:s1" d="M [\d.-]+,[\d.-]+ C /);
+    expect(svg).toContain('>TRAP</text>');
+  });
+
+  it('carries the whole formulation in the alt text', () => {
+    const { altText } = renderRoleProcedure(rp);
+    expect(altText).toContain('Reciprocal role pair: Unavailable, dismissing of need ⇄');
+    expect(altText).toContain('Plane "Self to self"');
+    expect(altText).toContain("Internalized: Don't need anything → My needs are a burden");
+    expect(altText).toContain('Underlying needs: Comfort when distressed');
+    expect(altText).toContain('a trap');
+    expect(altText).toContain('Contested — Avoid asking for help: CAT');
+  });
+
+  it('client layer: plain labels, no contested marker or provenance footnote', () => {
+    const { svg, altText } = render(rp, { audience: 'client' });
+    expect(svg).toContain('Growing up');
+    expect(svg).not.toContain('⚖');
+    expect(altText).not.toContain('Contested');
+  });
+
+  it('renders without bands or a core pair (single lane, no crash)', () => {
+    const bare = parseModel({
+      version: '0.1.0',
+      diagram: 'role-procedure',
+      nodes: [
+        { id: 'x', kind: 'state', label: { clinician: { en: 'X' } } },
+        { id: 'y', kind: 'state', label: { clinician: { en: 'Y' } } },
+      ],
+      edges: [{ id: 'e', kind: 'sequential', source: 'x', target: 'y', loop: 'R' }],
+    });
+    const { svg } = renderRoleProcedure(bare);
+    expect(svg).toContain('Enactments');
+    expect(svg).toContain('data-el="edge:e"');
   });
 });

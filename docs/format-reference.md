@@ -21,7 +21,7 @@ node dist/cli/psyuml.mjs convert examples/state-map.psyuml     # JSON ⇄ text D
 |---|---|---|---|---|
 | `version` | string | yes | — | model version, currently `0.1.0` |
 | `language` | string (BCP-47) | no | `en` | default language key for labels |
-| `diagram` | enum | yes | — | one of the 20 diagram types below |
+| `diagram` | enum | yes | — | one of the 21 diagram types below |
 | `meta` | object | no | `{}` | see Meta |
 | `bands` | Band[] | no | `[]` | ordered zones / swimlanes / phases |
 | `nodes` | Node[] | no | `[]` | the elements |
@@ -60,6 +60,7 @@ node dist/cli/psyuml.mjs convert examples/state-map.psyuml     # JSON ⇄ text D
 | `source` / `target` | string | yes | node ids; both must exist |
 | `label` | Label? | no | edge label |
 | `trigger` | Label? | no | ⚑ precipitant on a transition |
+| `stereotype` | string? | no | Tier-3 tag on a connector (ADR-0059), e.g. `internalizes` |
 | `loop` | `R` \| `B` | no | Reinforcing / Balancing marker |
 | `properties` | Properties | no | as below |
 
@@ -107,6 +108,7 @@ node dist/cli/psyuml.mjs convert examples/state-map.psyuml     # JSON ⇄ text D
 | `schema-grid` | Young's 18 EMS in the 5 schema domains | schema by `stereotype` (domain) | — (edge-free) | clinician (+psychoed) | active schemas highlighted via `properties.intensity` |
 | `decisional-balance` | MI 2×2: change/stay × benefit/cost | item by `stereotype` (quadrant) | — (edge-free) | yes | a reflection, not a persuasion tool (MI caveat) |
 | `secure-base` | attachment secure base & safe haven | by `stereotype` (explore/comfort/base) | — (edge-free) | yes (caregiver) | a generic graphic, **not** the trademarked Circle of Security® |
+| `role-procedure` | CAT reciprocal role pair + the planes it is re-enacted in (Pattern family) | two `reciprocal-role` poles (no band); lane nodes in `bands` (one per plane); TA message cards (`injunction`/`driver`/`attribution`); `presented-self`; lane `context` = lens; `need` strip | `reciprocal` (the pair), `sequential` with `stereotype: internalizes`, self-loops, `exit`; `loop`/`topology` on the closing edge | yes | needs a way out (path-of-hope); rows auto-align message → internalized → enacted |
 
 ## Worked example — the text DSL
 
@@ -133,7 +135,9 @@ edge x1 numb exit anxious label="movement / orienting" client="move / look aroun
 ```
 
 Statement shapes: `node <id> <kind> [stereotype=… tier=… band=… pos=x,y hidden=true <prop>=… ] label="…" [client="…"]`
-and `edge <id> <source> <kind> <target> [loop=R|B <prop>=… trigger="…" ] [label="…" client="…"]`.
+and `edge <id> <source> <kind> <target> [stereotype=… loop=R|B <prop>=… trigger="…" ] [label="…" client="…"]`.
+An edge whose `source` equals its `target` is a self-relation (e.g. self-to-self contempt) and is
+drawn as a loop; several edges between the same two nodes fan out side by side (ADR-0059).
 Round-trip any `.psyuml` with `psyuml convert <file>` to see its DSL.
 
 ## Validation rules you must satisfy (`@psyuml/validate`)

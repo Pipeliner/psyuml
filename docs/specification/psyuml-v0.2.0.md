@@ -26,7 +26,7 @@ v0.1 shipped 12 *types* (the language now has 20). v0.2 groups them into **eight
 | **Field** | Who/what is in the person's world? | relational-field, genogram, drama-triangle, resource-anchor, body-map | typed-edge network / sorter |
 | **Cycle** | What maintaining loop keeps this going? | process-loop | feedback loop |
 | **Parts** | What internal multiplicity is in play? | parts-map, mode-map | parts / process-field |
-| **Pattern** | What recurring procedure repeats over time, and where's the exit? | cat-sdr (process-loop today) → **pattern-map** (§4) | node+transition graph |
+| **Pattern** | What recurring procedure repeats over time, and where's the exit? | cat-sdr (a single loop, as a process-loop) · **role-procedure** (§4, ADR-0059) | node+transition graph |
 | **Journey** | What is the trajectory / story over time? | timeline | linear path |
 | **Change** | What is the treatment direction? | intervention-sequence, two-triangles | path with intervention vectors |
 | **Ritual** | What symbolic/ceremonial process? | ritual | phased sequence (v0.1 §F) |
@@ -57,6 +57,7 @@ CAT's SDR is PsyUML's strongest native ancestor. v0.2 adds **Pattern** semantics
 - **Exit** (already an `EdgeKind`) is the canonical **intervention marker on the graph** — where a procedure is broken. Every Pattern/Cycle map `MUST` retain v0.1's path-of-hope rule (≥1 exit).
 - **Reciprocal role** and **observing-eye** are **optional node tags**, `MUST NOT` be required, and carry a `school:` provenance — they are a CAT *dialect*, not universal primitives (the SDR's own centre shifted historically; ontology-neutrality is the lesson).
 - **Internal nodes are ontology-neutral** (§6): tag as `part`/`mode`/`ego-state`/`voice`/`role`/`state` with an optional `as-if`/`metaphor` qualifier; the model `MUST NOT` bake in one metaphysics of mind.
+- **Role procedure** (`role-procedure`, ADR-0059) — the Pattern family's own view: one reciprocal role pair and the *planes* it is re-enacted in (one band each — e.g. with the original figure, self-to-self, with others). Parental messages `MAY` be tagged as TA `injunction` / `driver` / `attribution` (a dialect, via `TA_PROFILE`), their **internalization** as an edge `stereotype: internalizes`, the face shown to others as `presented-self`, a plane's condition (e.g. a neurotype) as a lane `context` lens, and the unmet needs under the procedure as `need` nodes. Its readings — a relational, a TA, a neurodivergence reading — stay separate `provenance` claims (`contested` + `provenanceNote`), never merged. Path-of-hope applies.
 
 *Honesty: the SDR works **through the therapeutic alliance**, not as an independent active ingredient (Tyrer & Masterson 2019). v0.2 adds it for expressivity, not as an outcome mechanism.*
 

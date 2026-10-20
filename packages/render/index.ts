@@ -166,6 +166,74 @@ function focalEdges(model: PsyumlModel, kinds: string[]): (id: string) => boolea
   return (id) => set.has(id);
 }
 
+/**
+ * Parallel-edge fan-out (ADR-0059): several edges joining the SAME unordered node pair (e.g.
+ * mother→me "cold" and me→mother "fear") used to share one straight segment, so the later label
+ * hid the earlier one. Each such edge gets a signed perpendicular offset (px) measured in the
+ * pair's CANONICAL frame (lexically-smaller id → larger), so anti-parallel edges land on opposite
+ * sides. A lone edge gets no entry, so single-edge layouts stay byte-identical. Self-loops are
+ * excluded (drawn by `selfLoop`).
+ */
+function parallelOffsets(edges: PsyumlModel['edges'], gap = 16): Map<string, number> {
+  const groups = new Map<string, string[]>();
+  for (const e of edges) {
+    if (e.source === e.target) continue;
+    const key =
+      e.source < e.target ? `${e.source}\u0000${e.target}` : `${e.target}\u0000${e.source}`;
+    const g = groups.get(key) ?? [];
+    g.push(e.id);
+    groups.set(key, g);
+  }
+  const out = new Map<string, number>();
+  for (const ids of groups.values()) {
+    if (ids.length < 2) continue;
+    ids.forEach((id, i) => out.set(id, (i - (ids.length - 1) / 2) * gap));
+  }
+  return out;
+}
+
+/** Shift a segment sideways by `off` px, perpendicular to the CANONICAL direction of its pair
+ * (so the sign means the same side for both directions of an anti-parallel pair). */
+function shiftSegment(a: Pt, b: Pt, off: number, flipped: boolean): { a: Pt; b: Pt } {
+  if (!off) return { a, b };
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const sgn = flipped ? -1 : 1;
+  const px = (-(b.y - a.y) / len) * off * sgn;
+  const py = ((b.x - a.x) / len) * off * sgn;
+  return { a: { x: a.x + px, y: a.y + py }, b: { x: b.x + px, y: b.y + py } };
+}
+
+/**
+ * A reflexive (self → self) edge, e.g. "me → me: contempt" (ADR-0059). Previously such an edge
+ * passed lint but was silently dropped by every renderer. Drawn as a teardrop loop leaving and
+ * re-entering the node boundary (radius `r` from the centre) in direction `angle` (radians), with
+ * an arrowhead on re-entry; returns the path + the anchor for its label (beyond the loop's apex).
+ */
+function selfLoop(
+  cx: number,
+  cy: number,
+  r: number,
+  angle: number,
+  size = 34,
+): { d: string; labelAt: Pt } {
+  const spread = 0.45;
+  const p1 = { x: cx + r * Math.cos(angle - spread), y: cy + r * Math.sin(angle - spread) };
+  const p2 = { x: cx + r * Math.cos(angle + spread), y: cy + r * Math.sin(angle + spread) };
+  const far = r + size * 2.4;
+  const c1 = { x: cx + far * Math.cos(angle - 0.5), y: cy + far * Math.sin(angle - 0.5) };
+  const c2 = { x: cx + far * Math.cos(angle + 0.5), y: cy + far * Math.sin(angle + 0.5) };
+  // The cubic's apex (t = ½) along `angle`, plus clearance for a label beyond it.
+  const apex = 0.25 * r * Math.cos(spread) + 0.75 * far * Math.cos(0.5) + 6;
+  return {
+    d: `M ${r1(p1.x)},${r1(p1.y)} C ${r1(c1.x)},${r1(c1.y)} ${r1(c2.x)},${r1(c2.y)} ${r1(p2.x)},${r1(p2.y)}`,
+    // `labelAt` is a text BASELINE: hung below the apex for a downward loop, sat on it otherwise.
+    labelAt: {
+      x: r1(cx + apex * Math.cos(angle)),
+      y: r1(cy + apex * Math.sin(angle) + (Math.sin(angle) > 0.5 ? 9 : 0)),
+    },
+  };
+}
+
 type MBand = PsyumlModel['bands'][number];
 type MNode = PsyumlModel['nodes'][number];
 
@@ -250,6 +318,8 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
       return renderDecisionalBalance(model, o);
     case 'secure-base':
       return renderSecureBase(model, o);
+    case 'role-procedure':
+      return renderRoleProcedure(model, o);
     case 'state-map':
     default:
       return renderStateMap(model, o);
@@ -1632,26 +1702,70 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
       badgeObstacles.push({ x: badgeCx - ww / 2, y: ty - 16, w: ww, h: 48 });
     }
   }
+  // Parallel chords between one pair fan out; a self-loop (ADR-0059) bulges away from the ring
+  // centroid, its label just beyond the loop's apex.
+  const chordOff = parallelOffsets(model.edges, 18);
+  let ringCy0 = 0;
+  for (const q of pos.values()) ringCy0 += q.y;
+  ringCy0 /= pos.size || 1;
+  const chord = (e: PsyumlModel['edges'][number]): { s: Pt; t: Pt; mid: Pt } | null => {
+    const s0 = pos.get(e.source);
+    const t0 = pos.get(e.target);
+    if (!s0 || !t0) return null;
+    const off = chordOff.get(e.id) ?? 0;
+    const { a, b } = shiftSegment(s0, t0, off, e.source > e.target);
+    // A fanned chord's label sits on its OWN outer side, so the pair's labels never stack.
+    const mid = shiftSegment(a, b, off ? Math.sign(off) * 12 : 0, e.source > e.target).a;
+    return { s: a, t: b, mid: { x: mid.x + (b.x - a.x) / 2, y: mid.y + (b.y - a.y) / 2 } };
+  };
+  const reflexive = (e: PsyumlModel['edges'][number]): { d: string; labelAt: Pt } | null => {
+    const p = pos.get(e.source);
+    if (!p || e.source !== e.target) return null;
+    return selfLoop(p.x, p.y, LNODE_H / 2, p.y <= ringCy0 ? -Math.PI / 2 : Math.PI / 2, 22);
+  };
   const loopLabels: TaggedBox[] = [];
   for (const e of model.edges) {
-    const s = pos.get(e.source);
-    const t = pos.get(e.target);
-    if (!s || !t) continue;
+    const c = chord(e);
+    if (!c) continue;
     const src = e.trigger ?? e.label;
     let txt = src ? getText(src, layer, lang) : '';
     if (e.kind === 'exit') txt = txt ? `${txt} (EXIT)` : 'EXIT';
     if (!txt) continue;
     const w = textWidth(txt, 10);
-    loopLabels.push({ id: e.id, x: (s.x + t.x) / 2 - w / 2, y: (s.y + t.y) / 2 - 3 - 8, w, h: 10 });
+    const sl = reflexive(e);
+    if (sl) {
+      loopLabels.push({ id: e.id, x: sl.labelAt.x - w / 2, y: sl.labelAt.y - 8, w, h: 10 });
+      continue;
+    }
+    loopLabels.push({ id: e.id, x: c.mid.x - w / 2, y: c.mid.y - 3 - 8, w, h: 10 });
   }
   const loopLblOff = deCollide(loopLabels, [...loopNodeBoxes, ...badgeObstacles], 1);
 
   // Edges (chords, endpoints pulled to the node boundary)
   const loopEdgeStrings: string[] = [];
+  let selfLoopMinY = Infinity;
+  let selfLoopMaxY = -Infinity;
   for (const e of model.edges) {
-    const s = pos.get(e.source);
-    const t = pos.get(e.target);
-    if (!s || !t) continue;
+    const c = chord(e);
+    if (!c) continue;
+    const { s, t } = c;
+    const sl = reflexive(e);
+    if (sl) {
+      const ePath = `<path data-el="edge:${esc(e.id)}" d="${sl.d}" fill="none" stroke="#000" stroke-width="2"${e.kind === 'exit' ? ' stroke-dasharray="6 5"' : ''} marker-end="url(#arrow)" />`;
+      parts.push(ePath);
+      const lblSrc = e.trigger ?? e.label;
+      let txt = lblSrc ? getText(lblSrc, layer, lang) : '';
+      if (e.kind === 'exit') txt = txt ? `${txt} (EXIT)` : 'EXIT';
+      const off = loopLblOff.get(e.id) ?? { dx: 0, dy: 0 };
+      const ly = r1(sl.labelAt.y + off.dy);
+      if (txt)
+        parts.push(
+          `<text data-el="edgelabel:${esc(e.id)}" x="${r1(sl.labelAt.x + off.dx)}" y="${ly}" font-family="sans-serif" font-size="10" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(txt)}</text>`,
+        );
+      selfLoopMinY = Math.min(selfLoopMinY, ly - 12);
+      selfLoopMaxY = Math.max(selfLoopMaxY, ly + 4);
+      continue;
+    }
     const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
     const ux = (t.x - s.x) / len;
     const uy = (t.y - s.y) / len;
@@ -1673,7 +1787,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     if (txt) {
       const off = loopLblOff.get(e.id) ?? { dx: 0, dy: 0 };
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2 + off.dx)}" y="${r1((y1 + y2) / 2 - 3 + off.dy)}" font-family="sans-serif" font-size="10" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(txt)}</text>`,
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((chordOff.has(e.id) ? c.mid.x : (x1 + x2) / 2) + off.dx)}" y="${r1((chordOff.has(e.id) ? c.mid.y : (y1 + y2) / 2) - 3 + off.dy)}" font-family="sans-serif" font-size="10" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(txt)}</text>`,
       );
     }
   }
@@ -1885,6 +1999,8 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   // Resource labels sit outside their diamond (above) — grow the frame so they never clip.
   if (Number.isFinite(resLabelMinY)) minY = Math.min(minY, resLabelMinY);
   if (Number.isFinite(resLabelMaxY)) maxY = Math.max(maxY, resLabelMaxY);
+  if (Number.isFinite(selfLoopMinY)) minY = Math.min(minY, selfLoopMinY);
+  if (Number.isFinite(selfLoopMaxY)) maxY = Math.max(maxY, selfLoopMaxY);
   if (!Number.isFinite(minX)) {
     minX = 0;
     minY = 0;
@@ -1920,6 +2036,561 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     parts.join('') +
     '</svg>';
 
+  return { svg, altText };
+}
+
+// ---------------------------------------------------------------------------
+// Role procedure (Pattern family, ADR-0059)
+// ---------------------------------------------------------------------------
+
+const RP_LW = 200; // lane node width
+const RP_GAP = 120; // inter-lane gutter — edge labels + self-loops live here
+const RP_PAD = 20;
+const RP_ROW_GAP = 30;
+const RP_CORE_GAP = 200; // room between the two role poles for the reciprocal label
+const RP_NEED_W = 170;
+
+/** Quoted-message stereotypes (TA profile, ADR-0059) → the small-caps tag drawn in the card. */
+const RP_MESSAGE_TAGS: Record<string, string> = {
+  injunction: 'INJUNCTION',
+  driver: 'DRIVER',
+  attribution: 'ATTRIBUTION',
+  message: 'MESSAGE',
+};
+
+/**
+ * Render a Role Procedure (ADR-0059; Pattern family, v0.2 §4): ONE reciprocal role pair (the CAT
+ * "core", top) and the planes it is re-enacted in — one lane per band, e.g. with the original
+ * figure, self-to-self, with others. Lanes hold quoted messages (injunction / driver / attribution
+ * cards), states, presented-self shells and exits; `internalizes`-stereotyped edges carry a message
+ * into the self-to-self plane and are drawn dash-dot. Rows are aligned so an internalization reads
+ * left→right on one line. Lane `context` nodes are the lane's lens (e.g. a neurotype), shown under
+ * its heading — a condition, not an item. `need`-stereotyped nodes sit in a bottom strip: the unmet
+ * needs the procedure stands in for, where the way out usually starts.
+ */
+export function renderRoleProcedure(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
+  model = withoutHidden(model);
+  const layer = options.layer ?? 'clinician';
+  const lang = options.lang ?? model.language ?? 'en';
+  const showInterpretive = options.showInterpretive ?? true;
+  const nodes = model.nodes;
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+
+  const lanes: MBand[] = model.bands.length
+    ? [...model.bands].sort((a, b) => a.order - b.order)
+    : [{ id: '', label: { clinician: { [lang]: 'Enactments' } }, order: 0, pattern: 'none' }];
+  const laneIdx = new Map(lanes.map((b, i) => [b.id, i]));
+  const isCore = (n: MNode): boolean => n.stereotype === 'reciprocal-role' && !n.bandId;
+  const isNeed = (n: MNode): boolean => !isCore(n) && n.stereotype === 'need';
+  const isLens = (n: MNode): boolean => !isCore(n) && !isNeed(n) && n.kind === 'context';
+  const core = nodes.filter(isCore);
+  const needs = nodes.filter(isNeed);
+  const lenses = nodes.filter(isLens);
+  const laneNodes = nodes.filter((n) => !isCore(n) && !isNeed(n) && !isLens(n));
+  const laneOf = (n: MNode): number => laneIdx.get(n.bandId ?? '') ?? 0;
+
+  const tagOf = (n: MNode): string | null => {
+    if (n.stereotype && n.stereotype in RP_MESSAGE_TAGS)
+      return (options.roleLabels?.[n.stereotype] ?? RP_MESSAGE_TAGS[n.stereotype]).toUpperCase();
+    if (n.stereotype === 'presented-self')
+      return (options.roleLabels?.['presented-self'] ?? 'presented self').toUpperCase();
+    return null;
+  };
+  const display = (n: MNode): string => {
+    let t = getText(n.label, layer, lang);
+    if (n.stereotype && n.stereotype in RP_MESSAGE_TAGS) t = `“${t}”`;
+    if (showInterpretive && n.properties.epistemicStatus === 'contested') t = `⚖ ${t}`;
+    if (showInterpretive && n.properties.asIf) t += ' (as-if)';
+    return t;
+  };
+  const name = (id: string): string => {
+    const n = byId.get(id);
+    return n ? getText(n.label, layer, lang) : id;
+  };
+  const LBL = 11;
+  const maxChars = (w: number): number => Math.max(4, Math.floor((w - 16) / (LBL * CHAR_W)));
+  const heightOf = (n: MNode, w: number): number =>
+    Math.max(40, wrapLines(display(n), maxChars(w), 3).length * 14 + 14 + (tagOf(n) ? 12 : 0));
+
+  // Row assignment: a lane node lines up with the earliest node FEEDING it from an earlier lane, so
+  // "message → internalized belief → enacted with others" reads on one line; a node fed only from
+  // inside its lane goes right after its predecessor, so a chain stays contiguous. Greedy, in a
+  // fixed order (deterministic); rows only grow, so nothing is placed on top of another.
+  const row = new Map<string, number>();
+  for (let li = 0; li < lanes.length; li += 1) {
+    const inLane = laneNodes.filter((n) => laneOf(n) === li);
+    const left = new Set(inLane.map((n) => n.id));
+    // key = the row a node wants; a feed from an earlier lane beats an in-lane one on a tie
+    // (encoded as −0.5), so a cross-lane line stays straight and the in-lane chain yields a row.
+    const key = (n: MNode): number => {
+      let best = Infinity;
+      for (const e of model.edges) {
+        if (e.target !== n.id || e.source === n.id) continue;
+        const src = byId.get(e.source);
+        const r = row.get(e.source);
+        if (!src || r === undefined || src.stereotype === 'reciprocal-role') continue;
+        const sl = laneOf(src);
+        if (sl < li) best = Math.min(best, r - 0.5);
+        else if (sl === li) best = Math.min(best, r + 1);
+      }
+      return best;
+    };
+    let next = 0;
+    while (left.size) {
+      let pick: MNode | undefined;
+      let pk = Infinity;
+      for (const n of inLane) {
+        if (!left.has(n.id)) continue;
+        const k = key(n);
+        if (pick === undefined || k < pk) {
+          pick = n;
+          pk = k;
+        }
+      }
+      pk = Math.ceil(pk);
+      const r = Number.isFinite(pk) ? Math.max(next, pk) : next;
+      row.set(pick!.id, r);
+      left.delete(pick!.id);
+      next = r + 1;
+    }
+  }
+  const nRows = Math.max(0, ...[...row.values()].map((r) => r + 1));
+  const rowH: number[] = Array.from({ length: nRows }, () => 40);
+  for (const n of laneNodes) {
+    const r = row.get(n.id)!;
+    rowH[r] = Math.max(rowH[r], heightOf(n, RP_LW));
+  }
+
+  // Horizontal extent: the lanes, or the core pair + its badge if that is wider.
+  const lanesW = lanes.length * RP_LW + (lanes.length - 1) * RP_GAP;
+  const topoMark = model.edges.find((e) => e.loopTopology)?.loopTopology;
+  const loopEdge = model.edges.find((e) => e.loop);
+  const hasBadge = Boolean(topoMark || loopEdge);
+  const coreW = core.length
+    ? core.length * RP_LW + (core.length - 1) * RP_CORE_GAP + (hasBadge ? 2 * 110 : 0)
+    : 0;
+  const contentW = Math.max(lanesW, coreW, 2 * RP_NEED_W + 16);
+  const x0 = RP_PAD;
+  const laneX = (i: number): number => x0 + (contentW - lanesW) / 2 + i * (RP_LW + RP_GAP);
+
+  const titleLines = model.meta.title
+    ? wrapLines(model.meta.title, Math.max(8, Math.floor(contentW / (16 * CHAR_W))), 2)
+    : [];
+  let y = RP_PAD + titleLines.length * 20;
+
+  const parts: string[] = [];
+  const boxes = new Map<string, { x: number; y: number; w: number; h: number }>();
+  const fixed: { x: number; y: number; w: number; h: number }[] = []; // headings, badge
+  let maxRight = x0 + contentW;
+
+  // Lenses with no lane: whole-diagram context, one line under the title.
+  const globalLens = lenses.filter((n) => !n.bandId || !laneIdx.has(n.bandId));
+  if (globalLens.length) {
+    y += 16;
+    const t = `Context: ${globalLens.map((n) => getText(n.label, layer, lang)).join(' · ')}`;
+    parts.push(fitText(t, x0, y, { size: 11, fill: '#333', maxWidth: contentW }));
+    y += 6;
+  }
+
+  // Core: the reciprocal role pair, centred, with the topology/loop badge to its right.
+  const contentCx = x0 + contentW / 2;
+  if (core.length) {
+    y += 24;
+    parts.push(
+      fitText('RECIPROCAL ROLE PAIR', contentCx, y, {
+        size: 10,
+        weight: 700,
+        anchor: 'middle',
+        fill: '#333',
+      }),
+    );
+    fixed.push({ x: contentCx - 70, y: y - 10, w: 140, h: 12 });
+    y += 10;
+    const ch = Math.max(...core.map((n) => heightOf(n, RP_LW)));
+    const span = core.length * RP_LW + (core.length - 1) * RP_CORE_GAP;
+    core.forEach((n, i) => {
+      const x = contentCx - span / 2 + i * (RP_LW + RP_CORE_GAP);
+      boxes.set(n.id, { x, y, w: RP_LW, h: ch });
+    });
+    if (hasBadge) {
+      const bx = contentCx + span / 2 + 70;
+      const by = y + ch / 2;
+      if (loopEdge)
+        parts.push(
+          `<circle cx="${r1(bx)}" cy="${r1(by - (topoMark ? 22 : 0))}" r="16" fill="#fff" stroke="#000" stroke-width="2" />`,
+          `<text x="${r1(bx)}" y="${r1(by - (topoMark ? 22 : 0) + 5)}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loopEdge.loop ?? '')}</text>`,
+        );
+      if (topoMark) {
+        const ty = by + (loopEdge ? 14 : 0);
+        parts.push(
+          loopTopologyGlyph(topoMark, bx, ty),
+          `<text x="${r1(bx)}" y="${r1(ty + 26)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">${esc(topoMark.toUpperCase())}</text>`,
+        );
+      }
+      fixed.push({ x: bx - 40, y: by - 40, w: 80, h: 84 });
+    }
+    y += ch + 30;
+  } else if (hasBadge) {
+    // No core pair: the badge sits top-right of the lanes.
+    y += 50;
+    const bx = x0 + contentW - 30;
+    const by = y - 20;
+    if (topoMark)
+      parts.push(
+        loopTopologyGlyph(topoMark, bx - (loopEdge ? 24 : 0), by),
+        `<text x="${r1(bx - (loopEdge ? 24 : 0))}" y="${r1(by + 26)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700">${esc(topoMark.toUpperCase())}</text>`,
+      );
+    if (loopEdge)
+      parts.push(
+        `<circle cx="${r1(bx + 12)}" cy="${r1(by)}" r="14" fill="#fff" stroke="#000" stroke-width="2" />`,
+        `<text x="${r1(bx + 12)}" y="${r1(by + 5)}" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700">${esc(loopEdge.loop ?? '')}</text>`,
+      );
+    fixed.push({ x: bx - 60, y: by - 18, w: 90, h: 50 });
+  }
+
+  // Lanes: heading (+ lens line), then the aligned rows.
+  const laneTop = y;
+  const lensText = (n: MNode): string => `lens: ${getText(n.label, layer, lang)}`;
+  const lensLines = (n: MNode): number =>
+    wrapLines(lensText(n), Math.floor(RP_LW / (10 * CHAR_W)), 2).length;
+  const laneLenses = (b: MBand): MNode[] =>
+    b.id ? lenses.filter((n) => n.bandId === b.id).slice(0, 2) : [];
+  const headH: number[] = lanes.map(
+    (b) => 24 + laneLenses(b).reduce((acc, n) => acc + lensLines(n) * 13 + 3, 0),
+  );
+  const head = Math.max(...headH);
+  const rowY: number[] = [];
+  let ry = laneTop + head + 10;
+  for (let r = 0; r < nRows; r += 1) {
+    rowY.push(ry);
+    ry += rowH[r] + RP_ROW_GAP;
+  }
+  const laneBottom = Math.max(ry - RP_ROW_GAP + 14, laneTop + head + 40);
+  lanes.forEach((b, i) => {
+    const lx = laneX(i);
+    parts.push(
+      `<rect data-el="band:${esc(b.id || 'lane')}" x="${r1(lx - 14)}" y="${r1(laneTop)}" width="${RP_LW + 28}" height="${r1(laneBottom - laneTop)}" rx="8" ry="8" fill="none" stroke="#000" stroke-width="1" />`,
+      wrapLabel(getText(b.label, layer, lang), lx + RP_LW / 2, laneTop + 17, {
+        size: 12,
+        weight: 700,
+        anchor: 'middle',
+        maxWidth: RP_LW,
+        maxLines: 1,
+      }),
+    );
+    fixed.push({ x: lx, y: laneTop + 4, w: RP_LW, h: 16 });
+    let ly = laneTop + 34;
+    for (const n of laneLenses(b)) {
+      const k = lensLines(n);
+      parts.push(
+        wrapLabel(lensText(n), lx + RP_LW / 2, ly + ((k - 1) * 13) / 2, {
+          size: 10,
+          anchor: 'middle',
+          fill: '#333',
+          maxWidth: RP_LW,
+          maxLines: 2,
+          lineHeight: 13,
+        }),
+      );
+      fixed.push({ x: lx, y: ly - 10, w: RP_LW, h: k * 13 });
+      ly += k * 13 + 3;
+    }
+  });
+  for (const n of laneNodes) {
+    const r = row.get(n.id)!;
+    const h = heightOf(n, RP_LW);
+    boxes.set(n.id, { x: laneX(laneOf(n)), y: rowY[r] + (rowH[r] - h) / 2, w: RP_LW, h });
+  }
+
+  // Needs strip: the unmet needs under the whole procedure.
+  let bottom = laneBottom;
+  if (needs.length) {
+    const top = laneBottom + 22;
+    parts.push(fitText('UNDERLYING NEEDS', x0, top + 10, { size: 10, weight: 700, fill: '#333' }));
+    fixed.push({ x: x0, y: top, w: 120, h: 12 });
+    const perRow = Math.max(1, Math.floor((contentW + 16) / (RP_NEED_W + 16)));
+    const nh = Math.max(...needs.map((n) => heightOf(n, RP_NEED_W)));
+    needs.forEach((n, i) => {
+      const rr = Math.floor(i / perRow);
+      const cc = i % perRow;
+      const inRow = Math.min(perRow, needs.length - rr * perRow);
+      const rowW = inRow * RP_NEED_W + (inRow - 1) * 16;
+      const x = contentCx - rowW / 2 + cc * (RP_NEED_W + 16);
+      boxes.set(n.id, { x, y: top + 20 + rr * (nh + 14), w: RP_NEED_W, h: nh });
+    });
+    bottom = top + 20 + Math.ceil(needs.length / perRow) * (nh + 14);
+  }
+
+  // Edges (under the nodes). Straight + clipped to the boxes; re-routed around any non-incident
+  // node the straight segment would cross (ADR-0024); a self-loop bulges into the right gutter.
+  const obstacles: RouterObstacle[] = [...boxes].map(([id, box]) => ({ id, box }));
+  const edgeParts: string[] = [];
+  const labelBoxes: TaggedBox[] = [];
+  const labelText = new Map<string, { lines: string[]; x: number; y: number; w: number }>();
+  const offsets = parallelOffsets(model.edges, 14);
+  let loopRight = 0;
+  for (const e of model.edges) {
+    const sb = boxes.get(e.source);
+    const tb = boxes.get(e.target);
+    if (!sb || !tb) continue;
+    const dash =
+      e.kind === 'exit'
+        ? ' stroke-dasharray="6 5"'
+        : e.stereotype === 'internalizes'
+          ? ' stroke-dasharray="9 3 2 3"'
+          : e.kind === 'transference'
+            ? ' stroke-dasharray="2 4"'
+            : '';
+    const start = e.kind === 'reciprocal' ? ' marker-start="url(#rp-arrow)"' : '';
+    const raw = e.label ?? e.trigger;
+    let txt = raw ? getText(raw, layer, lang) : '';
+    if (e.kind === 'exit') txt = txt ? `${txt} (EXIT)` : 'EXIT';
+    if (e.loop) txt = `${txt} (${e.loop})`.trim();
+    let mid: Pt;
+    if (e.source === e.target) {
+      const rx = sb.x + sb.w;
+      const cy = sb.y + sb.h / 2;
+      edgeParts.push(
+        `<path data-el="edge:${esc(e.id)}" d="M ${r1(rx)},${r1(cy - 9)} C ${r1(rx + 58)},${r1(cy - 40)} ${r1(rx + 58)},${r1(cy + 40)} ${r1(rx + 2)},${r1(cy + 9)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#rp-arrow)" />`,
+      );
+      loopRight = Math.max(loopRight, rx + 50);
+      mid = { x: rx + 46, y: cy - 30 };
+    } else {
+      const sc = { x: sb.x + sb.w / 2, y: sb.y + sb.h / 2 };
+      const tc = { x: tb.x + tb.w / 2, y: tb.y + tb.h / 2 };
+      const { a, b } = shiftSegment(sc, tc, offsets.get(e.id) ?? 0, e.source > e.target);
+      const straight = [clipToBox(b, a, sb), clipToBox(a, b, tb)];
+      const crosses = obstacles.some(
+        (o) =>
+          o.id !== e.source &&
+          o.id !== e.target &&
+          segIntersectsBox(straight[0], straight[1], o.box, -1),
+      );
+      const pts = crosses
+        ? edgeRouter.route(obstacles, [e], { obstacleMargin: 7 })[0].points
+        : straight;
+      edgeParts.push(
+        `<path data-el="edge:${esc(e.id)}" d="${routeToPath(pts)}" fill="none" stroke="#000" stroke-width="2"${dash}${start} marker-end="url(#rp-arrow)" />`,
+      );
+      mid = polyMid(pts);
+    }
+    if (!txt) continue;
+    const lines = wrapLines(txt, Math.max(6, Math.floor((RP_GAP - 12) / (10 * CHAR_W))), 2);
+    const w = Math.min(RP_GAP - 8, Math.max(...lines.map((l) => textWidth(l, 10))));
+    const h = lines.length * 13;
+    // A label on a near-vertical run (an in-lane step) sits BESIDE the line — on its fan side for a
+    // parallel pair — since the 30px row gap has no room above it; otherwise it sits above.
+    const sb2 = boxes.get(e.source)!;
+    const tb2 = boxes.get(e.target)!;
+    const vertical =
+      e.source !== e.target &&
+      Math.abs(tb2.y + tb2.h / 2 - (sb2.y + sb2.h / 2)) >
+        Math.abs(tb2.x + tb2.w / 2 - (sb2.x + sb2.w / 2));
+    const fan = Math.sign(offsets.get(e.id) ?? 0) * (e.source > e.target ? -1 : 1);
+    const goingDown = tb2.y > sb2.y;
+    const side = fan ? (goingDown ? -fan : fan) : 1;
+    const cx = vertical ? mid.x + side * (w / 2 + 8) : mid.x;
+    const cy = vertical ? mid.y + h / 2 : mid.y - 3;
+    labelText.set(e.id, { lines, x: cx, y: cy - h / 2, w });
+    labelBoxes.push({ id: e.id, x: cx - w / 2, y: cy - h, w, h });
+  }
+  const off = deCollide(labelBoxes, [...boxes.values(), ...fixed], 2);
+  // Edges, then the bridge/casing hops over any crossing (ADR-0025), then labels + nodes on top.
+  parts.push(
+    ...edgeParts,
+    ...addCrossingBridges(edgeParts, edgeIncidence(model), focalEdges(model, ['exit'])),
+  );
+  for (const [id, l] of labelText) {
+    const o = off.get(id) ?? { dx: 0, dy: 0 };
+    const lb = labelBoxes.find((b) => b.id === id)!;
+    lb.x += o.dx;
+    lb.y += o.dy;
+    parts.push(
+      wrapLabel(l.lines.join(' '), l.x + o.dx, l.y + o.dy + 4, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: RP_GAP - 8,
+        maxLines: 2,
+        lineHeight: 13,
+        halo: 3,
+        dataEl: `edgelabel:${id}`,
+      }),
+    );
+  }
+
+  // Nodes.
+  for (const [id, b] of boxes) {
+    const n = byId.get(id)!;
+    const dash = isInterpretive(n.properties.epistemicStatus) ? ' stroke-dasharray="5 4"' : '';
+    const tag = tagOf(n);
+    const msg = Boolean(n.stereotype && n.stereotype in RP_MESSAGE_TAGS);
+    const pill = n.kind === 'resource' || n.kind === 'self';
+    const rx = pill ? Math.min(20, b.h / 2) : msg ? 3 : 8;
+    const sw = isNeed(n) ? 1.5 : 2;
+    if (n.stereotype === 'presented-self')
+      parts.push(
+        `<rect x="${r1(b.x - 5)}" y="${r1(b.y - 5)}" width="${b.w + 10}" height="${b.h + 10}" rx="12" ry="12" fill="none" stroke="#000" stroke-width="1.5" stroke-dasharray="3 3" />`,
+      );
+    parts.push(
+      `<rect data-el="node:${esc(id)}" x="${r1(b.x)}" y="${r1(b.y)}" width="${b.w}" height="${r1(b.h)}" rx="${rx}" ry="${rx}" fill="#fff" stroke="#000" stroke-width="${sw}"${dash} />`,
+    );
+    if (msg)
+      // speech-card tail: the message is someone's words
+      parts.push(
+        `<path d="M ${r1(b.x + 16)},${r1(b.y + b.h)} L ${r1(b.x + 12)},${r1(b.y + b.h + 8)} L ${r1(b.x + 26)},${r1(b.y + b.h)}" fill="#fff" stroke="#000" stroke-width="${sw}"${dash} />`,
+      );
+    if (n.stereotype === 'observing-eye')
+      parts.push(
+        `<ellipse cx="${r1(b.x + 18)}" cy="${r1(b.y + b.h / 2)}" rx="9" ry="5.5" fill="none" stroke="#000" stroke-width="1.5" />`,
+        `<circle cx="${r1(b.x + 18)}" cy="${r1(b.y + b.h / 2)}" r="2.2" fill="#000" />`,
+      );
+    if (tag)
+      parts.push(
+        fitText(tag, b.x + b.w / 2, b.y + 12, {
+          size: 8,
+          weight: 700,
+          anchor: 'middle',
+          fill: '#333',
+          maxWidth: b.w - 16,
+        }),
+      );
+    parts.push(
+      wrapLabel(display(n), b.x + b.w / 2, b.y + b.h / 2 + 4 + (tag ? 6 : 0), {
+        size: LBL,
+        anchor: 'middle',
+        maxWidth: b.w - 16,
+        maxLines: 3,
+        lineHeight: 14,
+        dataEl: `nodelabel:${id}`,
+      }),
+    );
+  }
+
+  // Legend (only the conventions present) + clinician footnotes for contested origins.
+  const has = (p: (n: MNode) => boolean): boolean => nodes.some(p);
+  const legend: string[] = [];
+  if (has((n) => Boolean(n.stereotype && n.stereotype in RP_MESSAGE_TAGS)))
+    legend.push('“card” = a message heard (injunction / driver / attribution)');
+  if (model.edges.some((e) => e.stereotype === 'internalizes'))
+    legend.push('dash-dot arrow = internalized');
+  if (has((n) => n.stereotype === 'presented-self'))
+    legend.push('dotted shell = the self presented to others');
+  if (has((n) => isInterpretive(n.properties.epistemicStatus)))
+    legend.push('dashed border = interpretive (a hypothesis)');
+  if (showInterpretive && has((n) => n.properties.epistemicStatus === 'contested'))
+    legend.push('⚖ = contested origin');
+  if (model.edges.some((e) => e.kind === 'exit')) legend.push('dashed arrow = EXIT, a way out');
+  const footW = Math.max(contentW, loopRight - x0);
+  const legendLines = legend.length
+    ? wrapLines(legend.join(' · '), Math.floor(footW / (10 * CHAR_W)), 3)
+    : [];
+  const notes = showInterpretive
+    ? nodes
+        .filter((n) => n.properties.epistemicStatus === 'contested' && n.properties.provenanceNote)
+        .map((n) => `⚖ ${name(n.id)}: ${n.properties.provenanceNote}`)
+    : [];
+  const noteLines = notes.flatMap((t) => wrapLines(t, Math.floor(footW / (10 * CHAR_W)), 3));
+  // Frame: everything placed so far, incl. self-loops + de-collided labels.
+  let minX = x0 - 16;
+  let maxX = Math.max(maxRight + 4, loopRight + 8);
+  let maxY = bottom;
+  for (const b of [...boxes.values(), ...labelBoxes]) {
+    minX = Math.min(minX, b.x - 8);
+    maxX = Math.max(maxX, b.x + b.w + 8);
+    maxY = Math.max(maxY, b.y + b.h + 12);
+  }
+  maxRight = maxX;
+  let fy = maxY + 14;
+  for (const ln of [...legendLines, ...noteLines]) {
+    parts.push(fitText(ln, x0, fy, { size: 10, fill: '#333', maxWidth: maxRight - x0 - 8 }));
+    fy += 14;
+  }
+  if (model.meta.disclaimer) {
+    parts.push(chromeLine(model.meta.disclaimer, x0, fy, maxRight, { size: 9, fill: '#333' }));
+    fy += 14;
+  }
+  const fx = r1(minX);
+  const fw = r1(maxRight + RP_PAD - 8 - fx);
+  const fh = r1(fy + 4);
+  const titleText = titleLines
+    .map((ln, i) =>
+      fitText(ln, x0, RP_PAD + 6 + i * 19, { size: 16, weight: 700, maxWidth: fw - 16 }),
+    )
+    .join('');
+
+  // Alt text: the whole formulation in words — structure first, then the clinician surface.
+  const laneSentences = lanes.map((b) => {
+    const items = laneNodes
+      .filter((n) => laneOf(n) === lanes.indexOf(b))
+      .sort((p, q) => row.get(p.id)! - row.get(q.id)!)
+      .map((n) => {
+        const st = n.stereotype && n.stereotype in RP_MESSAGE_TAGS ? `${n.stereotype} ` : '';
+        return `${st}${n.stereotype === 'presented-self' ? 'presented self: ' : ''}${display(n)}`;
+      });
+    const lens = lenses
+      .filter((n) => n.bandId === b.id && b.id)
+      .map((n) => getText(n.label, layer, lang));
+    return `Plane "${getText(b.label, layer, lang)}"${lens.length ? ` (lens: ${lens.join(', ')})` : ''}: ${items.join('; ') || 'empty'}.`;
+  });
+  const recip = model.edges.find(
+    (e) => e.kind === 'reciprocal' && core.some((c) => c.id === e.source),
+  );
+  const coreSentence = core.length
+    ? `Reciprocal role pair: ${recip ? `${name(recip.source)} ⇄ ${name(recip.target)}` : core.map((c) => name(c.id)).join(' ⇄ ')}.`
+    : '';
+  const internal = model.edges
+    .filter((e) => e.stereotype === 'internalizes')
+    .map((e) => `${name(e.source)} → ${name(e.target)}`);
+  const links = model.edges
+    .filter((e) => e.kind !== 'exit' && e.stereotype !== 'internalizes')
+    .map(
+      (e) =>
+        `${name(e.source)} ${e.kind === 'reciprocal' ? '<->' : '->'} ${name(e.target)}${e.loop ? ' (reinforcing)' : ''}`,
+    );
+  const exits = model.edges
+    .filter((e) => e.kind === 'exit')
+    .map((e) => `${name(e.source)} to ${name(e.target)}`);
+  const TOPO = {
+    trap: 'a trap — a self-confirming loop, where actions meant to escape confirm the belief',
+    dilemma: 'a dilemma — a false-binary, polarized either/or fork',
+    snag: 'a snag — a self-truncating loop that sabotages legitimate success',
+  } as const;
+  const extra: string[] = [];
+  if (topoMark) extra.push(`The procedure is ${TOPO[topoMark]}.`);
+  if (showInterpretive) {
+    const interp = nodes
+      .filter((n) => isInterpretive(n.properties.epistemicStatus))
+      .map((n) => name(n.id));
+    if (interp.length) extra.push(`Interpretive (hypotheses): ${interp.join('; ')}.`);
+    extra.push(...notes.map((t) => `Contested — ${t.slice(2)}.`));
+  }
+  const altText = [
+    `Role procedure${model.meta.title ? `: ${model.meta.title}` : ''}.`,
+    globalLens.length
+      ? `Context: ${globalLens.map((n) => getText(n.label, layer, lang)).join(', ')}.`
+      : '',
+    coreSentence,
+    ...laneSentences,
+    internal.length ? `Internalized: ${internal.join('; ')}.` : '',
+    `Links: ${links.join('; ') || 'none'}. Ways out: ${exits.join('; ') || 'none'}.`,
+    needs.length
+      ? `Underlying needs: ${needs.map((n) => getText(n.label, layer, lang)).join('; ')}.`
+      : '',
+    ...extra,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const defs =
+    '<defs><marker id="rp-arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>';
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fx} 0 ${fw} ${fh}" role="img" aria-label="${esc(altText)}">` +
+    `<title>${esc(model.meta.title ?? 'Role procedure')}</title><desc>${esc(altText)}</desc>` +
+    defs +
+    `<rect x="${fx}" y="0" width="${fw}" height="${fh}" fill="#fff" />` +
+    titleText +
+    parts.join('') +
+    '</svg>';
   return { svg, altText };
 }
 
@@ -2416,30 +3087,57 @@ export function renderRelationalField(
 
   const parts: string[] = [];
 
-  // Relations (under the nodes)
+  // Relations (under the nodes). Several relations between the same pair fan out side by side,
+  // each with a small arrowhead at its target so the two directions of an asymmetric pair stay
+  // readable; a self-relation is drawn as a loop above the glyph (ADR-0059).
+  const relOff = parallelOffsets(model.edges);
+  let relArrow = false;
   for (const e of model.edges) {
     const s = pos.get(e.source);
     const t = pos.get(e.target);
     if (!s || !t) continue;
-    const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
-    const ux = (t.x - s.x) / len;
-    const uy = (t.y - s.y) / len;
-    parts.push(
-      relLine(
-        e.kind,
-        s.x + ux * REL_SHORT,
-        s.y + uy * REL_SHORT,
-        t.x - ux * REL_SHORT,
-        t.y - uy * REL_SHORT,
-      ),
-    );
     const lbl = e.label ? getText(e.label, layer, lang) : '';
-    if (lbl) {
+    if (e.source === e.target) {
+      const loop = selfLoop(s.x, s.y, 26, -Math.PI / 2, 22);
+      relArrow = true;
       parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 4}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
+        `<path data-el="edge:${esc(e.id)}" d="${loop.d}" fill="none" stroke="#000" stroke-width="1.5"${e.kind === 'distant' ? ' stroke-dasharray="6 5"' : ''} marker-end="url(#rf-arrow)" />`,
+      );
+      if (lbl)
+        parts.push(
+          `<text data-el="edgelabel:${esc(e.id)}" x="${loop.labelAt.x}" y="${loop.labelAt.y}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
+        );
+      continue;
+    }
+    const off = relOff.get(e.id) ?? 0;
+    const { a, b } = shiftSegment(s, t, off, e.source > e.target);
+    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const ux = (b.x - a.x) / len;
+    const uy = (b.y - a.y) / len;
+    const x2 = b.x - ux * REL_SHORT;
+    const y2 = b.y - uy * REL_SHORT;
+    parts.push(relLine(e.kind, a.x + ux * REL_SHORT, a.y + uy * REL_SHORT, x2, y2));
+    if (off) {
+      relArrow = true;
+      parts.push(
+        `<path d="M ${r1(x2 - ux * 9 - uy * 4)},${r1(y2 - uy * 9 + ux * 4)} L ${r1(x2)},${r1(y2)} L ${r1(x2 - ux * 9 + uy * 4)},${r1(y2 - uy * 9 - ux * 4)} z" fill="#000" />`,
+      );
+    }
+    if (lbl) {
+      // A fanned label sits on its own line's OUTER side so the pair's labels never stack.
+      const side = off ? Math.sign(off) * (e.source > e.target ? -1 : 1) : 0;
+      const away = Math.abs(off) + 9;
+      const lx = (a.x + b.x) / 2 - uy * side * away;
+      const ly = (a.y + b.y) / 2 + ux * side * away - (side ? 0 : 4);
+      parts.push(
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1(lx)}" y="${r1(side ? ly + 3 : ly)}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
       );
     }
   }
+  if (relArrow)
+    parts.unshift(
+      '<defs><marker id="rf-arrow" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>',
+    );
 
   // People + systems. Each is wrapped in a group tagged with its node id so the editor can
   // hit-test it for drag-to-reposition (this renderer honors n.position; persisted via pos=).

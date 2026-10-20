@@ -38,6 +38,7 @@ const KNOWN_TYPES = new Set([
   'schema-grid',
   'decisional-balance',
   'secure-base',
+  'role-procedure',
 ]);
 
 interface CatalogEntry {
