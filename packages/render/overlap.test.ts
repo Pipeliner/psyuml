@@ -23,6 +23,7 @@ import { parseModel, type PsyumlModel } from '@psyuml/model';
 import * as render from '@psyuml/render';
 import { overlaps } from './layout';
 import { boxesFromSvg, idOf, kindOf, viewBoxOf } from './introspect';
+import { loopRepro, partsRepro } from './issue-repros';
 
 /** Tolerance: the shared metric is an estimate, so allow <=1px of slop before calling it overlap. */
 const SLOP = 1;
@@ -330,4 +331,20 @@ describe('overlap invariant — stress models (ADR-0012)', () => {
     });
     assertNoOverlap('stress/schema-grid', render.renderSchemaGrid(m).svg);
   });
+  // The issue repros (#4 long Self/part labels + a labelled barrier; #5 a loop with a reciprocal
+  // role, an observing eye and an exit sharing one state) — all four assertions, both layers.
+  for (const layer of ['clinician', 'client'] as const) {
+    it(`parts-map: issue #4 repro (${layer})`, () => {
+      assertNoOverlap(
+        `repro/parts-map/${layer}`,
+        render.renderPartsMap(partsRepro(), { layer }).svg,
+      );
+    });
+    it(`process-loop: issue #5 repro (${layer})`, () => {
+      assertNoOverlap(
+        `repro/process-loop/${layer}`,
+        render.renderLoopMap(loopRepro(), { layer }).svg,
+      );
+    });
+  }
 });

@@ -60,18 +60,16 @@ function nonIncidentCrossings(model: PsyumlModel, svg: string): string[] {
 /**
  * STRUCTURAL crossings, pinned per example file (everything not listed MUST be crossing-free). Each is
  * a relation that spans the diagram's clinically-meaningful layout and unavoidably cuts another:
- *   • process-loop — the dashed EXIT chord escapes across the ring to a resource on the far side and
- *     crosses one cycle chord (the ring order is the cycle's semantics — not reorderable);
  *   • parts-map — the POLARIZATION tie between two parts on opposite sides of the protector arc
  *     crosses their containment lines down to the exile.
- * The loop/parts ones are made legible by the bridge/casing pass (ADR-0025); the genogram one is a
+ * The parts one is made legible by the bridge/casing pass (ADR-0025); the genogram one is a
  * dotted origin thread over a solid side, traceable without a hop. Reduce one → update its baseline.
+ * (process-loop is now crossing-free: since ADR-0064 the cycle is drawn as ring ARCS and an exit's
+ * resource is a satellite beside its source, so the EXIT no longer chords across the ring — the
+ * cat-sdr / depression-flower / showcase-process-loop baselines of 1 dropped to 0.)
  */
 const CROSSING_BASELINE = new Map<string, number>([
   ['showcase-parts-map.psyuml', 2],
-  ['cat-sdr.psyuml', 1],
-  ['depression-flower.psyuml', 1],
-  ['showcase-process-loop.psyuml', 1],
   // relational-field (ties tagged + measured since ADR-0062): the Victim → Helpless-child ORIGIN
   // thread has to leave the present-day triangle to reach the earlier one; routed around the Rescuer
   // (it used to run straight THROUGH that person) it crosses the Persecutor–Rescuer side once.

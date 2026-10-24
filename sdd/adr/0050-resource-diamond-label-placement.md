@@ -1,6 +1,6 @@
 # ADR-0050: a loop-map resource label is contained — short inside the diamond, long lifted outside
 
-- **Status:** accepted
+- **Status:** superseded (mechanism) by ADR-0064 — the diamond is now a satellite sized to hold its label inside; the containment guard below still applies
 - **Date:** 2026-06-29
 - **Deciders:** project owner + maintainer
 - **Spec / REQ touched:** REQ-TEXT-CONTAINMENT (extends it to the non-rectangular diamond shape) · §D (notation), §J (conformance); follow-up to ADR-0049 (the layered-layout work, during whose dense-diagram audit this was found), built on ADR-0046 (containment invariant) and ADR-0047 (legibility halos)

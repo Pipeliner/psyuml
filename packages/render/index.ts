@@ -25,8 +25,11 @@ import {
   CHAR_W,
   clipToBox,
   deCollide,
+  overlaps,
+  placeLabel,
   type Pt,
   segIntersectsBox,
+  segSegCross,
   separate1D,
   type TaggedBox,
   textWidth,
@@ -820,6 +823,66 @@ const TOPO_KEY: Record<'trap' | 'dilemma' | 'snag', ChromeKey> = {
 
 const PARTS_W = 680;
 const PARTS_H = 470;
+/** Part-circle radius range (ADR-0063): the smallest radius that holds every name, capped. */
+const PART_R_MIN = 34;
+const PART_R_MAX = 50;
+/** Widest line of the wrapped Self label (≈ 21 bold characters at 12px). */
+const SELF_LABEL_W = 150;
+/** Inset between a part's name and its circle outline. */
+const CIRCLE_PAD = 3;
+
+/** How many characters fit in `w` px at `size` (the shared `textWidth` metric; float-safe). */
+const charsFit = (w: number, size: number): number =>
+  Math.max(1, Math.floor(w / (size * CHAR_W) + 1e-6));
+
+/**
+ * Wrap `s` to fit INSIDE a circle of radius `r` (issue #4.3, ADR-0063): for 1…`maxLines` lines,
+ * the text block (centred on the circle) has a half-height, so every line must fit the circle's
+ * chord at that height. Returns the first (fewest-lines) wrap whose every line fits, with the chord
+ * width it was wrapped to — or `null` when no wrap fits at this size.
+ */
+function circleWrap(
+  s: string,
+  r: number,
+  size: number,
+  maxLines: number,
+): { lines: string[]; w: number } | null {
+  const ri = r - CIRCLE_PAD;
+  for (let n = 1; n <= maxLines; n += 1) {
+    const half = ((n - 1) * (size + 3)) / 2 + 0.5 * size;
+    if (half >= ri) break;
+    const w = 2 * Math.sqrt(ri * ri - half * half);
+    const lines = wrapLines(s, charsFit(w, size), n);
+    if (lines.every((ln) => textWidth(ln, size) <= w)) return { lines, w };
+  }
+  return null;
+}
+
+/**
+ * A part's name, wrapped INSIDE its circle (issue #4.3, ADR-0063): 10px if it fits, else 9 / 8px
+ * with more lines; a name that fits at none (a single very long word) is wrapped at 8px to the
+ * chord and compressed to it, so it still never crosses the outline. Centred on the circle.
+ */
+function partNameLabel(name: string, x: number, y: number, r: number, dataEl: string): string {
+  const label = (size: number, w: number, lines: number): string =>
+    wrapLabel(name, x, y + 0.3 * size, {
+      size,
+      anchor: 'middle',
+      maxWidth: w,
+      maxLines: lines,
+      dataEl,
+    });
+  for (const [size, maxLines] of [
+    [10, 3],
+    [9, 4],
+    [8, 4],
+  ] as const) {
+    const fit = circleWrap(name, r, size, maxLines);
+    if (fit) return label(size, fit.w + 0.01, fit.lines.length);
+  }
+  // 3 lines at 8px: block half-height 1·11 + 4.
+  return label(8, 2 * Math.sqrt((r - CIRCLE_PAD) ** 2 - 15 ** 2), 3);
+}
 
 /** Render a Parts / Agents Map (spec §E.2): Self centred, protectors orbiting,
  * exiles in a containment orbit behind a dissociative barrier. */
@@ -833,25 +896,45 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   const showInterpretive = options.showInterpretive ?? true;
 
   const titleH = model.meta.title ? 28 : 0;
-  const nodeR = 34;
 
   const self = model.nodes.find((n) => n.kind === 'self');
   const exiles = model.nodes.filter((n) => n.stereotype === 'exile');
   const protectors = model.nodes.filter((n) => n.kind !== 'self' && n.stereotype !== 'exile');
+
+  // Part names are drawn INSIDE their circle (issue #4.3, ADR-0063): the circle radius is the
+  // smallest (shared, so the parts stay one size) that holds every part's name at 10px; a name that
+  // still doesn't fit at the cap steps down to 9 / 8px, and only then compresses to the chord.
+  const partName = (nd: MNode): string => getText(nd.label, layer, lang);
+  const needR = (s: string): number => {
+    for (let r = PART_R_MIN; r <= PART_R_MAX; r += 2) if (circleWrap(s, r, 10, 3)) return r;
+    return PART_R_MAX;
+  };
+  const nodeR = Math.max(
+    PART_R_MIN,
+    ...model.nodes.filter((nd) => nd.kind !== 'self').map((nd) => needR(partName(nd))),
+  );
 
   // GROW the orbit radius so protectors (circle + role tag above + wrapped label + provenance
   // below) never collide, then size the canvas to it (ADR-0012 scaling guarantee). Each protector
   // claims a footprint ~PROT_FW wide; on a ring the chord between adjacent angular slots is
   // 2R·sin(Δθ/2), so R must satisfy 2R·sin(Δθ/2) >= PROT_FW + gap. Protectors sit on an arc over
   // the TOP (avoiding the downward cone reserved for the barrier + exiles).
-  const PROT_FW = 132; // footprint width: max(2·nodeR, label/prov maxWidth 124) + slack
+  const PROT_FW = Math.max(2 * nodeR, 124) + 8; // footprint: circle or label/prov maxWidth 124
   const PROT_GAP = 16;
   const arcStartDeg = 158; // lower-left, going up and over the top to…
   const arcEndDeg = 382; // …lower-right (=22°); a 224° arc clear of the bottom
   const n = protectors.length;
   const dTheta = n > 1 ? ((arcEndDeg - arcStartDeg) * Math.PI) / 180 / (n - 1) : 0;
   const minR = n > 1 ? (PROT_FW + PROT_GAP) / (2 * Math.sin(dTheta / 2)) : 0;
-  const orbitR = Math.max(140, minR);
+  // The Self label sits under the Self, level with the two lowest protectors (issue #4.2). It wraps
+  // to ≤ SELF_LABEL_W; widen the orbit just enough that those protectors clear that width.
+  const selfName = self ? getText(self.label, layer, lang) : '';
+  const selfW = Math.min(SELF_LABEL_W, textWidth(selfName, 12));
+  const lowCos = Math.cos(((arcEndDeg - 360) * Math.PI) / 180);
+  const selfClearR = n > 1 ? (selfW / 2 + PROT_FW / 2 + 6) / lowCos : 0;
+  const orbitR = Math.max(140, minR, selfClearR);
+  // Half-width of the free column under the Self, between the lowest protectors' footprints.
+  const columnHalf = n > 1 ? orbitR * lowCos - PROT_FW / 2 - 6 : PARTS_W / 2 - 40;
 
   // The footprint also extends radially (role tag above the circle, provenance below it). Build
   // the canvas around the ring + that radial reach so nothing clips.
@@ -861,7 +944,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
 
   // Exiles spread below the Self (centred about the column) — compute their half-span first so
   // the canvas is wide enough for BOTH the orbit and the exile row + containment orbit.
-  const EXILE_HW = 60; // exile circle + label footprint half-width
+  const EXILE_HW = Math.max(60, nodeR + 26); // exile circle + label footprint half-width
   const exileOffsets = separate1D(
     exiles.map((_, i) => ({ center: (i - (exiles.length - 1) / 2) * 150, half: EXILE_HW })),
     20,
@@ -884,7 +967,29 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     const angle = (deg * Math.PI) / 180;
     pos.set(p.id, { x: r1(cx + orbitR * Math.cos(angle)), y: r1(cy + orbitR * Math.sin(angle)) });
   });
-  const exileY = cy + Math.max(170, orbitR + 30);
+  // Below the Self, top to bottom: the wrapped Self label, the barrier (its own label above the
+  // double bar), then the exiles' containment orbit. Each is pushed down past the one above.
+  const SELF_LH = 15;
+  const selfLines = self ? wrapLines(selfName, charsFit(selfW, 12), 3).length : 0;
+  const selfLabelY = cy + 50; // first baseline (unchanged for a one-line label)
+  const selfBottom = selfLabelY + (selfLines - 1) * SELF_LH + 3;
+  const barrier = model.edges.find((e) => e.kind === 'barrier');
+  const barrierText = barrier
+    ? barrier.label
+      ? getText(barrier.label, layer, lang)
+      : tr('parts.barrier')
+    : '';
+  const barrierW = Math.max(120, 2 * columnHalf);
+  const barrierLines = barrierText ? wrapLines(barrierText, charsFit(barrierW, 10), 2).length : 0;
+  const containRy = Math.max(48, nodeR + 22); // the exile role tag clears the orbit line
+  let exileY = cy + Math.max(170, orbitR + 30);
+  let barrierY = (cy + exileY) / 2;
+  if (barrier && self && exiles.length) {
+    barrierY = Math.max(barrierY, selfBottom + 22 + (barrierLines - 1) * 13);
+    exileY = Math.max(exileY, barrierY + 11 + containRy);
+  } else if (self && exiles.length) {
+    exileY = Math.max(exileY, selfBottom + 12 + containRy);
+  }
   exiles.forEach((e, i) => pos.set(e.id, { x: r1(cx + exileOffsets[i]), y: exileY }));
   // REQ-PROVENANCE-NARRATIVE: the SUBSTANCE of each contested node's cross-school disagreement — the
   // "how" behind the ⚖ marker (which only names WHICH schools). Drawn as a footnote + echoed in
@@ -919,7 +1024,18 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
         `<circle data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" r="30" fill="#fff" stroke="#000" stroke-width="2" />`,
         `<circle cx="${p.x}" cy="${p.y}" r="23" fill="none" stroke="#000" stroke-width="2" />`,
         `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#000" />`,
-        `<text data-el="nodelabel:${esc(node.id)}" x="${p.x}" y="${p.y + 50}" font-family="sans-serif" font-size="12" font-weight="700" text-anchor="middle">${esc(name)}</text>`,
+        // Wrapped to the free column under the Self (issue #4.2) and haloed — the protectors'
+        // dotted lines pass under it on their way to the exile.
+        wrapLabel(name, p.x, selfLabelY + ((selfLines - 1) * SELF_LH) / 2, {
+          size: 12,
+          weight: 700,
+          anchor: 'middle',
+          maxWidth: selfW + 0.5,
+          maxLines: 3,
+          lineHeight: SELF_LH,
+          halo: 3,
+          dataEl: `nodelabel:${node.id}`,
+        }),
       );
       return np;
     }
@@ -933,12 +1049,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     }
     np.push(
       `<circle data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" r="${nodeR}" fill="#fff" stroke="#000" stroke-width="2" />`,
-      wrapLabel(name, p.x, p.y + 3, {
-        size: 10,
-        anchor: 'middle',
-        maxWidth: 110,
-        dataEl: `nodelabel:${node.id}`,
-      }),
+      partNameLabel(name, p.x, p.y, nodeR, `nodelabel:${node.id}`),
     );
     const claims = schoolClaims(node.properties.provenance);
     if (showInterpretive && claims.length > 1) {
@@ -964,66 +1075,138 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   };
   const nodeParts = model.nodes.flatMap(renderNode);
 
-  // Pre-pass (ADR-0024, the label↔label half of REQ-EDGE-ROUTER): the FREE containment ("protects"/
-  // "soothes"/"numbs") and conflict ("polarized") edge labels sit on bowed curves around the Self and
-  // can collide with node-NAME labels (and each other) — the documented parts-map gap. De-collide
-  // them off the node shapes + node labels (measured from `nodeParts`, so the boxes are exactly what
-  // the overlap invariant checks) and off each other; the offset map keyed by edge id is applied
-  // where each label is emitted below. A non-colliding label gets a zero offset and stays byte-identical.
-  const fixedBoxes = boxesFromSvg(nodeParts.join(''));
-  const edgeLabelBoxes: TaggedBox[] = [];
+  // Dissociative barrier (double bar) between Self and the exiles. Its label is the barrier edge's
+  // OWN label when it has one, the localized default otherwise (issue #4.1), wrapped to the free
+  // column under the Self and tagged as that edge's label. Built here (emitted later, above the
+  // connectors) so the edge labels below treat it as an obstacle.
+  const barrierParts: string[] = [];
+  const barrierObstacles: Box[] = [];
+  if (barrier && self && exiles.length) {
+    const by = r1(barrierY);
+    barrierParts.push(
+      `<line x1="${r1(cx - 75)}" y1="${by - 3}" x2="${r1(cx + 75)}" y2="${by - 3}" stroke="#000" stroke-width="2.5" />`,
+      `<line x1="${r1(cx - 75)}" y1="${by + 3}" x2="${r1(cx + 75)}" y2="${by + 3}" stroke="#000" stroke-width="2.5" />`,
+      wrapLabel(barrierText, cx, by - 8 - ((barrierLines - 1) * 13) / 2, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: barrierW,
+        maxLines: 2,
+        lineHeight: 13,
+        halo: 3,
+        dataEl: `edgelabel:${barrier.id}`,
+      }),
+    );
+    barrierObstacles.push({ x: cx - 75, y: by - 5, w: 150, h: 10 });
+  }
+
+  // Edge geometry: containment = a quadratic bow around the Self (control point pushed outward);
+  // conflict = a straight tie (drawn as a zigzag about it).
+  const bow = (a: Pt, b: Pt): Pt => ({
+    x: r1((a.x + b.x) / 2 + (a.x < cx ? -70 : 70)),
+    y: r1((a.y + b.y) / 2),
+  });
+  const quadAt = (a: Pt, c: Pt, b: Pt, t: number): Pt => ({
+    x: (1 - t) ** 2 * a.x + 2 * (1 - t) * t * c.x + t * t * b.x,
+    y: (1 - t) ** 2 * a.y + 2 * (1 - t) * t * c.y + t * t * b.y,
+  });
+  const edgeLines = new Map<string, [Pt, Pt][]>();
   for (const e of model.edges) {
     const a = pos.get(e.source);
     const b = pos.get(e.target);
     if (!a || !b) continue;
-    let lx: number;
-    let ly: number;
     if (e.kind === 'containment') {
-      const mx = r1((a.x + b.x) / 2 + (a.x < cx ? -70 : 70));
-      const my = r1((a.y + b.y) / 2);
-      lx = mx;
-      ly = r1((my + b.y) / 2);
+      const c = bow(a, b);
+      const pts = Array.from({ length: 13 }, (_, k) => quadAt(a, c, b, k / 12));
+      edgeLines.set(
+        e.id,
+        pts.slice(1).map((p, k) => [pts[k], p]),
+      );
     } else if (e.kind === 'conflict') {
-      lx = r1((a.x + b.x) / 2);
-      ly = r1((a.y + b.y) / 2 - 4);
-    } else {
-      continue;
+      edgeLines.set(e.id, [[a, b]]);
     }
-    const lbl = e.label ? getText(e.label, layer, lang) : '';
-    if (!lbl) continue;
-    edgeLabelBoxes.push({ id: e.id, ...textLineBox(lbl, lx, ly, 8, 'middle') });
   }
-  const edgeLblOff = deCollide(edgeLabelBoxes, fixedBoxes, 1);
+
+  // Edge labels (issue #4.4, ADR-0063; the label↔label half of ADR-0024). A containment label
+  // ("protects" / "soothes" / "numbs") is placed ON its own bow — the point nearest the middle that
+  // clears every node, node label, the barrier and the labels already placed, and that doesn't sit
+  // on another edge's line — so it is unambiguous which protector it belongs to. Obstacles are
+  // measured from the rendered fragments (`boxesFromSvg`), i.e. exactly the boxes the overlap
+  // invariant checks. Conflict-tie labels (and any containment label with no free spot on its bow)
+  // are then de-collided off all of those.
+  const fixedBoxes: Box[] = [
+    ...boxesFromSvg(nodeParts.join('') + barrierParts.join('')),
+    ...barrierObstacles,
+  ];
+  const LABEL_TS = [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74];
+  const labelPos = new Map<string, Pt>(); // baseline anchor (text-anchor middle)
+  const placed: Box[] = [];
+  const leftovers: TaggedBox[] = [];
+  for (const e of model.edges) {
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    const a = pos.get(e.source);
+    const b = pos.get(e.target);
+    if (!lbl || !a || !b || e.kind !== 'containment') continue;
+    const w = textWidth(lbl, 8);
+    const c = bow(a, b);
+    const avoid = [...edgeLines].filter(([id]) => id !== e.id).flatMap(([, segs]) => segs);
+    const at = placeLabel(
+      LABEL_TS.map((t) => quadAt(a, c, b, t)),
+      w,
+      8,
+      [...fixedBoxes, ...placed],
+      avoid,
+      1,
+    );
+    if (at) {
+      labelPos.set(e.id, { x: at.x, y: at.y + 2.4 });
+      placed.push({ x: at.x - w / 2, y: at.y - 4, w, h: 8 });
+    } else {
+      const mid = quadAt(a, c, b, 0.5);
+      leftovers.push({ id: e.id, ...textLineBox(lbl, mid.x, mid.y + 2.4, 8, 'middle') });
+    }
+  }
+  for (const e of model.edges) {
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    const a = pos.get(e.source);
+    const b = pos.get(e.target);
+    if (!lbl || !a || !b || e.kind !== 'conflict') continue;
+    leftovers.push({
+      id: e.id,
+      ...textLineBox(lbl, (a.x + b.x) / 2, (a.y + b.y) / 2 - 4, 8, 'middle'),
+    });
+  }
+  const leftoverOff = deCollide(leftovers, [...fixedBoxes, ...placed], 1);
+  for (const l of leftovers) {
+    const off = leftoverOff.get(l.id) ?? { dx: 0, dy: 0 };
+    // textLineBox(… 'middle') puts the box centre at x and the baseline 0.8em below its top.
+    labelPos.set(l.id, { x: l.x + l.w / 2 + off.dx, y: l.y + 6.4 + off.dy });
+  }
+  const edgeLabel = (id: string, lbl: string): string => {
+    const at = labelPos.get(id)!;
+    return `<text data-el="edgelabel:${esc(id)}" x="${r1(at.x)}" y="${r1(at.y)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`;
+  };
 
   // Containment orbit around the exiles (a container; sized to hold the spread exiles).
   if (exiles.length) {
     parts.push(
-      `<ellipse data-el="band:containment" cx="${r1(cx)}" cy="${exileY}" rx="${r1(exileRx)}" ry="48" fill="none" stroke="#000" stroke-width="2" />`,
+      `<ellipse data-el="band:containment" cx="${r1(cx)}" cy="${exileY}" rx="${r1(exileRx)}" ry="${containRy}" fill="none" stroke="#000" stroke-width="2" />`,
     );
   }
 
-  // Protect edges (containment): bowed dotted lines routed around the Self
+  // Protect edges (containment): bowed dotted lines routed around the Self, each with its
+  // relationship word on the curve (white halo — distinct protections shouldn't look identical).
   const partsEdgeStrings: string[] = [];
   for (const e of model.edges) {
     if (e.kind !== 'containment') continue;
     const a = pos.get(e.source);
     const b = pos.get(e.target);
     if (!a || !b) continue;
-    const mx = r1((a.x + b.x) / 2 + (a.x < cx ? -70 : 70));
-    const my = r1((a.y + b.y) / 2);
+    const { x: mx, y: my } = bow(a, b);
     const ePath = `<path data-el="edge:${esc(e.id)}" d="M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3 4" opacity="0.7" />`;
     parts.push(ePath);
     partsEdgeStrings.push(ePath);
-    // Show the relationship word (e.g. "protects" / "soothes" / "numbs") on the curve, with a
-    // white halo so it stays legible over the dotted line — distinct protections shouldn't all
-    // look identical (eval finding). Placed near the curve's control point.
     const lbl = e.label ? getText(e.label, layer, lang) : '';
-    if (lbl) {
-      const off = edgeLblOff.get(e.id) ?? { dx: 0, dy: 0 };
-      parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1(mx + off.dx)}" y="${r1((my + b.y) / 2 + off.dy)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
-      );
-    }
+    if (lbl) parts.push(edgeLabel(e.id, lbl));
   }
 
   // Conflict ties (zigzag) between two parts — drawn (not silently dropped, eval finding), using
@@ -1050,12 +1233,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     parts.push(ePath);
     partsEdgeStrings.push(ePath);
     const lbl = e.label ? getText(e.label, layer, lang) : '';
-    if (lbl) {
-      const off = edgeLblOff.get(e.id) ?? { dx: 0, dy: 0 };
-      parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((a.x + b.x) / 2 + off.dx)}" y="${r1((a.y + b.y) / 2 - 4 + off.dy)}" font-family="sans-serif" font-size="8" text-anchor="middle" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(lbl)}</text>`,
-      );
-    }
+    if (lbl) parts.push(edgeLabel(e.id, lbl));
   }
 
   // Bridge/casing pass (ADR-0025): a cross-map POLARIZATION tie crossing the containment lines is
@@ -1064,16 +1242,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     ...addCrossingBridges(partsEdgeStrings, edgeIncidence(model), focalEdges(model, ['conflict'])),
   );
 
-  // Dissociative barrier (double bar) between Self and the exiles
-  const barrier = model.edges.find((e) => e.kind === 'barrier');
-  if (barrier && self && exiles.length) {
-    const by = (cy + exileY) / 2;
-    parts.push(
-      `<line x1="${r1(cx - 75)}" y1="${by - 3}" x2="${r1(cx + 75)}" y2="${by - 3}" stroke="#000" stroke-width="2.5" />`,
-      `<line x1="${r1(cx - 75)}" y1="${by + 3}" x2="${r1(cx + 75)}" y2="${by + 3}" stroke="#000" stroke-width="2.5" />`,
-      `<text x="${r1(cx)}" y="${by - 8}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(tr('parts.barrier'))}</text>`,
-    );
-  }
+  parts.push(...barrierParts);
 
   // Nodes (◎ Self, ○ parts) — built early into `nodeParts` (above) for the de-collision pass, but
   // emitted HERE so they draw over the connectors. Z-order and bytes are identical to emitting inline.
@@ -1114,7 +1283,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   const altText =
     `Parts map${model.meta.title ? `: ${model.meta.title}` : ''}. Self at the centre. ` +
     `Protectors around it: ${protectorDesc.join(', ') || 'none'}. ` +
-    `Exile(s): ${exileDesc.join(', ') || 'none'}${barrier ? ', behind a dissociative barrier from Self' : ''}. ` +
+    `Exile(s): ${exileDesc.join(', ') || 'none'}${barrier ? `, behind a dissociative barrier${barrier.label ? ` ("${barrierText}")` : ''} from Self` : ''}. ` +
     `Protectors guard the exile.` +
     (showInterpretive && contested.length
       ? ` Origins disagree on: ${contested.join('; ')} — both claims are shown, not merged.`
@@ -1593,6 +1762,183 @@ function loopTopologyGlyph(topo: 'trap' | 'dilemma' | 'snag', cx: number, cy: nu
   );
 }
 
+/** Min clear gap between two ring nodes (ADR-0064) — room for the arc + its arrowhead between them. */
+const RING_GAP = 30;
+/** Shortest clear spoke between a satellite and its anchor (two arrowheads + a visible line). */
+const SPOKE_MIN = 48;
+/** The observing-eye glyph's ellipse radii. */
+const EYE_RX = 26;
+const EYE_RY = 15;
+
+/** A loop-map node outline: half extents, and (diamond / eye) how its label is wrapped. */
+interface LoopShape {
+  kind: 'rect' | 'diamond' | 'eye';
+  hw: number;
+  hh: number;
+  /** Label line count + wrap width (diamond: inside the rhombus; eye: the caption below it). */
+  lines?: number;
+  textW?: number;
+}
+
+/**
+ * A resource diamond sized to hold its label INSIDE (issue #5.3, ADR-0064; supersedes the ADR-0050
+ * outside placement, which existed only because the diamond had to keep a fixed ring slot). For 1–3
+ * lines it wraps the label, then takes the half-extents that put every line inside the rhombus — a
+ * w×h text block centred in a rhombus of half-extents (HW, HH) fits iff w/2/HW + h/2/HH ≤ 1 — and
+ * keeps the wrap with the smallest diamond. Never smaller than a plain node.
+ */
+function diamondFor(text: string): LoopShape {
+  const size = 11;
+  const words = text.split(/\s+/).filter(Boolean);
+  let best: LoopShape | null = null;
+  for (let n = 1; n <= 3; n += 1) {
+    const chars = Math.max(Math.ceil(text.length / n), ...words.map((w) => w.length), 1);
+    const lines = wrapLines(text, chars, n);
+    const textW = Math.max(...lines.map((l) => textWidth(l, size)));
+    const a = textW / 2 + 2;
+    const b = ((lines.length - 1) * 14) / 2 + 0.5 * size + 1;
+    const hh = Math.max(LNODE_H / 2, 2 * b + 2);
+    const hw = Math.max(LNODE_W / 2, a / (1 - b / hh) + 2);
+    if (!best || hw * hh < best.hw * best.hh - 1e-6) {
+      best = { kind: 'diamond', hw, hh, lines: lines.length, textW: chars * size * CHAR_W + 0.01 };
+    }
+  }
+  return best!;
+}
+
+/** The observing-eye glyph, with its caption (≤2 lines) drawn below it. */
+function eyeFor(text: string): LoopShape {
+  const lines = wrapLines(text, Math.floor((LNODE_W - 16) / (11 * CHAR_W)), 2);
+  const textW = Math.min(LNODE_W - 16, Math.max(...lines.map((l) => textWidth(l, 11))));
+  return { kind: 'eye', hw: EYE_RX, hh: EYE_RY, lines: lines.length, textW };
+}
+
+/** The outline's bounding box when centred on (x, y). */
+const shapeBox = (s: LoopShape, x: number, y: number): Box => ({
+  x: x - s.hw,
+  y: y - s.hh,
+  w: 2 * s.hw,
+  h: 2 * s.hh,
+});
+
+/** Everything a node draws (outline + an outside caption) — what other things must keep clear of. */
+function shapeFootprint(s: LoopShape, x: number, y: number): Box {
+  const box = shapeBox(s, x, y);
+  if (s.kind !== 'eye') return box;
+  const n = s.lines ?? 1;
+  const w = s.textW ?? 0;
+  const top = y + 30 - ((n - 1) * 14) / 2 - 8.8;
+  const bottom = y + 30 + ((n - 1) * 14) / 2 + 2.2;
+  return union([box, { x: x - w / 2, y: top, w, h: bottom - top }]);
+}
+
+/** Is `p` inside the outline centred on `c`? */
+function insideShape(s: LoopShape, c: Pt, p: Pt): boolean {
+  const dx = Math.abs(p.x - c.x);
+  const dy = Math.abs(p.y - c.y);
+  if (s.kind === 'diamond') return dx / s.hw + dy / s.hh <= 1;
+  if (s.kind === 'eye') return (dx / s.hw) ** 2 + (dy / s.hh) ** 2 <= 1;
+  return dx <= s.hw && dy <= s.hh;
+}
+
+/**
+ * Where a curve leaves a shape: `at(t)` is inside at `tIn` and (normally) outside at `tOut`; bisect
+ * to the first outside parameter. Lets an arrow stop exactly ON the node outline (issue #5.2) for
+ * rectangles, diamonds and ellipses alike, along straight spokes and ring arcs.
+ */
+function boundaryT(at: (t: number) => Pt, inside: (p: Pt) => boolean, tIn: number, tOut: number) {
+  if (!inside(at(tIn))) return tIn;
+  if (inside(at(tOut))) return tOut;
+  let a = tIn;
+  let b = tOut;
+  for (let k = 0; k < 40; k += 1) {
+    const m = (a + b) / 2;
+    if (inside(at(m))) a = m;
+    else b = m;
+  }
+  return b;
+}
+
+/** A circular arc (centre, radius, start → end angle in radians, either direction) as cubic
+ * Béziers of ≤ 90° each — `C` keeps it readable by the shared introspection (`pathToSegments`). */
+function arcPath(cx: number, cy: number, R: number, a0: number, a1: number): string {
+  const n = Math.max(1, Math.ceil(Math.abs(a1 - a0) / (Math.PI / 2)));
+  const pt = (a: number): Pt => ({ x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) });
+  const p0 = pt(a0);
+  let d = `M ${r1(p0.x)},${r1(p0.y)}`;
+  for (let i = 0; i < n; i += 1) {
+    const s = a0 + ((a1 - a0) * i) / n;
+    const e = a0 + ((a1 - a0) * (i + 1)) / n;
+    const k = (4 / 3) * Math.tan((e - s) / 4);
+    const ps = pt(s);
+    const pe = pt(e);
+    const c1 = { x: ps.x - k * R * Math.sin(s), y: ps.y + k * R * Math.cos(s) };
+    const c2 = { x: pe.x + k * R * Math.sin(e), y: pe.y - k * R * Math.cos(e) };
+    d += ` C ${r1(c1.x)},${r1(c1.y)} ${r1(c2.x)},${r1(c2.y)} ${r1(pe.x)},${r1(pe.y)}`;
+  }
+  return d;
+}
+
+/** Unsigned angular distance between two angles (radians), in [0, π]. */
+const angDist = (a: number, b: number): number =>
+  Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+
+/**
+ * The maintaining cycle (ADR-0064): the longest simple directed cycle over the non-exit edges,
+ * preferring one that contains the loop-closing edge (`prefer`, the edge carrying `loop`), rotated
+ * so that edge's target — the step the loop returns to — comes first (drawn at the top). Small
+ * graphs only (a formulation has a handful of steps); returns [] above 14 nodes or with no cycle.
+ */
+function longestCycle(
+  nodes: PsyumlModel['nodes'],
+  edges: PsyumlModel['edges'],
+  prefer?: PsyumlModel['edges'][number],
+): PsyumlModel['nodes'] {
+  if (nodes.length > 14) return [];
+  const idx = new Map(nodes.map((nd, i) => [nd.id, i]));
+  const adj: number[][] = nodes.map(() => []);
+  for (const e of edges) {
+    if (e.kind === 'exit') continue;
+    const s = idx.get(e.source);
+    const t = idx.get(e.target);
+    if (s !== undefined && t !== undefined && s !== t && !adj[s].includes(t)) adj[s].push(t);
+  }
+  const has = (c: number[], s: number, t: number): boolean =>
+    c.some((v, i) => v === s && c[(i + 1) % c.length] === t);
+  const ps = prefer ? idx.get(prefer.source) : undefined;
+  const pt = prefer ? idx.get(prefer.target) : undefined;
+  let best: number[] = [];
+  let bestPref = false;
+  const consider = (c: number[]): void => {
+    const pref = ps !== undefined && pt !== undefined && has(c, ps, pt);
+    if ((pref && !bestPref) || (pref === bestPref && c.length > best.length)) {
+      best = [...c];
+      bestPref = pref;
+    }
+  };
+  // Enumerate each simple cycle once, from its lowest-index node.
+  for (let start = 0; start < nodes.length; start += 1) {
+    const path = [start];
+    const seen = new Set([start]);
+    const dfs = (v: number): void => {
+      for (const w of adj[v]) {
+        if (w === start && path.length >= 2) consider(path);
+        else if (w > start && !seen.has(w)) {
+          seen.add(w);
+          path.push(w);
+          dfs(w);
+          path.pop();
+          seen.delete(w);
+        }
+      }
+    };
+    dfs(start);
+  }
+  if (!best.length) return [];
+  const first = pt !== undefined && best.includes(pt) ? pt : Math.min(...best);
+  const r = best.indexOf(first);
+  return [...best.slice(r), ...best.slice(0, r)].map((i) => nodes[i]);
+}
 /** Render a Process / Loop map (spec §E.4): a maintaining cycle on a ring, with
  * reciprocal (double-headed) links, a reinforcing/balancing centre badge, and exits.
  * v0.2 §4 adds CAT loop-topology markers (trap/dilemma/snag); v0.2 §3 surfaces
@@ -1607,237 +1953,499 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   // honest dashed border. Defaults to shown (the v0.1 + clinician behaviour).
   const showInterpretive = options.showInterpretive ?? true;
   const nodes = model.nodes;
-  const n = Math.max(1, nodes.length);
-  const cx = LOOP_W / 2;
-  const cy = 250;
-  const radius = Math.max(120, n * 26);
-
-  // Honor manual positions when present; otherwise lay the cycle out on a ring.
+  type MEdge = (typeof model.edges)[number];
+  // Layout (issue #5, ADR-0064). The maintaining CYCLE goes on a ring — one evenly-spaced slot per
+  // step, the first step at the top — and every cycle edge, the loop-closing one included, is drawn
+  // as an ARC along that ring, so the centre stays empty for the R/B badge and the topology marker.
+  // Everything off the cycle (a reciprocal-role pole, the observing eye, a resource / exit, a lead-in
+  // step) is a SATELLITE placed outside the ring next to the node it connects to, joined by a short
+  // straight spoke. With no ≥3-step cycle the non-satellite nodes keep the chain-ordered ring. Manual
+  // `position`s are honoured as given. Every arrow is clipped to the real outline of its nodes.
   const usePos = nodes.some((node) => node.position);
-  // Lay ring nodes out in CYCLE order (follow the sequential chain) so consecutive steps are
-  // adjacent and edges don't cross the middle — only the closing edge spans (pilot legibility).
-  const ringOrder = usePos ? nodes : cycleOrder(nodes, model.edges);
-  const pos = new Map<string, { x: number; y: number }>();
-  ringOrder.forEach((node, i) => {
-    if (usePos && node.position) {
-      pos.set(node.id, { x: node.position.x, y: node.position.y });
-    } else {
-      const a = ((-90 + (i * 360) / ringOrder.length) * Math.PI) / 180;
-      pos.set(node.id, { x: r1(cx + radius * Math.cos(a)), y: r1(cy + radius * Math.sin(a)) });
-    }
-  });
 
   const nodeName = (id: string): string => {
     const node = nodes.find((x) => x.id === id);
     return node ? getText(node.label, layer, lang) : id;
   };
+  // v0.2 §3/§4: a contested marker (⚖) and an as-if qualifier ride on the node's own label.
+  const labelOf = (node: MNode): string => {
+    let t = getText(node.label, layer, lang);
+    if (showInterpretive && node.properties.epistemicStatus === 'contested') t = `⚖ ${t}`;
+    if (showInterpretive && node.properties.asIf) t += ` (${tr('node.asIf')})`;
+    return t;
+  };
+  const edgeText = (e: MEdge): string => {
+    const src = e.trigger ?? e.label;
+    let txt = src ? getText(src, layer, lang) : '';
+    if (e.kind === 'exit') txt = txt ? `${txt} (${tr('edge.exit')})` : tr('edge.exit');
+    return txt;
+  };
 
-  const parts: string[] = [];
-  const SHORT = 64;
+  // Node shapes. A resource diamond is sized to hold its label INSIDE (issue #5.3) — it no longer
+  // shares a fixed ring slot, so it can grow.
+  const shape = new Map<string, LoopShape>();
+  for (const node of nodes) {
+    if (node.kind === 'resource') shape.set(node.id, diamondFor(labelOf(node)));
+    else if (node.stereotype === 'observing-eye') shape.set(node.id, eyeFor(labelOf(node)));
+    else shape.set(node.id, { kind: 'rect', hw: LNODE_W / 2, hh: LNODE_H / 2 });
+  }
 
-  // Pre-pass (ADR-0024 label↔label): chord-midpoint edge labels on a ring can collide (the
-  // documented process-loop gap). De-collide them off each other + the node boxes; the chord
-  // midpoint is exactly (s+t)/2 (the symmetric pull-back cancels), so the offset map keyed by edge
-  // id is applied where each label is emitted below — non-colliding labels get a zero offset and
-  // stay byte-identical.
-  const loopNodeBoxes = [...pos.values()].map((p) => ({
-    x: p.x - LNODE_W / 2,
-    y: p.y - LNODE_H / 2,
-    w: LNODE_W,
-    h: LNODE_H,
-  }));
-  // Centre badge (R/B disc + CAT loop-topology marker) reserved up front so the chord-midpoint edge
-  // labels de-collide OFF it too (ADR-0045), not only off the node boxes — previously the badge was
-  // emitted AFTER the labels, so a central label could land on the R/B / TRAP marker. The badge is
-  // drawn below at this same centre.
+  // Centre badge (R/B disc + CAT topology glyph + word), measured up front so the ring is sized to
+  // leave it clear and every edge / label avoids it (ADR-0045).
   const loopEdge = model.edges.find((e) => e.loop);
   const topoMark = model.edges.find((e) => e.loopTopology)?.loopTopology;
-  let badgeCx = 0;
-  let badgeCy = 0;
-  const badgeObstacles: { x: number; y: number; w: number; h: number }[] = [];
-  if (loopEdge || topoMark) {
+  const topoWord = topoMark ? tr(TOPO_KEY[topoMark]) : '';
+  const badgeTop = loopEdge ? -18 : -11;
+  const badgeBot = (loopEdge ? 36 : 0) + (topoMark ? 31 : 18 - 36);
+  const badgeHW = Math.max(
+    18,
+    topoMark ? (textWidth(topoWord, 11) + 0.5 * topoWord.length) / 2 + 2 : 0,
+  );
+  const hasBadge = Boolean(loopEdge || topoMark);
+  /** The badge's box when its R disc (or glyph) is centred on (bx, by). */
+  const badgeBoxAt = (bx: number, by: number): Box => ({
+    x: bx - badgeHW,
+    y: by + badgeTop,
+    w: 2 * badgeHW,
+    h: badgeBot - badgeTop,
+  });
+
+  // --- ring membership + order ------------------------------------------------------------------
+  const cycle = usePos ? [] : longestCycle(nodes, model.edges, loopEdge);
+  let ring: MNode[];
+  if (usePos) ring = [];
+  else if (cycle.length >= 3) ring = cycle;
+  else {
+    const core = nodes.filter((nd) => nd.kind !== 'resource' && nd.stereotype !== 'observing-eye');
+    ring = core.length >= 2 ? cycleOrder(core, model.edges) : cycleOrder(nodes, model.edges);
+  }
+  const onRing = new Set(ring.map((nd) => nd.id));
+  const ringIdx = new Map(ring.map((nd, i) => [nd.id, i]));
+  const satellites = usePos ? [] : nodes.filter((nd) => !onRing.has(nd.id));
+
+  const pos = new Map<string, Pt>();
+  const cx = 0;
+  const cy = 0;
+  const ringN = ring.length;
+  const angleOf = (i: number): number => -Math.PI / 2 + (i * 2 * Math.PI) / Math.max(1, ringN);
+  // Smallest radius at which no two ring nodes come within RING_GAP and the badge stays clear.
+  let R = 0;
+  if (ringN >= 2) {
+    for (R = 100; R < 1200; R += 2) {
+      const bx = ring.map((nd, i) =>
+        shapeBox(shape.get(nd.id)!, cx + R * Math.cos(angleOf(i)), cy + R * Math.sin(angleOf(i))),
+      );
+      const clashes = bx.some((a, i) => bx.some((b, j) => j > i && overlaps(a, b, RING_GAP)));
+      const badgeHit = hasBadge && bx.some((b) => overlaps(b, badgeBoxAt(cx, cy), 16));
+      if (!clashes && !badgeHit) break;
+    }
+  }
+  ring.forEach((nd, i) => {
+    pos.set(nd.id, { x: r1(cx + R * Math.cos(angleOf(i))), y: r1(cy + R * Math.sin(angleOf(i))) });
+  });
+  if (usePos) for (const nd of nodes) if (nd.position) pos.set(nd.id, { ...nd.position });
+
+  const boxOf = (id: string): Box => {
+    const p = pos.get(id)!;
+    return shapeBox(shape.get(id)!, p.x, p.y);
+  };
+  const footOf = (id: string): Box => {
+    const p = pos.get(id)!;
+    return shapeFootprint(shape.get(id)!, p.x, p.y);
+  };
+  /** Clip the curve `at(t)` (t 0→1 runs source centre → target centre) to both outlines. */
+  const clipCurve = (e: MEdge, at: (t: number) => Pt): [number, number] => {
+    const s = shape.get(e.source)!;
+    const t = shape.get(e.target)!;
+    const sp = pos.get(e.source)!;
+    const tp = pos.get(e.target)!;
+    const t0 = boundaryT(at, (p) => insideShape(s, sp, p), 0, 0.5);
+    const t1 = boundaryT(at, (p) => insideShape(t, tp, p), 1, 0.5);
+    return [t0, t1];
+  };
+
+  // --- edge geometry ----------------------------------------------------------------------------
+  interface EdgeGeo {
+    d: string;
+    pts: Pt[]; // the drawn curve, flattened (for label placement + avoidance)
+    arc?: { a0: number; a1: number }; // ring arc: drawn angles (radians)
+  }
+  const geo = new Map<string, EdgeGeo>();
+  const arcUsed = new Set<string>();
+  const straight = (e: MEdge): EdgeGeo => {
+    const sp = pos.get(e.source)!;
+    const tp = pos.get(e.target)!;
+    const at = (t: number): Pt => ({ x: sp.x + (tp.x - sp.x) * t, y: sp.y + (tp.y - sp.y) * t });
+    const [t0, t1] = clipCurve(e, at);
+    const p0 = at(t0);
+    const p1 = at(t1);
+    return {
+      d: `M ${r1(p0.x)},${r1(p0.y)} L ${r1(p1.x)},${r1(p1.y)}`,
+      pts: [p0, p1],
+    };
+  };
+  for (const e of model.edges) {
+    if (!pos.has(e.source) || !pos.has(e.target) || e.source === e.target) continue;
+    const i = ringIdx.get(e.source);
+    const j = ringIdx.get(e.target);
+    let dir = 0;
+    if (i !== undefined && j !== undefined && ringN >= 2) {
+      if ((i + 1) % ringN === j) dir = 1;
+      else if ((j + 1) % ringN === i) dir = -1;
+    }
+    const key = `${e.source}>${e.target}`;
+    if (dir === 0 || arcUsed.has(key)) {
+      if (onRing.has(e.source) && onRing.has(e.target)) geo.set(e.id, straight(e));
+      continue; // satellite spokes are built once the satellites are placed
+    }
+    arcUsed.add(key);
+    const a = angleOf(i!);
+    const b = a + (dir * 2 * Math.PI) / ringN;
+    const at = (t: number): Pt => ({
+      x: cx + R * Math.cos(a + (b - a) * t),
+      y: cy + R * Math.sin(a + (b - a) * t),
+    });
+    const [t0, t1] = clipCurve(e, at);
+    const a0 = a + (b - a) * t0;
+    const a1 = a + (b - a) * t1;
+    geo.set(e.id, {
+      d: arcPath(cx, cy, R, a0, a1),
+      pts: Array.from({ length: 17 }, (_, k) => at(t0 + ((t1 - t0) * k) / 16)),
+      arc: { a0, a1 },
+    });
+  }
+
+  // --- labels on the ring edges (outside the ring, at the arc's middle) -------------------------
+  const LFS = 10;
+  const labelAt = new Map<string, Pt>(); // label CENTRE
+  const labelBoxes: Box[] = [];
+  const badge: Box | null = hasBadge && !usePos ? badgeBoxAt(cx, cy) : null;
+  const segsOf = (g: EdgeGeo): [Pt, Pt][] => g.pts.slice(1).map((p, k) => [g.pts[k], p]);
+  const otherSegs = (id: string): [Pt, Pt][] =>
+    [...geo].filter(([k]) => k !== id).flatMap(([, g]) => segsOf(g));
+  const nodeFoots = (): Box[] => [...pos.keys()].map(footOf);
+  for (const e of model.edges) {
+    const g = geo.get(e.id);
+    const txt = edgeText(e);
+    if (!g?.arc || !txt) continue;
+    const w = textWidth(txt, LFS);
+    const cands: Pt[] = [];
+    for (const k of [0, 1, -1, 2, -2, 3, -3]) {
+      const phi = (g.arc.a0 + g.arc.a1) / 2 + ((g.arc.a1 - g.arc.a0) * k) / 10;
+      const out = Math.abs(Math.cos(phi)) * (w / 2) + Math.abs(Math.sin(phi)) * (LFS / 2) + 5;
+      cands.push({ x: cx + (R + out) * Math.cos(phi), y: cy + (R + out) * Math.sin(phi) });
+    }
+    const at = placeLabel(cands, w, LFS, [...nodeFoots(), ...labelBoxes], otherSegs(e.id), 2);
+    if (at) {
+      labelAt.set(e.id, at);
+      labelBoxes.push({ x: at.x - w / 2, y: at.y - LFS / 2, w, h: LFS });
+    }
+  }
+
+  // --- satellites: outside the ring, beside the node they connect to ----------------------------
+  const ringOuter = R + 14;
+  const placedAngles: number[] = [];
+  const pending = [...satellites];
+  while (pending.length) {
+    // The next satellite: the first (model order) joined to an already-placed node, else the first.
+    let idx = pending.findIndex((nd) =>
+      model.edges.some(
+        (e) =>
+          (e.source === nd.id && pos.has(e.target)) || (e.target === nd.id && pos.has(e.source)),
+      ),
+    );
+    if (idx < 0) idx = 0;
+    const sat = pending.splice(idx, 1)[0];
+    const sh = shape.get(sat.id)!;
+    const link = model.edges.find(
+      (e) =>
+        (e.source === sat.id && pos.has(e.target)) || (e.target === sat.id && pos.has(e.source)),
+    );
+    const anchorId = link ? (link.source === sat.id ? link.target : link.source) : undefined;
+    const anchor = anchorId ? pos.get(anchorId)! : undefined;
+    // Preferred direction: straight out from the anchor; a free node takes the widest open gap.
+    let want: number;
+    if (anchor) want = Math.atan2(anchor.y - cy, anchor.x - cx);
+    else {
+      want = Math.PI;
+      let best = -1;
+      for (let k = 0; k < 36; k += 1) {
+        const a = Math.PI - (k * Math.PI) / 18;
+        const gap = Math.min(Math.PI, ...placedAngles.map((p) => angDist(a, p)));
+        if (gap > best + 1e-9) {
+          best = gap;
+          want = a;
+        }
+      }
+    }
+    const baseR = anchor ? Math.hypot(anchor.x - cx, anchor.y - cy) : R;
+    const cands: { r: number; a: number; cost: number }[] = [];
+    for (let ri = 0; ri < 40; ri += 1) {
+      for (let k = 0; k <= 12; k += 1) {
+        for (const sgn of k ? [1, -1] : [1]) {
+          cands.push({
+            r: Math.max(baseR, R) + 40 + ri * 12,
+            a: want + (sgn * k * Math.PI) / 20,
+            cost: ri + k * 0.8,
+          });
+        }
+      }
+    }
+    cands.sort((p, q) => p.cost - q.cost);
+    const obstacles = [...nodeFoots(), ...labelBoxes, ...(badge ? [badge] : [])];
+    const allSegs = [...geo.values()].flatMap(segsOf);
+    let chosen: Pt | null = null;
+    let spokeLabel: { id: string; at: Pt; box: Box } | null = null;
+    for (const c of cands) {
+      const p = { x: cx + c.r * Math.cos(c.a), y: cy + c.r * Math.sin(c.a) };
+      const foot = shapeFootprint(sh, p.x, p.y);
+      // Wholly outside the ring, clear of every placed node / label / the badge.
+      const nx = Math.max(foot.x, Math.min(cx, foot.x + foot.w));
+      const ny = Math.max(foot.y, Math.min(cy, foot.y + foot.h));
+      if (ringN >= 2 && Math.hypot(nx - cx, ny - cy) < ringOuter) continue;
+      if (obstacles.some((o) => overlaps(foot, o, 14))) continue;
+      if (anchor && anchorId) {
+        // The spoke must not run through another node or label, or cross a drawn edge.
+        const ash = shape.get(anchorId)!;
+        const at = (t: number): Pt => ({
+          x: anchor.x + (p.x - anchor.x) * t,
+          y: anchor.y + (p.y - anchor.y) * t,
+        });
+        const s0 = at(boundaryT(at, (q) => insideShape(ash, anchor, q), 0, 0.5));
+        const s1 = at(boundaryT(at, (q) => insideShape(sh, p, q), 1, 0.5));
+        const blocked =
+          [...pos.keys()]
+            .filter((id) => id !== anchorId)
+            .some((id) => segIntersectsBox(s0, s1, footOf(id), 2)) ||
+          labelBoxes.some((b) => segIntersectsBox(s0, s1, b, 2)) ||
+          allSegs.some(([u, v]) => segSegCross(s0, s1, u, v));
+        if (blocked) continue;
+        // Long enough to read as a link (both arrowheads clear of each other) and to carry its
+        // label ON the spoke between them; that label slot must itself be free (issue #5.4).
+        const len = Math.hypot(s1.x - s0.x, s1.y - s0.y);
+        const txt = link ? edgeText(link) : '';
+        const w = textWidth(txt, LFS);
+        const ux = len ? Math.abs(s1.x - s0.x) / len : 0;
+        const uy = len ? Math.abs(s1.y - s0.y) / len : 0;
+        if (len < Math.max(SPOKE_MIN, txt ? ux * w + uy * LFS + 36 : 0)) continue;
+        if (txt) {
+          const m = { x: (s0.x + s1.x) / 2, y: (s0.y + s1.y) / 2 };
+          const lb = { x: m.x - w / 2, y: m.y - LFS / 2, w, h: LFS };
+          if ([...obstacles, foot].some((o) => overlaps(lb, o, 4))) continue;
+          if (allSegs.some(([u, v]) => segIntersectsBox(u, v, lb, 2))) continue;
+          spokeLabel = { id: link!.id, at: m, box: lb };
+        }
+      }
+      chosen = p;
+      break;
+    }
+    if (chosen && spokeLabel) {
+      labelAt.set(spokeLabel.id, spokeLabel.at);
+      labelBoxes.push(spokeLabel.box);
+    }
+    if (!chosen) {
+      const c = cands[0];
+      chosen = { x: cx + c.r * Math.cos(c.a), y: cy + c.r * Math.sin(c.a) };
+    }
+    pos.set(sat.id, { x: r1(chosen.x), y: r1(chosen.y) });
+    placedAngles.push(Math.atan2(chosen.y - cy, chosen.x - cx));
+    // Its spokes to already-placed nodes are now drawable.
+    for (const e of model.edges) {
+      if (geo.has(e.id) || e.source === e.target) continue;
+      if (pos.has(e.source) && pos.has(e.target)) geo.set(e.id, straight(e));
+    }
+  }
+  // Manual positions: every edge is a clipped straight line.
+  for (const e of model.edges) {
+    if (geo.has(e.id) || e.source === e.target) continue;
+    if (pos.has(e.source) && pos.has(e.target)) geo.set(e.id, straight(e));
+  }
+
+  // --- labels on the straight edges: on the line, nearest its middle, clear of everything -------
+  const freeLabels: TaggedBox[] = [];
+  for (const e of model.edges) {
+    const g = geo.get(e.id);
+    const txt = edgeText(e);
+    if (!g || g.arc || !txt || labelAt.has(e.id)) continue;
+    const w = textWidth(txt, LFS);
+    const [p0, p1] = [g.pts[0], g.pts[g.pts.length - 1]];
+    const len = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1;
+    const nx = -(p1.y - p0.y) / len;
+    const ny = (p1.x - p0.x) / len;
+    const cands: Pt[] = [];
+    for (const t of [0.5, 0.4, 0.6, 0.3, 0.7]) {
+      const m = { x: p0.x + (p1.x - p0.x) * t, y: p0.y + (p1.y - p0.y) * t };
+      cands.push(m);
+      // beside the line (clear of it) when the line itself is crowded
+      const off = Math.abs(nx) * (w / 2) + Math.abs(ny) * (LFS / 2) + 4;
+      cands.push(
+        { x: m.x + nx * off, y: m.y + ny * off },
+        { x: m.x - nx * off, y: m.y - ny * off },
+      );
+    }
+    const obstacles = [...nodeFoots(), ...labelBoxes, ...(badge ? [badge] : [])];
+    const at = placeLabel(cands, w, LFS, obstacles, otherSegs(e.id), 2);
+    if (at) {
+      labelAt.set(e.id, at);
+      labelBoxes.push({ x: at.x - w / 2, y: at.y - LFS / 2, w, h: LFS });
+    } else {
+      const m = cands[0];
+      freeLabels.push({ id: e.id, x: m.x - w / 2, y: m.y - LFS / 2, w, h: LFS });
+    }
+  }
+  // Ring-arc labels that found no free outside spot, and any leftovers, are de-collided.
+  for (const e of model.edges) {
+    const g = geo.get(e.id);
+    const txt = edgeText(e);
+    if (!g?.arc || !txt || labelAt.has(e.id)) continue;
+    const w = textWidth(txt, LFS);
+    const m = g.pts[8];
+    freeLabels.push({ id: e.id, x: m.x - w / 2, y: m.y - LFS / 2, w, h: LFS });
+  }
+  const freeOff = deCollide(
+    freeLabels,
+    [...nodeFoots(), ...labelBoxes, ...(badge ? [badge] : [])],
+    2,
+  );
+  for (const f of freeLabels) {
+    const o = freeOff.get(f.id) ?? { dx: 0, dy: 0 };
+    labelAt.set(f.id, { x: f.x + f.w / 2 + o.dx, y: f.y + f.h / 2 + o.dy });
+  }
+
+  // --- badge position: the ring centre; with manual positions, the clearest spot near the centroid
+  let badgeCx = cx;
+  let badgeCy = cy;
+  if (hasBadge && usePos && pos.size) {
     let sx = 0;
     let sy = 0;
     for (const p of pos.values()) {
       sx += p.x;
       sy += p.y;
     }
-    badgeCx = r1(sx / pos.size);
-    badgeCy = r1(sy / pos.size);
-    if (loopEdge) badgeObstacles.push({ x: badgeCx - 20, y: badgeCy - 20, w: 40, h: 40 });
-    if (topoMark) {
-      const ty = badgeCy + (loopEdge ? 36 : 0);
-      const ww = Math.max(40, textWidth(tr(TOPO_KEY[topoMark]), 11) + 8);
-      badgeObstacles.push({ x: badgeCx - ww / 2, y: ty - 16, w: ww, h: 48 });
+    badgeCx = sx / pos.size;
+    badgeCy = sy / pos.size;
+    const segs = [...geo.values()].flatMap(segsOf);
+    const lbls = [...labelAt].map(([id, c]) => {
+      const w = textWidth(edgeText(model.edges.find((x) => x.id === id)!), LFS);
+      return { x: c.x - w / 2, y: c.y - LFS / 2, w, h: LFS };
+    });
+    const clear = (bx: number, by: number): boolean => {
+      const b = badgeBoxAt(bx, by);
+      return (
+        !segs.some(([p, q]) => segIntersectsBox(p, q, b, 4)) &&
+        ![...nodeFoots(), ...lbls].some((o) => overlaps(b, o, 4))
+      );
+    };
+    search: for (let rr = 0; rr <= 160; rr += 8) {
+      for (let k = 0; k < Math.max(1, rr); k += 1) {
+        const a = (k / Math.max(1, rr)) * 2 * Math.PI;
+        if (clear(badgeCx + rr * Math.cos(a), badgeCy + rr * Math.sin(a))) {
+          badgeCx += rr * Math.cos(a);
+          badgeCy += rr * Math.sin(a);
+          break search;
+        }
+      }
     }
   }
-  const loopLabels: TaggedBox[] = [];
-  for (const e of model.edges) {
-    const s = pos.get(e.source);
-    const t = pos.get(e.target);
-    if (!s || !t) continue;
-    const src = e.trigger ?? e.label;
-    let txt = src ? getText(src, layer, lang) : '';
-    if (e.kind === 'exit') txt = txt ? `${txt} (${tr('edge.exit')})` : tr('edge.exit');
-    if (!txt) continue;
-    const w = textWidth(txt, 10);
-    loopLabels.push({ id: e.id, x: (s.x + t.x) / 2 - w / 2, y: (s.y + t.y) / 2 - 3 - 8, w, h: 10 });
-  }
-  const loopLblOff = deCollide(loopLabels, [...loopNodeBoxes, ...badgeObstacles], 1);
+  badgeCx = r1(badgeCx);
+  badgeCy = r1(badgeCy);
 
-  // Edges (chords, endpoints pulled to the node boundary)
+  // --- emit: edges, crossing hops, centre badge, nodes ------------------------------------------
+  const parts: string[] = [];
+  const frameBoxes: Box[] = [];
   const loopEdgeStrings: string[] = [];
   for (const e of model.edges) {
-    const s = pos.get(e.source);
-    const t = pos.get(e.target);
-    if (!s || !t) continue;
-    const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
-    const ux = (t.x - s.x) / len;
-    const uy = (t.y - s.y) / len;
-    // Clamp the pull-back so short chords don't overshoot into a detached arrowhead.
-    const short = Math.max(0, Math.min(SHORT, len / 2 - 10));
-    const x1 = r1(s.x + ux * short);
-    const y1 = r1(s.y + uy * short);
-    const x2 = r1(t.x - ux * short);
-    const y2 = r1(t.y - uy * short);
-    const isExit = e.kind === 'exit';
-    const dash = isExit ? ' stroke-dasharray="6 5"' : '';
+    const g = geo.get(e.id);
+    if (!g) continue;
+    const dash = e.kind === 'exit' ? ' stroke-dasharray="6 5"' : '';
     const markerStart = e.kind === 'reciprocal' ? ' marker-start="url(#arrow)"' : '';
-    const ePath = `<path data-el="edge:${esc(e.id)}" d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="2"${dash}${markerStart} marker-end="url(#arrow)" />`;
+    const ePath = `<path data-el="edge:${esc(e.id)}" d="${g.d}" fill="none" stroke="#000" stroke-width="2"${dash}${markerStart} marker-end="url(#arrow)" />`;
     parts.push(ePath);
     loopEdgeStrings.push(ePath);
-    const lblSrc = e.trigger ?? e.label;
-    let txt = lblSrc ? getText(lblSrc, layer, lang) : '';
-    if (isExit) txt = txt ? `${txt} (${tr('edge.exit')})` : tr('edge.exit');
-    if (txt) {
-      const off = loopLblOff.get(e.id) ?? { dx: 0, dy: 0 };
-      parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2 + off.dx)}" y="${r1((y1 + y2) / 2 - 3 + off.dy)}" font-family="sans-serif" font-size="10" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(txt)}</text>`,
-      );
-    }
+    frameBoxes.push(union(g.pts.map((p) => ({ x: p.x, y: p.y, w: 0, h: 0 })))); // arcs bulge past nodes
+  }
+  for (const e of model.edges) {
+    const at = labelAt.get(e.id);
+    const txt = edgeText(e);
+    if (!at || !txt) continue;
+    const w = textWidth(txt, LFS);
+    parts.push(
+      `<text data-el="edgelabel:${esc(e.id)}" x="${r1(at.x)}" y="${r1(at.y + 0.3 * LFS)}" font-family="sans-serif" font-size="${LFS}" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(txt)}</text>`,
+    );
+    frameBoxes.push({ x: at.x - w / 2, y: at.y - LFS / 2, w, h: LFS });
   }
 
-  // Bridge/casing pass (ADR-0025): a cross-ring EXIT chord crossing a cycle chord is rendered with a
-  // legible hop so the two lines are traceable — the EXIT stays continuous and hops OVER. Above the
-  // edges, below the centre badge + nodes.
+  // Bridge/casing pass (ADR-0025): an EXIT line crossing another edge hops OVER it, so the two
+  // lines stay traceable. Above the edges, below the centre badge + nodes.
   parts.push(
     ...addCrossingBridges(loopEdgeStrings, edgeIncidence(model), focalEdges(model, ['exit'])),
   );
 
-  // Reinforcing / balancing loop badge + CAT loop-topology marker in the centre (spec §C, v0.2 §4);
-  // drawn here above the edges, at the centre reserved as a label obstacle above (ADR-0045).
-  if (loopEdge || topoMark) {
+  // Reinforcing / balancing loop badge + CAT loop-topology marker in the empty ring centre (spec §C,
+  // v0.2 §4). The invisible `badge:centre` box is the area every edge and label keeps clear of.
+  if (hasBadge) {
     const bx = badgeCx;
     const by = badgeCy;
+    const bb = badgeBoxAt(bx, by);
+    parts.push(
+      `<rect data-el="badge:centre" x="${r1(bb.x)}" y="${r1(bb.y)}" width="${r1(bb.w)}" height="${r1(bb.h)}" fill="none" stroke="none" />`,
+    );
+    frameBoxes.push(bb);
     if (loopEdge) {
       parts.push(
         `<circle cx="${bx}" cy="${by}" r="18" fill="#fff" stroke="#000" stroke-width="2" />`,
-        `<text x="${bx}" y="${by + 5}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loopEdge.loop ?? '')}</text>`,
+        `<text x="${bx}" y="${r1(by + 5)}" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700">${esc(loopEdge.loop ?? '')}</text>`,
       );
     }
     if (topoMark) {
-      const ty = by + (loopEdge ? 36 : 0);
+      const ty = r1(by + (loopEdge ? 36 : 0));
       parts.push(
         loopTopologyGlyph(topoMark, bx, ty),
-        `<text x="${bx}" y="${ty + 28}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">${esc(tr(TOPO_KEY[topoMark]))}</text>`,
+        `<text x="${bx}" y="${r1(ty + 28)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">${esc(topoWord)}</text>`,
       );
     }
   }
 
-  // Ring vertical centroid — a resource diamond sits on the ring hull, so the side of it FACING
-  // AWAY from this centroid is always open exterior, and the side facing the centroid is where its
-  // incoming exit chord (and that chord's midpoint label) lives. A long resource label is placed on
-  // the outward vertical side so it never lands on the exit-edge label (ADR-0050).
-  let ringCy = 0;
-  for (const q of pos.values()) ringCy += q.y;
-  ringCy /= pos.size || 1;
-
-  // Nodes (resources = diamonds, CAT observing-eye = eye glyph, others = rounded rects).
-  // A flat 140×44 rhombus has almost no usable width off its centre line, so a multi-line label
-  // placed INSIDE it always pokes the slanted edges (the diamond can't grow without breaking the
-  // ring spacing → overlap). The resource label is therefore placed OUTSIDE the glyph (above it
-  // when the diamond is in the upper half of the ring, below it otherwise) — full node width,
-  // white-haloed so it stays legible over any chord it crosses — and the frame is grown to keep it
-  // in view (ADR-0049 follow-up; the same outside-the-glyph remedy used for mode-map names).
-  let resLabelMinY = Infinity;
-  let resLabelMaxY = -Infinity;
+  // Nodes (resources = diamonds holding their label, CAT observing-eye = eye glyph with its caption
+  // below, others = rounded rects with the label inside).
   for (const node of nodes) {
     const p = pos.get(node.id);
     if (!p) continue;
+    const sh = shape.get(node.id)!;
+    frameBoxes.push(footOf(node.id));
     // v0.2 §3: interpretive content (inferred / clinician-inferred / contested / symbolic)
     // is drawn dashed; descriptive content stays solid.
     const dash = isInterpretive(node.properties.epistemicStatus) ? ' stroke-dasharray="5 4"' : '';
-    const isDiamond = node.kind === 'resource';
-    const isEye = !isDiamond && node.stereotype === 'observing-eye';
-    if (isDiamond) {
+    const labelText = labelOf(node);
+    if (sh.kind === 'diamond') {
       parts.push(
-        `<polygon data-el="node:${esc(node.id)}" points="${p.x},${p.y - LNODE_H / 2} ${p.x + LNODE_W / 2},${p.y} ${p.x},${p.y + LNODE_H / 2} ${p.x - LNODE_W / 2},${p.y}" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
+        `<polygon data-el="node:${esc(node.id)}" points="${r1(p.x)},${r1(p.y - sh.hh)} ${r1(p.x + sh.hw)},${r1(p.y)} ${r1(p.x)},${r1(p.y + sh.hh)} ${r1(p.x - sh.hw)},${r1(p.y)}" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
+        wrapLabel(labelText, p.x, p.y + 0.3 * 11, {
+          size: 11,
+          anchor: 'middle',
+          maxWidth: sh.textW,
+          maxLines: sh.lines,
+          lineHeight: 14,
+          dataEl: `nodelabel:${node.id}`,
+        }),
       );
-    } else if (isEye) {
+    } else if (sh.kind === 'eye') {
       // CAT observing eye/I — the self-reflective stance that watches the trap (spec §B).
       parts.push(
-        `<ellipse data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" rx="26" ry="15" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
+        `<ellipse data-el="node:${esc(node.id)}" cx="${p.x}" cy="${p.y}" rx="${EYE_RX}" ry="${EYE_RY}" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
         `<circle cx="${p.x}" cy="${p.y}" r="6" fill="#000" />`,
+        wrapLabel(labelText, p.x, p.y + 30, {
+          size: 11,
+          anchor: 'middle',
+          maxWidth: LNODE_W - 16,
+          maxLines: 2,
+          dataEl: `nodelabel:${node.id}`,
+        }),
       );
     } else {
       parts.push(
-        `<rect data-el="node:${esc(node.id)}" x="${p.x - LNODE_W / 2}" y="${p.y - LNODE_H / 2}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
-      );
-    }
-    // v0.2 §3/§4: a contested marker (⚖) and an as-if qualifier ride on the node's own
-    // label (owner content — they don't enlarge the node, so the overlap invariant holds)
-    // and are echoed in alt-text below.
-    let labelText = getText(node.label, layer, lang);
-    if (showInterpretive && node.properties.epistemicStatus === 'contested')
-      labelText = `⚖ ${labelText}`;
-    if (showInterpretive && node.properties.asIf) labelText += ` (${tr('node.asIf')})`;
-    if (isDiamond) {
-      // A short label fits ON one line within the rhombus' widest band (≈100px at the cap-height
-      // offset from centre), so it sits INSIDE the diamond — filling the glyph as a normal node.
-      // A longer label can't (a flat 140×44 rhombus has almost no width off its centre line, so a
-      // multi-line label inside would poke the slanted edges, and the diamond can't grow without
-      // breaking the ring spacing → overlap). It is therefore placed OUTSIDE, on the outward
-      // (away-from-centroid) vertical side — full node width, white-haloed so it stays legible over
-      // any chord it crosses, frame grown past it (ADR-0049 follow-up; the same outside-the-glyph
-      // remedy used for mode-map names).
-      const INSIDE_W = 100;
-      if (textWidth(labelText, 11) <= INSIDE_W) {
-        parts.push(
-          wrapLabel(labelText, p.x, p.y + 4, {
-            size: 11,
-            anchor: 'middle',
-            maxWidth: 116,
-            maxLines: 1,
-            dataEl: `nodelabel:${node.id}`,
-          }),
-        );
-      } else {
-        const lh = 14;
-        const maxW = LNODE_W - 4;
-        const maxChars = Math.max(4, Math.floor(maxW / (11 * CHAR_W)));
-        const lines = wrapLines(labelText, maxChars, 3);
-        const span = (lines.length - 1) * lh;
-        const above = p.y <= ringCy;
-        const labelCy = above
-          ? p.y - LNODE_H / 2 - 6 - span / 2 // bottom line just above the top vertex
-          : p.y + LNODE_H / 2 + 12 + span / 2; // top line just below the bottom vertex
-        parts.push(
-          wrapLabel(labelText, p.x, labelCy, {
-            size: 11,
-            anchor: 'middle',
-            maxWidth: maxW,
-            maxLines: 3,
-            lineHeight: lh,
-            halo: 3,
-            dataEl: `nodelabel:${node.id}`,
-          }),
-        );
-        resLabelMinY = Math.min(resLabelMinY, labelCy - span / 2 - 9);
-        resLabelMaxY = Math.max(resLabelMaxY, labelCy + span / 2 + 4);
-      }
-    } else {
-      parts.push(
-        wrapLabel(labelText, p.x, p.y + (isEye ? 30 : 4), {
+        `<rect data-el="node:${esc(node.id)}" x="${r1(p.x - LNODE_W / 2)}" y="${r1(p.y - LNODE_H / 2)}" width="${LNODE_W}" height="${LNODE_H}" rx="10" ry="10" fill="#fff" stroke="#000" stroke-width="2"${dash} />`,
+        wrapLabel(labelText, p.x, p.y + 4, {
           size: 11,
           anchor: 'middle',
           maxWidth: LNODE_W - 16,
@@ -1910,28 +2518,17 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     (extra.length ? ' ' + extra.join(' ') : '');
 
   // Fit the frame to the actual content (incl. negative coords) so nothing clips on screen or in export.
+  // Every node footprint, edge label and the badge is in `frameBoxes`. The frame is widened
+  // symmetrically about the nodes' centre so the diagram stays centred (ADR-0054).
   const pad = 18;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const p of pos.values()) {
-    minX = Math.min(minX, p.x - LNODE_W / 2);
-    maxX = Math.max(maxX, p.x + LNODE_W / 2);
-    minY = Math.min(minY, p.y - LNODE_H / 2);
-    maxY = Math.max(maxY, p.y + LNODE_H / 2);
-  }
-  // Resource labels sit outside their diamond (above) — grow the frame so they never clip.
-  if (Number.isFinite(resLabelMinY)) minY = Math.min(minY, resLabelMinY);
-  if (Number.isFinite(resLabelMaxY)) maxY = Math.max(maxY, resLabelMaxY);
-  if (!Number.isFinite(minX)) {
-    minX = 0;
-    minY = 0;
-    maxX = LOOP_W;
-    maxY = 200;
-  }
-  const fx = r1(minX - pad);
-  const fw = r1(maxX + pad - fx);
+  const content = frameBoxes.length ? union(frameBoxes) : { x: 0, y: 0, w: LOOP_W, h: 200 };
+  const nodeSpan = pos.size ? union([...pos.keys()].map(boxOf)) : content;
+  const midX = nodeSpan.x + nodeSpan.w / 2;
+  const halfW = Math.max(midX - content.x, content.x + content.w - midX) + pad;
+  const minY = content.y;
+  const maxY = content.y + content.h;
+  const fx = r1(midX - halfW);
+  const fw = r1(2 * halfW);
   // The title sits above the ring and WRAPS to ≤2 lines within the content width. It never grows the
   // frame (that left the ring off-centre with an empty right margin — ADR-0054) nor compresses
   // (ADR-0052/0053): a wide title simply takes a second line over the centred ring.
