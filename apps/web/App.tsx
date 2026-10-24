@@ -347,7 +347,8 @@ function downloadText(filename: string, text: string, type: string): void {
  * PDF (the print stylesheet), not a bundled library.
  */
 function downloadPng(filename: string, svgString: string, scale = 2): void {
-  const vb = svgString.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+  // Content-fit renderers (process-loop, relational-field) move the viewBox ORIGIN, so accept any x/y.
+  const vb = svgString.match(/viewBox="-?[\d.]+ -?[\d.]+ ([\d.]+) ([\d.]+)"/);
   const w = vb ? parseFloat(vb[1]) : 800;
   const h = vb ? parseFloat(vb[2]) : 600;
   // Some browsers need explicit width/height to decode an SVG <img> at the right size.

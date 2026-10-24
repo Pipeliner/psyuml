@@ -64,13 +64,18 @@ function nonIncidentCrossings(model: PsyumlModel, svg: string): string[] {
  *     crosses one cycle chord (the ring order is the cycle's semantics — not reorderable);
  *   • parts-map — the POLARIZATION tie between two parts on opposite sides of the protector arc
  *     crosses their containment lines down to the exile.
- * All are made legible by the bridge/casing pass (ADR-0025). Reduce one → update its baseline.
+ * The loop/parts ones are made legible by the bridge/casing pass (ADR-0025); the genogram one is a
+ * dotted origin thread over a solid side, traceable without a hop. Reduce one → update its baseline.
  */
 const CROSSING_BASELINE = new Map<string, number>([
   ['showcase-parts-map.psyuml', 2],
   ['cat-sdr.psyuml', 1],
   ['depression-flower.psyuml', 1],
   ['showcase-process-loop.psyuml', 1],
+  // relational-field (ties tagged + measured since ADR-0062): the Victim → Helpless-child ORIGIN
+  // thread has to leave the present-day triangle to reach the earlier one; routed around the Rescuer
+  // (it used to run straight THROUGH that person) it crosses the Persecutor–Rescuer side once.
+  ['drama-triangle.psyuml', 1],
 ]);
 
 const load = (f: string): PsyumlModel =>

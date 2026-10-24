@@ -21,6 +21,7 @@ import {
 } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
 import {
+  type Box,
   CHAR_W,
   clipToBox,
   deCollide,
@@ -29,12 +30,29 @@ import {
   separate1D,
   type TaggedBox,
   textWidth,
+  union,
 } from './layout';
 import { routeToPath, type RouterObstacle } from './router';
 import { BespokeRouter } from './router-bespoke';
 import { layeredLayout } from './layered';
-import { attrs, boxesFromSvg, edgeCrossings, edgeSegments, textLineBox } from './introspect';
+import {
+  attrs,
+  boxesFromSvg,
+  edgeCrossings,
+  edgeSegments,
+  textBoxesFromSvg,
+  textLineBox,
+} from './introspect';
 import { chromeText, type ChromeKey, translator } from './i18n';
+import {
+  bendCurve,
+  detourWaypoint,
+  growBox,
+  pathSegs,
+  placeLabelOnPath,
+  rankAgainst,
+  trimEnds,
+} from './label-place';
 
 // Edge routing (REQ-EDGE-ROUTER, ADR-0023/0024): export the EdgeRouter interface + both backends.
 export * from './router';
@@ -560,6 +578,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
   }
 
   const parts: string[] = [];
+  const bandTitleBoxes: Box[] = [];
 
   // Bands
   bands.forEach((b, i) => {
@@ -574,9 +593,11 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
         `<rect x="20" y="${top}" width="${r1(width - 40)}" height="${BAND_H}" fill="url(#${pid})" stroke="none" />`,
       );
     }
-    parts.push(
-      `<text x="28" y="${top + 18}" font-family="sans-serif" font-size="13" font-weight="700">${esc(getText(b.label, layer, lang))}</text>`,
-    );
+    // Band title over the band's hatch: a white halo (ADR-0047/0062, issue #6) so the pattern lines
+    // break around the glyphs and the title stays legible in monochrome.
+    const bandTitle = `<text x="28" y="${top + 18}" font-family="sans-serif" font-size="13" font-weight="700" stroke="#fff" stroke-width="4" paint-order="stroke">${esc(getText(b.label, layer, lang))}</text>`;
+    bandTitleBoxes.push(...textBoxesFromSvg(bandTitle));
+    parts.push(bandTitle);
   });
 
   // Edges (orthogonal lanes: transitions route right into the right gutter, exits route left
@@ -604,7 +625,9 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
         box: { x: c.cx - NODE_W / 2, y: c.cy - NODE_H / 2, w: NODE_W, h: NODE_H },
       };
     });
-  const routedLabels: { id: string; text: string; at: Pt }[] = [];
+  const routedLabels: { id: string; text: string; pts: Pt[] }[] = [];
+  // Every drawn edge polyline, so a routed label can keep off OTHER edges' lines (issue #6).
+  const drawnPaths: { id: string; pts: Pt[] }[] = [];
   for (const e of model.edges) {
     const s = center.get(e.source);
     const t = center.get(e.target);
@@ -639,8 +662,10 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
       parts.push(
         `<path data-el="edge:${esc(e.id)}" d="${routeToPath(points)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
       );
-      if (txt) routedLabels.push({ id: e.id, text: txt, at: polyMid(points) });
+      drawnPaths.push({ id: e.id, pts: points });
+      if (txt) routedLabels.push({ id: e.id, text: txt, pts: points });
     } else {
+      drawnPaths.push({ id: e.id, pts: lanePts });
       parts.push(
         `<path data-el="edge:${esc(e.id)}" d="M ${r1(sx)},${s.cy} H ${r1(lane)} V ${t.cy} H ${r1(ex)}" fill="none" stroke="#000" stroke-width="2"${dash} marker-end="url(#arrow)" />`,
       );
@@ -673,22 +698,25 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
       `<text data-el="edgelabel:${esc(el.id)}" x="${r1(el.x)}" y="${r1(el.y)}" font-family="sans-serif" font-size="${edgeLabelFs}" text-anchor="${el.anchor}" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(el.text)}</text>`,
     );
   }
-  // Routed edges (multi-node bands): label rides the routed path's midpoint, centred + haloed.
-  // Two routed labels whose midpoints land in the same crowded area are spread on y (like the
-  // gutter labels) so they don't overprint (ADR-0012 label↔label).
-  routedLabels.sort((a, b) => a.at.y - b.at.y || a.id.localeCompare(b.id));
-  if (routedLabels.length >= 2) {
-    const ys = separate1D(
-      routedLabels.map((rl) => ({ center: rl.at.y, half: edgeLabelFs / 2 + 1 })),
-      6,
-    );
-    routedLabels.forEach((rl, i) => {
-      rl.at = { x: rl.at.x, y: ys[i] };
-    });
-  }
+  // Routed edges (multi-node bands): the label is PLACED along its routed path (ADR-0062, issue #6) —
+  // the first spot from the midpoint outward that clears every state box, band title, gutter label
+  // and already-placed routed label and does not sit on another edge's line, so a cross-column exit
+  // label is never hidden behind a state and two crossing triggers never stack at the crossing.
+  const placed: Box[] = [
+    ...sObstacles.map((o) => o.box),
+    ...bandTitleBoxes,
+    ...edgeLabels.map((el) => textLineBox(el.text, el.x, el.y, edgeLabelFs, el.anchor)),
+  ];
+  const bandsArea: Box = { x: 20, y: TITLE_H + PAD_TOP, w: width - 40, h: bandH - BAND_GAP };
   for (const rl of routedLabels) {
+    const spot = placeLabelOnPath(rl.pts, rl.text, edgeLabelFs, {
+      boxes: placed,
+      segs: pathSegs(drawnPaths.filter((d) => d.id !== rl.id).map((d) => d.pts)),
+      frame: bandsArea,
+    });
+    placed.push(spot.box);
     parts.push(
-      `<text data-el="edgelabel:${esc(rl.id)}" x="${r1(rl.at.x)}" y="${r1(rl.at.y)}" font-family="sans-serif" font-size="${edgeLabelFs}" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(rl.text)}</text>`,
+      `<text data-el="edgelabel:${esc(rl.id)}" x="${r1(spot.x)}" y="${r1(spot.y)}" font-family="sans-serif" font-size="${edgeLabelFs}" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(rl.text)}</text>`,
     );
   }
 
@@ -2318,46 +2346,101 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
   return { svg, altText };
 }
 
-/** McGoldrick relation line styles (spec §C): close=solid, distant=dashed,
- * conflict=zigzag, fused=triple, cutoff=solid with two slash marks. */
-function relLine(kind: string, x1: number, y1: number, x2: number, y2: number): string {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
-  const px = -uy;
-  const py = ux;
+/** A polyline as an absolute `M … L …` path `d`. */
+const polyD = (pts: Pt[]): string =>
+  pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${r1(p.x)},${r1(p.y)}`).join(' ');
+
+/** The polyline shifted `k` px along its left normal (mitred at the bends) — the fused triple line. */
+function offsetPolyline(pts: Pt[], k: number): Pt[] {
+  const nrm = (a: Pt, b: Pt): Pt => {
+    const l = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    return { x: -(b.y - a.y) / l, y: (b.x - a.x) / l };
+  };
+  return pts.map((p, i) => {
+    const n1 = i > 0 ? nrm(pts[i - 1], p) : nrm(p, pts[i + 1]);
+    const n2 = i < pts.length - 1 ? nrm(p, pts[i + 1]) : n1;
+    const sx = n1.x + n2.x;
+    const sy = n1.y + n2.y;
+    const sl = Math.hypot(sx, sy) || 1;
+    const m = { x: sx / sl, y: sy / sl };
+    const f = k / Math.max(0.3, m.x * n1.x + m.y * n1.y);
+    return { x: p.x + m.x * f, y: p.y + m.y * f };
+  });
+}
+
+/** McGoldrick relation line styles (spec §C) drawn along a polyline — straight (2 points) or bent once
+ * around a third person (ADR-0062, issue #8): close=solid, distant=dashed, conflict=zigzag,
+ * fused=triple, cutoff=solid with two slash marks. The main stroke carries `data-el="edge:<id>"`, so
+ * the edge↔node, crossing and overlap invariants can read every tie. */
+function relLine(kind: string, pts: Pt[], dataEl: string): string {
+  const tag = elAttr(dataEl);
   if (kind === 'conflict') {
-    const segs = Math.max(4, Math.round(len / 14));
-    let d = `M ${r1(x1)},${r1(y1)}`;
+    // zigzag teeth every ~14px of ARC LENGTH, alternating ±5px off the (possibly curved) tie
+    const cum = [0];
+    for (let i = 1; i < pts.length; i += 1)
+      cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+    const total = cum[cum.length - 1] || 1;
+    const segs = Math.max(4, Math.round(total / 14));
+    let d = `M ${r1(pts[0].x)},${r1(pts[0].y)}`;
+    let leg = 0;
     for (let i = 1; i < segs; i += 1) {
-      const t = i / segs;
+      const at = (total * i) / segs;
+      while (leg < pts.length - 2 && cum[leg + 1] < at) leg += 1;
+      const a = pts[leg];
+      const b = pts[leg + 1];
+      const len = cum[leg + 1] - cum[leg] || 1;
+      const f = (at - cum[leg]) / len;
       const off = i % 2 === 0 ? 5 : -5;
-      d += ` L ${r1(x1 + dx * t + px * off)},${r1(y1 + dy * t + py * off)}`;
+      const px = -(b.y - a.y) / len;
+      const py = (b.x - a.x) / len;
+      d += ` L ${r1(a.x + (b.x - a.x) * f + px * off)},${r1(a.y + (b.y - a.y) * f + py * off)}`;
     }
-    return `<path d="${d} L ${r1(x2)},${r1(y2)}" fill="none" stroke="#000" stroke-width="1.5" />`;
+    const end = pts[pts.length - 1];
+    return `<path${tag} d="${d} L ${r1(end.x)},${r1(end.y)}" fill="none" stroke="#000" stroke-width="1.5" />`;
   }
   if (kind === 'fused') {
-    const ln = (k: number): string =>
-      `<line x1="${r1(x1 + px * k)}" y1="${r1(y1 + py * k)}" x2="${r1(x2 + px * k)}" y2="${r1(y2 + py * k)}" stroke="#000" stroke-width="1.5" />`;
-    return ln(-3) + ln(0) + ln(3);
+    return [-3, 0, 3]
+      .map(
+        (k) =>
+          `<path${k === 0 ? tag : ''} d="${polyD(offsetPolyline(pts, k))}" fill="none" stroke="#000" stroke-width="1.5" />`,
+      )
+      .join('');
   }
+  const end = pts[pts.length - 1];
   if (kind === 'nestedWithin') {
     // Origin / nested-within: a fine-dotted thread (distinct from 'distant' dashes) with a
     // small ring at the historical end to read as "derives from this earlier pattern".
     return (
-      `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="#000" stroke-width="1" stroke-dasharray="1 4" />` +
-      `<circle cx="${r1(x2)}" cy="${r1(y2)}" r="4" fill="none" stroke="#000" stroke-width="1" />`
+      `<path${tag} d="${polyD(pts)}" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 4" />` +
+      `<circle cx="${r1(end.x)}" cy="${r1(end.y)}" r="4" fill="none" stroke="#000" stroke-width="1" />`
     );
   }
   const dash = kind === 'distant' ? ' stroke-dasharray="6 5"' : '';
-  let out = `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="#000" stroke-width="2"${dash} />`;
+  let out = `<path${tag} d="${polyD(pts)}" fill="none" stroke="#000" stroke-width="2"${dash} />`;
   if (kind === 'cutoff') {
-    const mx = (x1 + x2) / 2;
-    const my = (y1 + y2) / 2;
+    const m = polyMid(pts);
+    // the leg the midpoint lies on gives the tick direction
+    let leg: [Pt, Pt] = [pts[0], end];
+    let best = Infinity;
+    for (let i = 0; i < pts.length - 1; i += 1) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      const dd =
+        Math.hypot(m.x - a.x, m.y - a.y) +
+        Math.hypot(b.x - m.x, b.y - m.y) -
+        Math.hypot(b.x - a.x, b.y - a.y);
+      if (dd < best) {
+        best = dd;
+        leg = [a, b];
+      }
+    }
+    const len = Math.hypot(leg[1].x - leg[0].x, leg[1].y - leg[0].y) || 1;
+    const ux = (leg[1].x - leg[0].x) / len;
+    const uy = (leg[1].y - leg[0].y) / len;
+    const px = -uy;
+    const py = ux;
     const tick = (c: number): string =>
-      `<line x1="${r1(mx + ux * c - px * 7)}" y1="${r1(my + uy * c - py * 7)}" x2="${r1(mx + ux * c + px * 7)}" y2="${r1(my + uy * c + py * 7)}" stroke="#000" stroke-width="2" />`;
+      `<line x1="${r1(m.x + ux * c - px * 7)}" y1="${r1(m.y + uy * c - py * 7)}" x2="${r1(m.x + ux * c + px * 7)}" y2="${r1(m.y + uy * c + py * 7)}" stroke="#000" stroke-width="2" />`;
     out += tick(-4) + tick(4);
   }
   return out;
@@ -2394,7 +2477,6 @@ function personGlyph(
 }
 
 const REL_SHORT = 30;
-
 /** Render a Relational Field / genogram (spec §E.3) from manually-placed people +
  * external systems, with the McGoldrick relation set and an ecomap overlay. */
 export function renderRelationalField(
@@ -2411,75 +2493,132 @@ export function renderRelationalField(
   nodes.forEach((n, i) => {
     pos.set(n.id, n.position ? { x: n.position.x, y: n.position.y } : { x: 80 + i * 130, y: 130 });
   });
-  let maxX = 0;
-  let maxY = 0;
-  for (const p of pos.values()) {
-    maxX = Math.max(maxX, p.x);
-    maxY = Math.max(maxY, p.y);
-  }
-  // The legend is a fixed reference strip wider than the node spread; grow the frame to fit it (and
-  // the title) at full size rather than squeezing a glyph legend (ADR-0052).
-  const RF_LEGEND = tr('relational.legend');
-  const width = Math.max(
-    560,
-    maxX + 90,
-    24 + textWidth(RF_LEGEND, 10),
-    model.meta.title ? 24 + textWidth(model.meta.title, 16) : 0,
-  );
-  const height = Math.max(300, maxY + 70) + 44;
 
-  const parts: string[] = [];
-
-  // Relations (under the nodes)
-  for (const e of model.edges) {
-    const s = pos.get(e.source);
-    const t = pos.get(e.target);
-    if (!s || !t) continue;
-    const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
-    const ux = (t.x - s.x) / len;
-    const uy = (t.y - s.y) / len;
-    parts.push(
-      relLine(
-        e.kind,
-        s.x + ux * REL_SHORT,
-        s.y + uy * REL_SHORT,
-        t.x - ux * REL_SHORT,
-        t.y - uy * REL_SHORT,
-      ),
-    );
-    const lbl = e.label ? getText(e.label, layer, lang) : '';
-    if (lbl) {
-      parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((s.x + t.x) / 2)}" y="${r1((s.y + t.y) / 2) - 4}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
-      );
-    }
-  }
-
-  // People + systems. Each is wrapped in a group tagged with its node id so the editor can
-  // hit-test it for drag-to-reposition (this renderer honors n.position; persisted via pos=).
+  // People + systems — built FIRST (emitted after the ties, so they draw on top) because their
+  // footprints (glyph + caption) are what a tie routes around and its label keeps clear of. Each is
+  // wrapped in a group tagged with its node id so the editor can hit-test it for drag-to-reposition
+  // (this renderer honors n.position; persisted via pos=).
+  const nodeParts: string[] = [];
+  const footprint = new Map<string, Box[]>();
   for (const n of nodes) {
     const p = pos.get(n.id);
     if (!p) continue;
     const labelDy = n.stereotype === 'system' ? 4 : 36;
-    parts.push(
+    const frag =
       `<g data-node-id="${esc(n.id)}">` +
-        personGlyph(n.stereotype, n.properties.index === true, p.x, p.y, `node:${n.id}`) +
-        wrapLabel(getText(n.label, layer, lang), p.x, p.y + labelDy, {
-          size: 10,
-          anchor: 'middle',
-          maxWidth: 120,
-          halo: 3,
-          dataEl: `nodelabel:${n.id}`,
-        }) +
-        `</g>`,
-    );
+      personGlyph(n.stereotype, n.properties.index === true, p.x, p.y, `node:${n.id}`) +
+      wrapLabel(getText(n.label, layer, lang), p.x, p.y + labelDy, {
+        size: 10,
+        anchor: 'middle',
+        maxWidth: 120,
+        halo: 3,
+        dataEl: `nodelabel:${n.id}`,
+      }) +
+      `</g>`;
+    nodeParts.push(frag);
+    // the glyph (+ the index double border, 4px out) and its caption
+    const glyph = boxesFromSvg(frag).filter((b) => b.el === `node:${n.id}`);
+    footprint.set(n.id, [...glyph.map((b) => growBox(b, 4)), ...textBoxesFromSvg(frag)]);
   }
+  const allNodeBoxes = [...footprint.values()].flat();
 
-  const ly = height - 26;
-  parts.push(fitText(RF_LEGEND, 12, ly, { size: 10, maxWidth: width - 24 }));
+  // Relations (under the nodes). A tie whose straight line would run through a THIRD person bends
+  // once around them (ADR-0062, issue #8) — drawn straight through, a grandmother→index conflict
+  // reads as a grandmother→mother one. The bend avoids crossing the other ties where it can, then
+  // keeps as far from them as it can (so it doesn't land on, say, a fused triple line); the
+  // orthogonal router is the fallback.
+  const routes: { e: (typeof model.edges)[number]; pts: Pt[] }[] = [];
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const blockers = [...footprint.entries()]
+      .filter(([id]) => id !== e.source && id !== e.target)
+      .flatMap(([, bs]) => bs.map((b) => growBox(b, 10)));
+    // the other ties: already-routed paths, then the straight centre lines still to come
+    const others = model.edges
+      .filter((o) => o.id !== e.id)
+      .map(
+        (o) =>
+          routes.find((r) => r.e.id === o.id)?.pts ??
+          [pos.get(o.source), pos.get(o.target)].filter((p): p is Pt => !!p),
+      );
+    const way = detourWaypoint(s, t, blockers, (pts) => rankAgainst(pts, others));
+    let path: Pt[] = [s, t];
+    if (way) path = bendCurve(s, way, t);
+    else if (way === undefined) {
+      const obstacles: RouterObstacle[] = [...footprint.entries()].map(([id, bs]) => ({
+        id,
+        box: union(bs),
+      }));
+      const routed = edgeRouter.route(obstacles, [e], { obstacleMargin: 10 })[0].points;
+      path = [s, ...routed.slice(1, -1), t];
+    }
+    routes.push({ e, pts: path });
+  }
+  // Stop each tie REL_SHORT short of both glyph centres.
+  const drawn = routes.map(({ e, pts }) => ({ e, pts: trimEnds(pts, REL_SHORT, REL_SHORT) }));
+
+  const parts: string[] = [];
+  const placedLabels: Box[] = [];
+  for (const { e, pts } of drawn) {
+    parts.push(relLine(e.kind, pts, `edge:${e.id}`));
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      // Placed along the tie, clear of every person + caption, the other labels and the other ties.
+      const spot = placeLabelOnPath(pts, lbl, 9, {
+        boxes: [...allNodeBoxes, ...placedLabels],
+        segs: pathSegs(drawn.filter((o) => o.e.id !== e.id).map((o) => o.pts)),
+      });
+      placedLabels.push(spot.box);
+      parts.push(
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1(spot.x)}" y="${r1(spot.y)}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
+      );
+    }
+  }
+  parts.push(...nodeParts);
+
+  // Fit the frame to the CONTENT (issue #8): the people, their captions, the ties and their labels,
+  // plus padding, a title row above and the legend + disclaimer below — so hand-placed positions far
+  // from the origin no longer leave an empty band under the title. Coordinates stay the model's own
+  // (the viewBox origin moves instead), so editor drag-to-reposition maps straight back to `pos`.
+  const PAD = 24;
+  const content = union([
+    ...allNodeBoxes,
+    ...placedLabels,
+    ...drawn.flatMap((d) => d.pts.map((p) => ({ x: p.x, y: p.y, w: 0, h: 0 }))),
+  ]);
+  const hasContent = allNodeBoxes.length > 0;
+  const cx0 = hasContent ? content.x : 0;
+  const cy0 = hasContent ? content.y : 0;
+  const cw = hasContent ? content.w : 300;
+  const ch = hasContent ? content.h : 120;
+  // The legend is a fixed reference strip wider than most node spreads; widen the frame to fit it
+  // (and the title) at full size rather than squeezing a glyph legend (ADR-0052), centring the content.
+  const RF_LEGEND = tr('relational.legend');
+  const width = r1(
+    Math.max(
+      560,
+      cw + 2 * PAD,
+      24 + textWidth(RF_LEGEND, 10),
+      model.meta.title ? 24 + textWidth(model.meta.title, 16) : 0,
+    ),
+  );
+  const TITLE_ROW = 34;
+  const FOOT = 44;
+  const fx = r1(cx0 + cw / 2 - width / 2);
+  const fy = r1(cy0 - PAD - TITLE_ROW);
+  const height = r1(TITLE_ROW + ch + 2 * PAD + FOOT);
+
+  const ly = fy + height - 26;
+  parts.push(fitText(RF_LEGEND, fx + 12, ly, { size: 10, maxWidth: width - 24 }));
   if (model.meta.disclaimer) {
     parts.push(
-      fitText(model.meta.disclaimer, 12, ly + 14, { size: 9, fill: '#333', maxWidth: width - 24 }),
+      fitText(model.meta.disclaimer, fx + 12, ly + 14, {
+        size: 9,
+        fill: '#333',
+        maxWidth: width - 24,
+      }),
     );
   }
 
@@ -2494,13 +2633,17 @@ export function renderRelationalField(
     `Relationships: ${rels.join('; ') || 'none'}.`;
 
   const titleText = model.meta.title
-    ? fitText(model.meta.title, 12, 22, { size: 16, weight: 700, maxWidth: width - 24 })
+    ? fitText(model.meta.title, fx + 12, fy + 22, {
+        size: 16,
+        weight: 700,
+        maxWidth: width - 24,
+      })
     : '';
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(altText)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fx} ${fy} ${width} ${height}" role="img" aria-label="${esc(altText)}">` +
     `<title>${esc(model.meta.title ?? tr('title.relationalField'))}</title><desc>${esc(altText)}</desc>` +
-    `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />` +
+    `<rect x="${fx}" y="${fy}" width="${width}" height="${height}" fill="#fff" />` +
     titleText +
     parts.join('') +
     '</svg>';
@@ -2545,44 +2688,23 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   const parts: string[] = [];
 
-  // Mode-trigger edges (under the nodes)
-  for (const e of model.edges) {
-    const s = pos.get(e.source);
-    const t = pos.get(e.target);
-    if (!s || !t) continue;
-    const sNode = nodes.find((x) => x.id === e.source);
-    const tNode = nodes.find((x) => x.id === e.target);
-    const rs = sNode ? radius(sNode) : 20;
-    const rt = tNode ? radius(tNode) : 20;
-    const len = Math.hypot(t.x - s.x, t.y - s.y) || 1;
-    const ux = (t.x - s.x) / len;
-    const uy = (t.y - s.y) / len;
-    const x1 = r1(s.x + ux * rs);
-    const y1 = r1(s.y + uy * rs);
-    const x2 = r1(t.x - ux * rt);
-    const y2 = r1(t.y - uy * rt);
-    parts.push(
-      `<path data-el="edge:${esc(e.id)}" d="M ${x1},${y1} L ${x2},${y2}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
-    );
-    const lbl = e.label ? getText(e.label, layer, lang) : '';
-    if (lbl) {
-      parts.push(
-        `<text data-el="edgelabel:${esc(e.id)}" x="${r1((x1 + x2) / 2)}" y="${r1((y1 + y2) / 2) - 3}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
-      );
-    }
-  }
-
-  // Mode circles (size = dominance, with a redundant numeral)
+  // Mode circles (size = dominance, with a redundant numeral). Built FIRST (emitted after the edges,
+  // so they still draw on top) because their boxes are what the edges route around and what the edge
+  // labels must keep clear of (ADR-0062, issue #6).
+  const nodeParts: string[] = [];
+  // Every mode's footprint (circle + the marks above it + its caption block), keyed by node id.
+  const footprint = new Map<string, Box[]>();
   for (const n of nodes) {
     const p = pos.get(n.id);
     if (!p) continue;
     const r = radius(n);
+    const from = nodeParts.length;
     const isHealthy = n.kind === 'self' || n.stereotype === 'healthy-adult';
-    parts.push(
+    nodeParts.push(
       `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#fff" stroke="#000" stroke-width="2" />`,
     );
     if (isHealthy) {
-      parts.push(
+      nodeParts.push(
         `<circle cx="${p.x}" cy="${p.y}" r="${r1(r - 4)}" fill="none" stroke="#000" stroke-width="2" />`,
         `<text x="${p.x}" y="${r1(p.y - r - 6)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(tr('mode.grow'))}</text>`,
       );
@@ -2590,7 +2712,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     const st = n.stereotype ?? '';
     if (st.includes('child') || st.includes('vulnerable')) {
       const ty = p.y - r - 4;
-      parts.push(
+      nodeParts.push(
         `<polygon points="${p.x},${r1(ty - 9)} ${p.x + 8},${r1(ty + 3)} ${p.x - 8},${r1(ty + 3)}" fill="#fff" stroke="#000" stroke-width="1.5" />`,
       );
     }
@@ -2601,7 +2723,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     const name = getText(n.label, layer, lang);
     const nameLines = wrapLines(name, Math.max(6, Math.floor(108 / (10 * CHAR_W))), 2);
     const nameCy = p.y + r + 14 + ((nameLines.length - 1) * 13) / 2;
-    parts.push(
+    nodeParts.push(
       wrapLabel(name, p.x, nameCy, {
         size: 10,
         anchor: 'middle',
@@ -2613,11 +2735,77 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     );
     const dom = n.properties.dominance;
     if (dom !== undefined) {
-      parts.push(
+      nodeParts.push(
         `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${r1(nameCy + ((nameLines.length - 1) * 13) / 2 + 14)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(tr('mode.dominance', { value: dom.toFixed(2) }))}</text>`,
       );
     }
+    footprint.set(n.id, [
+      // the circle, extended up over the ↑grow word / vulnerable-child triangle drawn above it
+      { x: p.x - r, y: p.y - r - 18, w: 2 * r, h: 2 * r + 18 },
+      ...textBoxesFromSvg(nodeParts.slice(from).join('')),
+    ]);
   }
+  const allNodeBoxes = [...footprint.values()].flat();
+
+  // Mode-trigger edges (under the nodes). A straight trigger that would run through a THIRD mode
+  // (e.g. collinear with it under manual `pos`) bends once around it (`detourWaypoint`), so it can't
+  // be misread as a trigger of that mode; the orthogonal router is the fallback.
+  const edgePaths: { e: (typeof model.edges)[number]; pts: Pt[] }[] = [];
+  for (const e of model.edges) {
+    const s = pos.get(e.source);
+    const t = pos.get(e.target);
+    if (!s || !t) continue;
+    const sNode = nodes.find((x) => x.id === e.source);
+    const tNode = nodes.find((x) => x.id === e.target);
+    const rs = sNode ? radius(sNode) : 20;
+    const rt = tNode ? radius(tNode) : 20;
+    const blockers = [...footprint.entries()]
+      .filter(([id]) => id !== e.source && id !== e.target)
+      .flatMap(([, bs]) => bs.map((b) => growBox(b, 6)));
+    // the other triggers: already-placed paths, then the straight centre lines still to come
+    const others = model.edges
+      .filter((o) => o.id !== e.id)
+      .map(
+        (o) =>
+          edgePaths.find((p) => p.e.id === o.id)?.pts ??
+          [pos.get(o.source), pos.get(o.target)].filter((p): p is Pt => !!p),
+      );
+    const way = detourWaypoint(s, t, blockers, (pts) => rankAgainst(pts, others));
+    let path: Pt[] = [s, t];
+    if (way) path = bendCurve(s, way, t);
+    else if (way === undefined) {
+      const obstacles: RouterObstacle[] = [...footprint.entries()].map(([id, bs]) => ({
+        id,
+        box: union(bs),
+      }));
+      const routed = edgeRouter.route(obstacles, [e], { obstacleMargin: 8 })[0].points;
+      path = [s, ...routed.slice(1, -1), t];
+    }
+    // start / end on the two circles' rims
+    const pts = trimEnds(path, rs, rt).map((p) => ({ x: r1(p.x), y: r1(p.y) }));
+    edgePaths.push({ e, pts });
+  }
+  const placedLabels: Box[] = [];
+  for (const { e, pts } of edgePaths) {
+    const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${r1(p.x)},${r1(p.y)}`).join(' ');
+    parts.push(
+      `<path data-el="edge:${esc(e.id)}" d="${d}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
+    );
+    const lbl = e.label ? getText(e.label, layer, lang) : '';
+    if (lbl) {
+      // Placed along the edge, clear of every mode + caption, the other labels and the OTHER edges'
+      // lines — two crossing triggers no longer both land on the shared midpoint (issue #6).
+      const spot = placeLabelOnPath(pts, lbl, 9, {
+        boxes: [...allNodeBoxes, ...placedLabels],
+        segs: pathSegs(edgePaths.filter((o) => o.e.id !== e.id).map((o) => o.pts)),
+      });
+      placedLabels.push(spot.box);
+      parts.push(
+        `<text data-el="edgelabel:${esc(e.id)}" x="${r1(spot.x)}" y="${r1(spot.y)}" text-anchor="middle" font-family="sans-serif" font-size="9" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(lbl)}</text>`,
+      );
+    }
+  }
+  parts.push(...nodeParts);
 
   const ly = height - 24;
   parts.push(chromeLine(tr('mode.legend'), 12, ly, width, { size: 10 }));
