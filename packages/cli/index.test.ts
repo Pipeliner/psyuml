@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { DiagramType, parseModel } from '@psyuml/model';
+import { render } from '@psyuml/render';
 import { run, type CliIO } from './index';
 
 /** A CliIO backed by the real example files, with an optional in-memory override map
@@ -292,4 +294,27 @@ describe('psyuml export (lossy FHIR, v0.2 §7)', () => {
     expect(run(['export', 'examples/state-map.psyuml', '--code', 'oops'], io)).toBe(2);
     expect(io.stderr.join('\n')).toContain('--code');
   });
+});
+
+// Issue #2: the CLI used to keep its own diagram→renderer map, which drifted from the core
+// `render()` dispatcher and left 8 types reporting "no renderer". Every diagram type the core
+// model accepts must render (and template) through the CLI, byte-identical to `render()`.
+describe('psyuml render covers every diagram type (no drift from @psyuml/render)', () => {
+  for (const diagram of DiagramType.options) {
+    const file = `examples/showcase-${diagram}.psyuml`;
+    it(`renders + templates ${diagram}`, () => {
+      const io = fakeIO();
+      const model = parseModel(JSON.parse(io.readFile(file)));
+      expect(model.diagram).toBe(diagram);
+
+      expect(run(['render', file, '-o', 'out.svg'], io)).toBe(0);
+      expect(io.stderr.join('\n')).not.toContain('no renderer');
+      expect(io.written['out.svg']).toBe(
+        render(model, { layer: 'clinician', monochrome: true }).svg,
+      );
+
+      expect(run(['template', file, '-o', 'blank.svg'], io)).toBe(0);
+      expect(io.written['blank.svg'].startsWith('<svg')).toBe(true);
+    });
+  }
 });

@@ -23,7 +23,7 @@ script. Lets validation gate CI / pre-commit the same way the editor gates expor
 | `index.test.ts` | Unit tests over `run` with a fake IO (clean/error lint, render, convert both ways, help/version) | `index.ts`, `examples/*.psyuml` | CI `test` | REQ-TEXT-DSL | low |
 
 ## Change checklist
-- [ ] New diagram type ⇒ add it to the `RENDERERS` map here (mirrors `conformance/`).
+- [ ] New diagram type ⇒ nothing to add here: `render` / `template` dispatch through `@psyuml/render`'s `render()` (its exhaustive `DIAGRAM_RENDERERS` registry). Never re-introduce a private renderer map — it drifted once (issue #2); `index.test.ts` renders every `DiagramType` through the CLI.
 - [ ] Keep `run` pure (all I/O via `CliIO`) so it stays testable without the bundle.
 - [ ] `pnpm build:cli` then `node dist/cli/psyuml.mjs lint examples/*.psyuml` to smoke-test.
 - [ ] Ran `node sdd/check.mjs` (green).

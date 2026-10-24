@@ -7,7 +7,14 @@
  *
  * Traceability: REQ-NOTATION, REQ-ACCESSIBILITY, REQ-EPISTEMIC-STATUS.
  */
-import { getText, isInterpretive, parseModel, schoolClaims, type PsyumlModel } from '@psyuml/model';
+import {
+  type DiagramType,
+  getText,
+  isInterpretive,
+  parseModel,
+  schoolClaims,
+  type PsyumlModel,
+} from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
 import {
   CHAR_W,
@@ -198,6 +205,38 @@ export interface RenderResult {
   altText: string;
 }
 
+/** A per-diagram renderer: model → SVG + alt text. */
+export type DiagramRenderer = (model: PsyumlModel, options?: RenderOptions) => RenderResult;
+
+/**
+ * The ONE diagram-type → renderer registry. Keyed by the model's `DiagramType` enum and typed
+ * exhaustively, so adding a diagram type without a renderer is a compile error. `render()`
+ * dispatches through it, and headless callers (the CLI) go through `render()` rather than keeping
+ * their own copy — a private copy is what drifted and broke 8 types in the CLI (issue #2).
+ */
+export const DIAGRAM_RENDERERS: { readonly [K in DiagramType]: DiagramRenderer } = {
+  'state-map': renderStateMap,
+  'parts-map': renderPartsMap,
+  'mode-map': renderModeMap,
+  'relational-field': renderRelationalField,
+  'process-loop': renderLoopMap,
+  timeline: renderTimeline,
+  'intervention-sequence': renderInterventionSeq,
+  ritual: renderRitual,
+  'decision-nav': renderDecisionChart,
+  'resource-anchor': renderResourceMap,
+  'body-map': renderBodyMap,
+  'two-triangles': renderTwoTriangles,
+  ladder: renderLadder,
+  'three-circles': renderThreeCircles,
+  venn: renderVenn,
+  bullseye: renderBullseye,
+  'tree-of-life': renderTreeOfLife,
+  'schema-grid': renderSchemaGrid,
+  'decisional-balance': renderDecisionalBalance,
+  'secure-base': renderSecureBase,
+};
+
 /**
  * Single entry point: dispatch a model to its renderer, resolving the v0.2 §2 **audience
  * profile** to the label layer + interpretive visibility. The editor (and any headless
@@ -211,49 +250,9 @@ export function render(model: PsyumlModel, options: RenderOptions = {}): RenderR
   const showInterpretive =
     options.showInterpretive ?? (options.audience ? options.audience === 'clinician' : true);
   const o: RenderOptions = { ...options, layer, showInterpretive };
-  switch (model.diagram) {
-    case 'parts-map':
-      return renderPartsMap(model, o);
-    case 'mode-map':
-      return renderModeMap(model, o);
-    case 'relational-field':
-      return renderRelationalField(model, o);
-    case 'process-loop':
-      return renderLoopMap(model, o);
-    case 'timeline':
-      return renderTimeline(model, o);
-    case 'intervention-sequence':
-      return renderInterventionSeq(model, o);
-    case 'ritual':
-      return renderRitual(model, o);
-    case 'decision-nav':
-      return renderDecisionChart(model, o);
-    case 'resource-anchor':
-      return renderResourceMap(model, o);
-    case 'body-map':
-      return renderBodyMap(model, o);
-    case 'two-triangles':
-      return renderTwoTriangles(model, o);
-    case 'ladder':
-      return renderLadder(model, o);
-    case 'three-circles':
-      return renderThreeCircles(model, o);
-    case 'venn':
-      return renderVenn(model, o);
-    case 'bullseye':
-      return renderBullseye(model, o);
-    case 'tree-of-life':
-      return renderTreeOfLife(model, o);
-    case 'schema-grid':
-      return renderSchemaGrid(model, o);
-    case 'decisional-balance':
-      return renderDecisionalBalance(model, o);
-    case 'secure-base':
-      return renderSecureBase(model, o);
-    case 'state-map':
-    default:
-      return renderStateMap(model, o);
-  }
+  // An unvalidated model with an unknown `diagram` keeps the historical state-map fallback.
+  const renderer: DiagramRenderer = DIAGRAM_RENDERERS[model.diagram] ?? renderStateMap;
+  return renderer(model, o);
 }
 
 const WIDTH = 680;

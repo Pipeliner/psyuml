@@ -82,29 +82,8 @@ function assertNoOverlap(label: string, svg: string, scopeLabelLabel = true): vo
   }
 }
 
-type Renderer = (m: PsyumlModel, o?: { layer?: 'clinician' | 'client' }) => { svg: string };
-const RENDERERS: Record<string, Renderer> = {
-  'state-map': render.renderStateMap,
-  'parts-map': render.renderPartsMap,
-  'mode-map': render.renderModeMap,
-  'relational-field': render.renderRelationalField,
-  'body-map': render.renderBodyMap,
-  'process-loop': render.renderLoopMap,
-  timeline: render.renderTimeline,
-  'intervention-sequence': render.renderInterventionSeq,
-  ritual: render.renderRitual,
-  'decision-nav': render.renderDecisionChart,
-  'resource-anchor': render.renderResourceMap,
-  'two-triangles': render.renderTwoTriangles,
-  ladder: render.renderLadder,
-  'three-circles': render.renderThreeCircles,
-  venn: render.renderVenn,
-  bullseye: render.renderBullseye,
-  'tree-of-life': render.renderTreeOfLife,
-  'schema-grid': render.renderSchemaGrid,
-  'decisional-balance': render.renderDecisionalBalance,
-  'secure-base': render.renderSecureBase,
-};
+// The shared registry (issue #2) — never a private copy that can drift from `render()`.
+const RENDERERS = render.DIAGRAM_RENDERERS;
 
 const load = (f: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${f}`, import.meta.url), 'utf8'));

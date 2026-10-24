@@ -20,21 +20,7 @@ import { validateProfile } from '@psyuml/profiles';
 import { fromDSL, toDSL } from '@psyuml/grammar';
 import { deidentify, redactionAudit, scopeToLayer } from '@psyuml/privacy';
 import { toFhir, validateFhirBundle, type ExportScope, type FhirCoding } from '@psyuml/interop';
-import {
-  blankTemplate,
-  renderBodyMap,
-  renderDecisionChart,
-  renderInterventionSeq,
-  renderLoopMap,
-  renderModeMap,
-  renderPartsMap,
-  renderRelationalField,
-  renderResourceMap,
-  renderRitual,
-  renderStateMap,
-  renderTimeline,
-  renderTwoTriangles,
-} from '@psyuml/render';
+import { blankTemplate, render } from '@psyuml/render';
 
 export interface CliIO {
   readFile(path: string): string;
@@ -44,25 +30,6 @@ export interface CliIO {
 }
 
 type Layer = 'clinician' | 'client';
-type Renderer = (
-  m: PsyumlModel,
-  o?: { layer?: Layer; monochrome?: boolean },
-) => { svg: string; altText: string };
-
-const RENDERERS: Record<string, Renderer> = {
-  'state-map': renderStateMap,
-  'parts-map': renderPartsMap,
-  'mode-map': renderModeMap,
-  'relational-field': renderRelationalField,
-  'body-map': renderBodyMap,
-  'process-loop': renderLoopMap,
-  timeline: renderTimeline,
-  'intervention-sequence': renderInterventionSeq,
-  ritual: renderRitual,
-  'decision-nav': renderDecisionChart,
-  'resource-anchor': renderResourceMap,
-  'two-triangles': renderTwoTriangles,
-};
 
 const HELP = `psyuml — PsyUML formulation tooling
 
@@ -174,12 +141,7 @@ function cmdRender(args: string[], io: CliIO): number {
     io.err(`${files[0]}: ${msg(e)}`);
     return 1;
   }
-  const renderer = RENDERERS[model.diagram];
-  if (!renderer) {
-    io.err(`no renderer for diagram type "${model.diagram}"`);
-    return 1;
-  }
-  const { svg } = renderer(model, { layer, monochrome: !color });
+  const { svg } = render(model, { layer, monochrome: !color });
   if (out) {
     io.writeFile(out, svg);
     io.out(`wrote ${out}`);
@@ -272,12 +234,7 @@ function cmdTemplate(args: string[], io: CliIO): number {
     io.err(`${files[0]}: ${msg(e)}`);
     return 1;
   }
-  const renderer = RENDERERS[model.diagram];
-  if (!renderer) {
-    io.err(`no renderer for diagram type "${model.diagram}"`);
-    return 1;
-  }
-  const { svg } = renderer(model, { layer, monochrome: !color });
+  const { svg } = render(model, { layer, monochrome: !color });
   if (out) {
     io.writeFile(out, svg);
     io.out(`wrote ${out}`);
