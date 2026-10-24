@@ -91,7 +91,7 @@ node dist/cli/psyuml.mjs convert examples/state-map.psyuml     # JSON ⇄ text D
 | `parts-map` | IFS-style parts + Self | `agent`, `self` | `containment`, `barrier` | yes | barrier endpoints: parts/states only |
 | `mode-map` | Schema modes sized by `dominance` | `agent`, `self` | `sequential` | yes | Healthy-Adult is the growth target |
 | `relational-field` | genogram / social field / **drama triangle** | `agent`, `context` | `close`/`conflict`/`fused`/`distant`/`cutoff`, `nestedWithin` | yes | relations join people/parts/contexts |
-| `body-map` | somatic sensations + arousal | `state` | — | yes | pace & titrate note |
+| `body-map` | somatic sensations + arousal | `state` placed by `pos` or `stereotype` (region / `whole-body`) — see [Body Map frame](#body-map-coordinate-frame--regions) | — | yes | pace & titrate note |
 | `process-loop` | maintaining cycle / **CAT SDR** | `state`, `resource`, `self`(observing-eye) | `sequential`, `reciprocal`, `exit` | **yes** | needs a hope marker; `loop: R/B` |
 | `timeline` | trajectory over time | `state` | `sequential` | yes | preferred-future column is the hope |
 | `intervention-sequence` | ordered intervention steps | `intervention` | `sequential` | yes | interventions must attach |
@@ -104,9 +104,69 @@ node dist/cli/psyuml.mjs convert examples/state-map.psyuml     # JSON ⇄ text D
 | `venn` | DBT states of mind (overlapping circles) | region by `stereotype` (left/overlap/right) | `containment` (contents) | yes | the lens = both; the circles are decoration |
 | `bullseye` | ACT values / circles of control | life domain plotted by `properties.intensity` | — (edge-free) | yes | closer to centre = on target |
 | `tree-of-life` | narrative strengths-forward life portrait | item by `stereotype` (roots/ground/trunk/branches/leaves/fruits) | — (edge-free) | yes | co-created, not an assessment |
-| `schema-grid` | Young's 18 EMS in the 5 schema domains | schema by `stereotype` (domain) | — (edge-free) | clinician (+psychoed) | active schemas highlighted via `properties.intensity` |
+| `schema-grid` | Young's 18 EMS in the 5 schema domains | schema by `stereotype` (domain) | — (edge-free) | clinician (+psychoed) | `properties.intensity` drawn graded (outline weight + bar + number); ≥ 0.5 also marked active |
 | `decisional-balance` | MI 2×2: change/stay × benefit/cost | item by `stereotype` (quadrant) | — (edge-free) | yes | a reflection, not a persuasion tool (MI caveat) |
 | `secure-base` | attachment secure base & safe haven | by `stereotype` (explore/comfort/base) | — (edge-free) | yes (caregiver) | a generic graphic, **not** the trademarked Circle of Security® |
+
+### Stereotype keys of the stereotype-placed types
+
+These diagrams place a node by its `stereotype`. A value outside the list triggers the
+`render.stereotype-unknown` warning with a did-you-mean hint, because the node would otherwise be
+silently left out of the picture (ADR-0060). The single source is `STEREOTYPE_PLACEMENT` in
+`@psyuml/model`.
+
+| Diagram | Keys | Node without a stereotype |
+|---|---|---|
+| schema-grid | `disconnection · autonomy · limits · other-directed · overvigilance` | not drawn (warned) |
+| tree-of-life | `roots · ground · trunk · branches · leaves · fruits` | not drawn (warned) |
+| decisional-balance | `change-benefit · stay-benefit · change-cost · stay-cost` | not drawn (warned) |
+| secure-base | `explore · comfort · base` | not drawn (warned) |
+| three-circles | `threat · drive · soothing` | fine (a system's contents) |
+| venn | `left · reasonable · right · emotion · overlap · wise · both` | fine (document order) |
+| body-map | the regions below, `whole-body`, `sensation` | fine (placed by `pos`) |
+
+### Body Map coordinate frame + regions
+
+A Body Map `pos=x,y` is read in a fixed frame (`BODY_FIGURE` in `@psyuml/render`, ADR-0061): the
+origin is top-left, **y grows down**, units are SVG px, the frame is **460 wide** and at least 484
+tall. The figure is a **front view**, so the person's right side is on the viewer's left.
+
+| Part | Geometry |
+|---|---|
+| head | circle, centre (210, 86), r 32 |
+| torso | x 172–248, y 120–292 |
+| arms | shoulders (176, 150) / (244, 150) → hands (120, 258) / (300, 258) |
+| legs | hips (192, 290) / (228, 290) → feet (178, 436) / (242, 436) |
+
+Instead of a `pos`, `stereotype=<region>` puts the sensation on a named anchor. An explicit `pos`
+wins, and several sensations on one region are stacked vertically:
+
+Centre line: `head` (210, 86) · `throat` (210, 128) · `chest` (210, 172) · `abdomen` (210, 226) ·
+`pelvis` (210, 272).
+
+| Area | Person's right (viewer's left) | Person's left (viewer's right) |
+|---|---|---|
+| Shoulder | `shoulder-right` (182, 146) | `shoulder-left` (238, 146) |
+| Arm | `arm-right` (148, 204) | `arm-left` (272, 204) |
+| Hand | `hand-right` (120, 258) | `hand-left` (300, 258) |
+| Leg | `leg-right` (185, 363) | `leg-left` (235, 363) |
+| Foot | `foot-right` (178, 436) | `foot-left` (242, 436) |
+
+`stereotype=whole-body` is for a non-localized sensation (fatigue, heaviness all over). It is
+listed in a **Whole body** row under the figure, not pinned to a point, and its `pos` is ignored. A
+marker below the figure grows the canvas, so the caption moves below it. A marker past the frame's
+sides, or above the title, is clamped inside. Each label goes on the side where it crosses no arm
+or leg stroke when there is room, and a white halo keeps it legible where a crossing can't be
+avoided.
+
+```
+diagram body-map
+disclaimer "Supports, does not replace, professional care."
+node a state stereotype=chest intensity=0.7 label="Tight chest"
+node b state stereotype=foot-left intensity=0.4 label="Cold foot"
+node c state stereotype=whole-body intensity=0.5 label="Tired all over"
+node d state pos=330,120 intensity=0.3 label="Placed by coordinates"
+```
 
 ## Worked example — the text DSL
 
@@ -150,6 +210,8 @@ Errors block export; warnings are advisory (some warnings escalate to errors in 
   + a secular variant.
 - **Safety triage:** `meta.safety.acuteRiskFlag` raises escalation + requires crisis resources;
   `psychosisFlag` escalates and is a hard contraindication on `ritual`.
+- **Stereotype placement:** on a stereotype-placed type (table above), an unknown or missing
+  stereotype is a **warn** (`render.stereotype-unknown`) naming the valid keys + the closest one.
 - **Accessibility:** labels over ~40 chars get an info nudge; renders are monochrome-by-default
   (colour is redundant) and every view emits alt text.
 

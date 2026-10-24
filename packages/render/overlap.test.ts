@@ -286,4 +286,48 @@ describe('overlap invariant — stress models (ADR-0012)', () => {
     // stress case keeps every label clear.
     assertNoOverlap('stress/parts-map', render.renderPartsMap(partsStress()).svg);
   });
+  it('body-map: every named region, stacked regions, off-figure pos, whole-body (issue #9)', () => {
+    const regions = Object.keys(render.BODY_REGION_ANCHORS);
+    const node = (id: string, extra: Record<string, unknown>): Record<string, unknown> => ({
+      id,
+      kind: 'state',
+      label: { clinician: { en: `Sensation ${id}` } },
+      properties: { intensity: 0.6 },
+      ...extra,
+    });
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'body-map',
+      meta: { title: 'Body map stress (synthetic)', disclaimer: 'Synthetic. Not care.' },
+      nodes: [
+        ...regions.map((r) => node(r, { stereotype: r })),
+        node('abdomen2', { stereotype: 'abdomen' }),
+        node('below', { position: { x: 230, y: 470 } }),
+        node('wide', { position: { x: 900, y: 300 } }),
+        node('whole1', { stereotype: 'whole-body' }),
+        node('whole2', { stereotype: 'whole-body', properties: { intensity: 1 } }),
+      ],
+    });
+    // All four assertions, label↔label included, with each of the 15 regions used once.
+    for (const layer of ['clinician', 'client'] as const) {
+      assertNoOverlap(`stress/body-map/${layer}`, render.renderBodyMap(m, { layer }).svg, true);
+    }
+  });
+  it('schema-grid: every cell scored, long names (issue #7)', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'schema-grid',
+      meta: { title: 'Schema grid stress (synthetic)', disclaimer: 'Synthetic.' },
+      nodes: Array.from({ length: 15 }, (_, i) => ({
+        id: `s${i}`,
+        kind: 'state',
+        stereotype: ['disconnection', 'autonomy', 'limits', 'other-directed', 'overvigilance'][
+          i % 5
+        ],
+        label: long(`Synthetic schema with a fairly long name number ${i}`),
+        properties: { intensity: (i % 10) / 9 },
+      })),
+    });
+    assertNoOverlap('stress/schema-grid', render.renderSchemaGrid(m).svg);
+  });
 });

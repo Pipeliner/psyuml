@@ -13,7 +13,7 @@
  * Traceability: REQ-WELLFORMEDNESS, REQ-PATH-OF-HOPE, REQ-SAFETY-TRIAGE,
  * REQ-ETHICS-GUARDRAILS, REQ-CROSS-SCHOOL.
  */
-import { getText, schoolClaims, type PsyumlModel } from '@psyuml/model';
+import { getText, schoolClaims, STEREOTYPE_PLACEMENT, type PsyumlModel } from '@psyuml/model';
 
 export type Severity = 'error' | 'warn' | 'info';
 
@@ -310,7 +310,89 @@ export function validate(model: PsyumlModel, options: ValidateOptions = {}): Val
     }
   }
 
+  // Stereotype-placed diagrams (issue #7): a node whose stereotype is not one of the diagram's
+  // placement keys used to vanish from the picture while lint said "clean". Warn, name the keys,
+  // and suggest the closest one ("impaired-limits" → "limits").
+  const placement = STEREOTYPE_PLACEMENT[model.diagram];
+  if (placement) {
+    const keyList = placement.keys.map((k) => `"${k}"`).join(', ');
+    for (const n of model.nodes) {
+      const st = n.stereotype?.trim();
+      const name = getText(n.label, layer) || n.id;
+      if (!st) {
+        if (placement.missingOk) continue;
+        add(
+          'render.stereotype-unknown',
+          'warn',
+          `"${name}" won't appear on the ${model.diagram} — it has no stereotype. Set stereotype= one ${placement.noun}: ${keyList}.`,
+          n.id,
+        );
+        continue;
+      }
+      if (placement.keys.includes(st)) continue;
+      const near = closestKeys(st, placement.keys);
+      const hint = near.length ? ` (did you mean ${near.map((k) => `"${k}"`).join(' or ')}?)` : '';
+      const effect =
+        placement.unknown === 'not-drawn'
+          ? `won't appear on the ${model.diagram}`
+          : `is ${placement.fallback ?? 'placed by a fallback'}`;
+      add(
+        'render.stereotype-unknown',
+        'warn',
+        `"${name}" ${effect} — "${st}" is not a ${placement.noun}${hint}. Use one of: ${keyList}.`,
+        n.id,
+      );
+    }
+  }
+
   return { ok: !issues.some((i) => i.severity === 'error'), issues };
+}
+
+/** Edit distance (Levenshtein), for the did-you-mean hint. */
+function editDistance(a: string, b: string): number {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i += 1) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j += 1) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/** Distance between two hyphen-tokens: 0 equal, 1 for a shared ≥4-char stem, else edit distance. */
+function tokenDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  let stem = 0;
+  while (stem < a.length && stem < b.length && a[stem] === b[stem]) stem += 1;
+  return stem >= 4 ? 1 : editDistance(a, b);
+}
+
+/**
+ * The placement keys closest to an unknown stereotype (at most 2), or none when nothing is close.
+ * A key scores by its best whole-string or single-token match ("impaired-limits" ~ "limits",
+ * "feet" ~ "foot-left"/"foot-right"); ties break on how well ALL the tokens match
+ * ("left-foot" → "foot-left", not "arm-left").
+ */
+export function closestKeys(value: string, keys: readonly string[]): string[] {
+  const v = value.toLowerCase();
+  const vt = v.split(/[-_\s]+/).filter(Boolean);
+  const scored = keys.map((k) => {
+    const kt = k.split('-');
+    const perToken = vt.map((t) => Math.min(...kt.map((x) => tokenDistance(t, x))));
+    const best = Math.min(editDistance(v, k), ...perToken);
+    const avg = perToken.reduce((s, d) => s + d, 0) / Math.max(1, perToken.length);
+    return { k, best, avg };
+  });
+  const min = Math.min(...scored.map((s) => s.best));
+  if (min > 2) return [];
+  const tied = scored.filter((s) => s.best === min);
+  const minAvg = Math.min(...tied.map((s) => s.avg));
+  return tied
+    .filter((s) => s.avg === minAvg)
+    .slice(0, 2)
+    .map((s) => s.k);
 }
 
 /**

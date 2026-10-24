@@ -206,6 +206,109 @@ export const DiagramType = z.enum([
 ]);
 export type DiagramType = z.infer<typeof DiagramType>;
 
+/** Young's 5 schema domains — the `stereotype` keys a schema-grid places by (ADR-0034, ADR-0060). */
+export const SCHEMA_DOMAINS = [
+  'disconnection',
+  'autonomy',
+  'limits',
+  'other-directed',
+  'overvigilance',
+] as const;
+
+/**
+ * Named Body Map regions (ADR-0061): `stereotype=<region>` puts a sensation on that anchor of the
+ * figure when it has no explicit `pos`. `-left` / `-right` are the PERSON's own sides (front view:
+ * their left is on the viewer's right). The anchor coordinates live with the figure in
+ * `@psyuml/render` (`BODY_REGION_ANCHORS`), typed exhaustively over this list.
+ */
+export const BODY_REGIONS = [
+  'head',
+  'throat',
+  'chest',
+  'abdomen',
+  'pelvis',
+  'shoulder-left',
+  'shoulder-right',
+  'arm-left',
+  'arm-right',
+  'hand-left',
+  'hand-right',
+  'leg-left',
+  'leg-right',
+  'foot-left',
+  'foot-right',
+] as const;
+export type BodyRegion = (typeof BODY_REGIONS)[number];
+/** A non-localized sensation (fatigue, whole-body heaviness): drawn beside the figure. */
+export const BODY_WHOLE = 'whole-body';
+
+/** How a diagram places nodes by `stereotype` — the single source the lint checks against. */
+export interface StereotypePlacement {
+  /** Every stereotype value the renderer understands. */
+  keys: readonly string[];
+  /** What a key names, for messages ("schema domain", "body region"). */
+  noun: string;
+  /** A node with NO stereotype is still drawn (`true`), or silently not placed (`false`). */
+  missingOk: boolean;
+  /** What becomes of a node whose stereotype is not a key. */
+  unknown: 'not-drawn' | 'fallback';
+  /** For `fallback`: how such a node is placed instead (completes "…, so it is …"). */
+  fallback?: string;
+}
+
+/**
+ * Stereotype-placed diagrams (issue #7). A renderer that buckets nodes by `stereotype` drops a node
+ * whose stereotype is not one of its keys; `@psyuml/validate` warns on that instead of letting the
+ * node vanish while lint says "clean". Renderers that own a key list import it from here.
+ */
+export const STEREOTYPE_PLACEMENT: Partial<Record<DiagramType, StereotypePlacement>> = {
+  'schema-grid': {
+    keys: SCHEMA_DOMAINS,
+    noun: 'schema domain',
+    missingOk: false,
+    unknown: 'not-drawn',
+  },
+  'tree-of-life': {
+    keys: ['roots', 'ground', 'trunk', 'branches', 'leaves', 'fruits'],
+    noun: 'Tree of Life zone',
+    missingOk: false,
+    unknown: 'not-drawn',
+  },
+  'decisional-balance': {
+    keys: ['change-benefit', 'stay-benefit', 'change-cost', 'stay-cost'],
+    noun: 'decisional-balance quadrant',
+    missingOk: false,
+    unknown: 'not-drawn',
+  },
+  'secure-base': {
+    keys: ['explore', 'comfort', 'base'],
+    noun: 'secure-base zone',
+    missingOk: false,
+    unknown: 'not-drawn',
+  },
+  // Un-stereotyped nodes are a system's contents (reached by `containment`), so missing is fine.
+  'three-circles': {
+    keys: ['threat', 'drive', 'soothing'],
+    noun: 'three-circles system',
+    missingOk: true,
+    unknown: 'not-drawn',
+  },
+  venn: {
+    keys: ['left', 'reasonable', 'right', 'emotion', 'overlap', 'wise', 'both'],
+    noun: 'Venn region',
+    missingOk: true,
+    unknown: 'fallback',
+    fallback: 'placed by document order (or not drawn)',
+  },
+  'body-map': {
+    keys: [...BODY_REGIONS, BODY_WHOLE, 'sensation'],
+    noun: 'body region',
+    missingOk: true,
+    unknown: 'fallback',
+    fallback: 'placed by its pos (or a default spot on the torso)',
+  },
+};
+
 /** Diagram-level metadata, incl. the client-facing disclaimer/crisis + safety flags. */
 export const Meta = z
   .object({

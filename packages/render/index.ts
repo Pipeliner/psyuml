@@ -13,6 +13,10 @@ import {
   isInterpretive,
   parseModel,
   schoolClaims,
+  SCHEMA_DOMAINS,
+  BODY_REGIONS,
+  BODY_WHOLE,
+  type BodyRegion,
   type PsyumlModel,
 } from '@psyuml/model';
 import { diffModels, type Layer, type ModelDiff } from '@psyuml/diff';
@@ -2648,31 +2652,140 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
 const BODY_W = 460;
 const BODY_H = 484;
 
+/**
+ * The Body Map's coordinate frame (issue #9, ADR-0061) — the contract a `pos=x,y` is read in.
+ * Origin top-left, y grows DOWN, units are SVG px; the frame is `BODY_W` = 460 wide and at least
+ * `BODY_H` = 484 tall (it grows to fit). The figure is a front view: the person's RIGHT side is on
+ * the viewer's LEFT. Head circle centre (210,86) r 32; torso 172–248 × 120–292; arms run from the
+ * shoulders (176,150)/(244,150) to the hands (120,258)/(300,258); legs from the hips (192,290)/
+ * (228,290) to the feet (178,436)/(242,436). A marker past the frame's sides or above the title is
+ * clamped in; one below the figure grows the canvas (the caption moves below it).
+ */
+export const BODY_FIGURE = {
+  head: { cx: 210, cy: 86, r: 32 },
+  torso: { x: 172, y: 120, w: 76, h: 172 },
+  /** Arm and leg strokes, [from, to] — the lines a marker label avoids crossing. */
+  limbs: [
+    [
+      { x: 176, y: 150 },
+      { x: 120, y: 258 },
+    ],
+    [
+      { x: 244, y: 150 },
+      { x: 300, y: 258 },
+    ],
+    [
+      { x: 192, y: 290 },
+      { x: 178, y: 436 },
+    ],
+    [
+      { x: 228, y: 290 },
+      { x: 242, y: 436 },
+    ],
+  ] as [Pt, Pt][],
+  /** Bounding box of the whole silhouette. */
+  bounds: { x: 120, y: 54, w: 180, h: 382 },
+} as const;
+
+/**
+ * Named region anchors (ADR-0061): `stereotype=<region>` puts a sensation here when it has no
+ * explicit `pos`. `-left` / `-right` are the PERSON's sides (so `-right` sits on the viewer's left).
+ * Typed over the model's `BODY_REGIONS`, so a region without an anchor is a compile error.
+ */
+export const BODY_REGION_ANCHORS: { readonly [K in BodyRegion]: Pt } = {
+  head: { x: 210, y: 86 },
+  throat: { x: 210, y: 128 },
+  chest: { x: 210, y: 172 },
+  abdomen: { x: 210, y: 226 },
+  pelvis: { x: 210, y: 272 },
+  'shoulder-right': { x: 182, y: 146 },
+  'shoulder-left': { x: 238, y: 146 },
+  'arm-right': { x: 148, y: 204 },
+  'arm-left': { x: 272, y: 204 },
+  'hand-right': { x: 120, y: 258 },
+  'hand-left': { x: 300, y: 258 },
+  'leg-right': { x: 185, y: 363 },
+  'leg-left': { x: 235, y: 363 },
+  'foot-right': { x: 178, y: 436 },
+  'foot-left': { x: 242, y: 436 },
+};
+
+const isBodyRegion = (s: string | undefined): s is BodyRegion =>
+  s !== undefined && (BODY_REGIONS as readonly string[]).includes(s);
+
 /** Render a Body Map (spec §E.5 / Source 3): a body outline with sensations placed by
- * location, each sized by `intensity` (redundant numeral, §D), with a pacing-safety note. */
+ * location, each sized by `intensity` (redundant numeral, §D), with a pacing-safety note.
+ * Location is an explicit `pos` in the documented frame (`BODY_FIGURE`), else a named region
+ * (`stereotype=<region>`, `BODY_REGION_ANCHORS`); `stereotype=whole-body` lists a non-localized
+ * sensation in a "Whole body" row beside the figure (ADR-0061). */
 export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
   const tr = translator(lang);
+  const F = BODY_FIGURE;
 
   const parts: string[] = [
     // Silhouette
-    '<circle cx="210" cy="86" r="32" fill="#fff" stroke="#000" stroke-width="2" />',
-    '<rect x="172" y="120" width="76" height="172" rx="26" ry="26" fill="#fff" stroke="#000" stroke-width="2" />',
-    '<line x1="176" y1="150" x2="120" y2="258" stroke="#000" stroke-width="2" />',
-    '<line x1="244" y1="150" x2="300" y2="258" stroke="#000" stroke-width="2" />',
-    '<line x1="192" y1="290" x2="178" y2="436" stroke="#000" stroke-width="2" />',
-    '<line x1="228" y1="290" x2="242" y2="436" stroke="#000" stroke-width="2" />',
+    `<circle cx="${F.head.cx}" cy="${F.head.cy}" r="${F.head.r}" fill="#fff" stroke="#000" stroke-width="2" />`,
+    `<rect x="${F.torso.x}" y="${F.torso.y}" width="${F.torso.w}" height="${F.torso.h}" rx="26" ry="26" fill="#fff" stroke="#000" stroke-width="2" />`,
+    ...F.limbs.map(
+      ([p, q]) =>
+        `<line x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}" stroke="#000" stroke-width="2" />`,
+    ),
   ];
+
+  // Title wraps to ≤2 lines at FULL size within the fixed frame — a heading is never compressed (it
+  // reads condensed) NOR allowed to widen the frame, which would push the centred body off-axis (both
+  // looked wrong in a visual audit). The body art + labels stay centred in BODY_W.
+  const titleLines = model.meta.title
+    ? wrapLines(model.meta.title, Math.max(8, Math.floor((BODY_W - 24) / (16 * CHAR_W))), 2)
+    : [];
+  const titleText = titleLines
+    .map((ln, i) => fitText(ln, 12, 22 + i * 19, { size: 16, weight: 700, maxWidth: BODY_W - 24 }))
+    .join('');
+  const titleBottom = titleLines.length ? 22 + (titleLines.length - 1) * 19 + 6 : 0;
+
+  const radius = (n: (typeof model.nodes)[number]): number =>
+    6 + (n.properties.intensity ?? 0.5) * 10;
+  const whole = model.nodes.filter((n) => n.stereotype === BODY_WHOLE);
+  const located = model.nodes
+    .map((n, i) => ({ n, i }))
+    .filter(({ n }) => n.stereotype !== BODY_WHOLE);
+
+  // Several un-positioned sensations on one region fan out vertically so no two markers coincide.
+  const byRegion = new Map<BodyRegion, (typeof model.nodes)[number][]>();
+  for (const { n } of located) {
+    if (!n.position && isBodyRegion(n.stereotype)) {
+      byRegion.set(n.stereotype, [...(byRegion.get(n.stereotype) ?? []), n]);
+    }
+  }
+  const basePos = (n: (typeof model.nodes)[number], i: number): Pt => {
+    if (n.position) return n.position;
+    if (isBodyRegion(n.stereotype)) {
+      const group = byRegion.get(n.stereotype) ?? [n];
+      const k = group.indexOf(n);
+      const step = 2 * Math.max(...group.map(radius)) + 4;
+      const a = BODY_REGION_ANCHORS[n.stereotype];
+      return { x: a.x, y: r1(a.y + (k - (group.length - 1) / 2) * step) };
+    }
+    return { x: 210, y: 140 + i * 30 };
+  };
 
   // Precompute each sensation's marker so a label can be capped to stop BEFORE any neighbour to
   // its right (labels sit beside the dots — ADR-0006 — so a long label must not reach another
   // dot; ADR-0012 keeps label↔non-owner-node clear by shrinking the label, never overlapping).
-  const marks = model.nodes.map((n, i) => {
-    const p = n.position ?? { x: 210, y: 140 + i * 30 };
+  // A marker past the frame's sides / above the title is clamped in (issue #9); below the figure
+  // the canvas grows instead.
+  const marks = located.map(({ n, i }) => {
     const intensity = n.properties.intensity ?? 0.5;
-    return { n, p, intensity, r: 6 + intensity * 10 };
+    const r = radius(n);
+    const b = basePos(n, i);
+    const p = {
+      x: Math.min(Math.max(b.x, r + 2), BODY_W - r - 2),
+      y: Math.max(b.y, titleBottom + r + 2),
+    };
+    return { n, p, intensity, r };
   });
   // Room on a given side before hitting a neighbouring marker (or the frame) within the label's
   // ~13px-tall band — the label sits beside the dot, so it must clear other dots (ADR-0006).
@@ -2692,15 +2805,28 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     }
     return cap;
   };
+  // How many limb strokes a label box would cross (issue #9.2): a label prefers a side that crosses
+  // none; an unavoidable crossing (a torso label) is kept legible by the white halo.
+  const limbHits = (x: number, y: number, w: number): number =>
+    F.limbs.filter(([p, q]) => segIntersectsBox(p, q, { x, y: y - 9, w, h: 13 })).length;
+  let contentBottom = F.bounds.y + F.bounds.h;
   marks.forEach(({ n, p, intensity, r }) => {
     const text = `${getText(n.label, layer, lang)} (${intensity.toFixed(1)})`;
     const rightX = r1(p.x + r + 8);
     const leftX = r1(p.x - r - 8);
     const capR = roomToRight(n.id, rightX, p.y);
     const capL = roomToLeft(n.id, leftX, p.y);
-    // Prefer the right (the familiar side); flip to the left when it has clearly more room — so a
-    // dot crowded on the right (e.g. a neighbour just beside it) still gets a legible label.
-    const onLeft = capL > capR + 8;
+    const full = textWidth(text, 11);
+    const wR = Math.min(full, Math.max(16, capR));
+    const wL = Math.min(full, Math.max(16, capL));
+    const hitsR = limbHits(rightX, p.y, wR);
+    const hitsL = limbHits(leftX - wL, p.y, wL);
+    // A side that crosses fewer limbs wins when it still has reasonable room; otherwise prefer the
+    // right (the familiar side) and flip to the left when it has clearly more room — so a dot crowded
+    // on the right (e.g. a neighbour just beside it) still gets a legible label.
+    const roomy = (cap: number): boolean => cap >= Math.min(full, 80);
+    const onLeft =
+      hitsL < hitsR && roomy(capL) ? true : hitsR < hitsL && roomy(capR) ? false : capL > capR + 8;
     const cap = Math.max(16, onLeft ? capL : capR);
     // Shrink the font (not fake-compress) so the label fits its cap at full glyph width — fully
     // legible, no truncation, and the natural-width box clears the neighbour (ADR-0012). Floor at the
@@ -2708,9 +2834,7 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     // a label too long for its cap even at the floor is caught loudly by the overlap invariant rather
     // than silently shrunk to illegibility.
     const fit =
-      textWidth(text, 11) > cap
-        ? Math.max(LEG_FLOOR, Math.floor((cap / (text.length * CHAR_W)) * 10) / 10)
-        : 11;
+      full > cap ? Math.max(LEG_FLOOR, Math.floor((cap / (text.length * CHAR_W)) * 10) / 10) : 11;
     parts.push(
       `<circle data-el="node:${esc(n.id)}" cx="${p.x}" cy="${p.y}" r="${r1(r)}" fill="#000" fill-opacity="0.15" stroke="#000" stroke-width="1.5" />`,
       fitText(text, onLeft ? leftX : rightX, p.y + 4, {
@@ -2721,18 +2845,49 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
         dataEl: `nodelabel:${n.id}`,
       }),
     );
+    contentBottom = Math.max(contentBottom, p.y + r, p.y + 8);
   });
+
+  // Whole-body sensations (issue #9.3): not pinned to a point — listed in a row under a "Whole
+  // body" heading beside (below) the figure, each with its intensity-sized marker.
+  if (whole.length) {
+    let y = contentBottom + 22;
+    parts.push(
+      `<text x="12" y="${r1(y)}" font-family="sans-serif" font-size="10" font-weight="700">${esc(tr('body.wholeBody'))}</text>`,
+    );
+    y += 6;
+    for (const n of whole) {
+      const intensity = n.properties.intensity ?? 0.5;
+      const r = radius(n);
+      const cy = y + r;
+      const cx = 12 + r;
+      const text = `${getText(n.label, layer, lang)} (${intensity.toFixed(1)})`;
+      const x = r1(cx + r + 8);
+      parts.push(
+        `<circle data-el="node:${esc(n.id)}" cx="${r1(cx)}" cy="${r1(cy)}" r="${r1(r)}" fill="#000" fill-opacity="0.15" stroke="#000" stroke-width="1.5" stroke-dasharray="3 2" />`,
+        fitText(text, x, cy + 4, {
+          size: 11,
+          maxWidth: BODY_W - x - 8,
+          halo: 3,
+          dataEl: `nodelabel:${n.id}`,
+        }),
+      );
+      y = cy + r + 4;
+    }
+    contentBottom = y;
+  }
 
   // Bottom chrome — a fixed guidance caption + the model disclaimer. They are long sentences while
   // the body art is only BODY_W wide, so each is WRAPPED to the frame width (never spilling past the
   // viewBox) and the frame HEIGHT grows to fit the wrapped lines (ADR-0006 content-fit; the title is
-  // compressed by `fitText` below for the same reason).
+  // compressed by `fitText` below for the same reason). It starts below the lowest marker, so a
+  // sensation placed below the figure grows the canvas rather than sitting on the footer (issue #9).
   const CHROME_W = BODY_W - 24;
   const capChars = Math.max(8, Math.floor(CHROME_W / (10 * CHAR_W)));
   const capLines = wrapLines(tr('body.caption'), capChars, 3);
   const discChars = Math.max(8, Math.floor(CHROME_W / (9 * CHAR_W)));
   const discLines = model.meta.disclaimer ? wrapLines(model.meta.disclaimer, discChars, 2) : [];
-  const fy = BODY_H - 30;
+  const fy = Math.max(BODY_H - 30, Math.ceil(contentBottom + 18));
   capLines.forEach((ln, i) => {
     parts.push(
       `<text x="12" y="${r1(fy + i * 12)}" font-family="sans-serif" font-size="10">${esc(ln)}</text>`,
@@ -2749,20 +2904,11 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
     : fy + (capLines.length - 1) * 12;
   const bodyH = Math.max(BODY_H, Math.ceil(chromeBottom + 12));
 
+  const isWhole = (n: (typeof model.nodes)[number]): boolean => n.stereotype === BODY_WHOLE;
   const altText =
     `Body map${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
-    `Sensations: ${model.nodes.map((n) => `${getText(n.label, layer, lang)} (intensity ${(n.properties.intensity ?? 0.5).toFixed(1)})`).join(', ') || 'none'}. ` +
+    `Sensations: ${model.nodes.map((n) => `${getText(n.label, layer, lang)} (${isWhole(n) ? 'whole body, ' : ''}intensity ${(n.properties.intensity ?? 0.5).toFixed(1)})`).join(', ') || 'none'}. ` +
     `Pace and titrate.`;
-
-  // Title wraps to ≤2 lines at FULL size within the fixed frame — a heading is never compressed (it
-  // reads condensed) NOR allowed to widen the frame, which would push the centred body off-axis (both
-  // looked wrong in a visual audit). The body art + labels stay centred in BODY_W.
-  const titleLines = model.meta.title
-    ? wrapLines(model.meta.title, Math.max(8, Math.floor((BODY_W - 24) / (16 * CHAR_W))), 2)
-    : [];
-  const titleText = titleLines
-    .map((ln, i) => fitText(ln, 12, 22 + i * 19, { size: 16, weight: 700, maxWidth: BODY_W - 24 }))
-    .join('');
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BODY_W} ${bodyH}" role="img" aria-label="${esc(altText)}">` +
@@ -3715,16 +3861,21 @@ export function renderTreeOfLife(model: PsyumlModel, options: RenderOptions = {}
   return { svg, altText };
 }
 
+/** A 0–1 intensity as printed: at most two decimals, no trailing zeros (0.95, 0.6, 0.2). */
+const fmtIntensity = (v: number): string => String(Number(v.toFixed(2)));
+
 /**
  * Schema-domains grid / sorter (REQ-NEW-DIAGRAM-TYPES, ADR-0034) — Young's schema-therapy framework:
  * the 18 Early Maladaptive Schemas grouped into the **5 canonical schema domains**. The load-bearing
  * structure is the GROUPING — which domain a schema belongs to — so the renderer is a five-column
  * sorter: a fixed domain header per column (renderer copy, like the Tree-of-Life zones), with each
- * schema a cell beneath its domain. A schema is placed by `stereotype` (the domain key); a schema the
- * person endorses is flagged via `properties.intensity` ≥ 0.5 and drawn ACTIVE — a bold outline + a
- * corner wedge + bold label + an alt-text note (redundant, never colour alone). Edge-free + no schema
- * growth. Honest scope: this is a grouped grid (the weakest topology of the ◇ set), but the 5-domain
- * clustering is the schema model's own structure and the active-schema highlight carries the signal.
+ * schema a cell beneath its domain. A schema is placed by `stereotype` (a `SCHEMA_DOMAINS` key; an
+ * unknown key is a lint warning, issue #7). `properties.intensity` is GRADED (ADR-0060): outline
+ * weight, a meter bar and the printed value all scale with it, so a profile where most schemas score
+ * ≥ 0.5 still reads; at ≥ 0.5 the schema is also drawn ACTIVE — a corner wedge + bold label + an
+ * alt-text note (redundant, never colour alone). Edge-free + no schema growth. Honest scope: this is
+ * a grouped grid (the weakest topology of the ◇ set), but the 5-domain clustering is the schema
+ * model's own structure and the intensity marks carry the signal.
  */
 export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}): RenderResult {
   model = withoutHidden(model);
@@ -3733,13 +3884,16 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
   const tr = translator(lang);
 
   const W = SCHEMA_W;
-  const DOMAINS: { key: string; name: string }[] = [
-    { key: 'disconnection', name: tr('schema.disconnection') },
-    { key: 'autonomy', name: tr('schema.autonomy') },
-    { key: 'limits', name: tr('schema.limits') },
-    { key: 'other-directed', name: tr('schema.otherDirected') },
-    { key: 'overvigilance', name: tr('schema.overvigilance') },
-  ];
+  // Keys come from the model's SCHEMA_DOMAINS — the same list `@psyuml/validate` checks, so an
+  // unknown domain is warned about rather than silently dropped (issue #7).
+  const DOMAIN_NAME: Record<(typeof SCHEMA_DOMAINS)[number], ChromeKey> = {
+    disconnection: 'schema.disconnection',
+    autonomy: 'schema.autonomy',
+    limits: 'schema.limits',
+    'other-directed': 'schema.otherDirected',
+    overvigilance: 'schema.overvigilance',
+  };
+  const DOMAINS = SCHEMA_DOMAINS.map((key) => ({ key, name: tr(DOMAIN_NAME[key]) }));
 
   const leftPad = 16;
   const rightPad = 16;
@@ -3751,8 +3905,12 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
   const headerY = titleH + 8;
   const headerH = 48;
   const boxTop = headerY + headerH + 10;
-  const rowH = 56;
+  const rowH = 62;
   const vGap = 8;
+  // Graded intensity (issue #7, ADR-0060): three colour-free channels scale with the value — the
+  // outline weight, a meter bar along the cell's foot, and the printed number beside it.
+  const meterPadL = 10;
+  const meterTrackW = colW - 50;
 
   const parts: string[] = [];
   const altDomains: string[] = [];
@@ -3776,15 +3934,29 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
     items.forEach((n, ri) => {
       const y = boxTop + ri * (rowH + vGap);
       const name = getText(n.label, layer, lang);
-      const active = (n.properties.intensity ?? 0) >= 0.5;
+      const intensity = n.properties.intensity;
+      const scored = intensity !== undefined;
+      const active = (intensity ?? 0) >= 0.5;
+      const stroke = scored ? r1(1.3 + 2.2 * intensity) : 1.3;
       parts.push(
-        `<rect data-el="node:${esc(n.id)}" x="${x}" y="${y}" width="${colW}" height="${rowH}" rx="6" ry="6" fill="#fff" stroke="#000" stroke-width="${active ? 2.6 : 1.3}" />`,
+        `<rect data-el="node:${esc(n.id)}" x="${x}" y="${y}" width="${colW}" height="${rowH}" rx="6" ry="6" fill="#fff" stroke="#000" stroke-width="${stroke}" />`,
       );
       if (active) {
-        parts.push(`<path d="M${x} ${y + 14} L${x} ${y} L${x + 14} ${y} Z" fill="#000" />`);
+        parts.push(
+          `<path data-active="${esc(n.id)}" d="M${x} ${y + 14} L${x} ${y} L${x + 14} ${y} Z" fill="#000" />`,
+        );
+      }
+      const value = scored ? fmtIntensity(intensity) : '';
+      if (scored) {
+        const my = y + rowH - 14;
+        parts.push(
+          `<rect data-meter-track="${esc(n.id)}" x="${x + meterPadL}" y="${my}" width="${meterTrackW}" height="6" fill="#fff" stroke="#000" stroke-width="0.8" />`,
+          `<rect data-meter="${esc(n.id)}" x="${x + meterPadL}" y="${my}" width="${r1(meterTrackW * intensity)}" height="6" fill="#000" />`,
+          `<text data-intensity-value="${esc(n.id)}" x="${x + colW - 10}" y="${my + 6}" text-anchor="end" font-family="sans-serif" font-size="10">${value}</text>`,
+        );
       }
       parts.push(
-        wrapLabel(name, x + colW / 2, y + rowH / 2, {
+        wrapLabel(name, x + colW / 2, scored ? y + (rowH - 14) / 2 + 3 : y + rowH / 2, {
           size: 11,
           maxWidth: colW - 16,
           maxLines: 3,
@@ -3792,7 +3964,10 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
           dataEl: `nodelabel:${n.id}`,
         }),
       );
-      names.push(active ? `${name} (active)` : name);
+      const facts = [active ? 'active' : '', scored ? `intensity ${value}` : '']
+        .filter(Boolean)
+        .join(', ');
+      names.push(facts ? `${name} (${facts})` : name);
       maxBottom = Math.max(maxBottom, y + rowH);
     });
     altDomains.push(`${d.name} — ${names.join(', ') || 'none listed'}`);
@@ -3809,7 +3984,7 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
 
   const altText =
     `Schema-domains grid${model.meta.title ? `: ${model.meta.title}` : ''}. ` +
-    `Young's 18 schemas in 5 domains; bold cells are active for this person. ${altDomains.join('; ')}.`;
+    `Young's 18 schemas in 5 domains; outline weight and a bar show each schema's intensity, bold cells are active for this person. ${altDomains.join('; ')}.`;
 
   const title = model.meta.title
     ? `<text x="${leftPad}" y="26" font-family="sans-serif" font-size="16" font-weight="700">${esc(model.meta.title)}</text>`

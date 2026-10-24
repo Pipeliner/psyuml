@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
-import { parseModel, type PsyumlModel } from '@psyuml/model';
-import { requiresHumanEscalation, validate } from './index';
+import { parseModel, STEREOTYPE_PLACEMENT, type PsyumlModel } from '@psyuml/model';
+import { requiresHumanEscalation, validate, type ValidationIssue } from './index';
 
 const read = (name: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${name}`, import.meta.url), 'utf8'));
@@ -306,6 +306,73 @@ describe('validate', () => {
   });
 });
 
+// Issue #7: a stereotype-placed diagram silently dropped a node whose stereotype was not one of
+// its placement keys, while lint said "clean". The rule names the key set and suggests a fix.
+describe('stereotype placement keys (issue #7)', () => {
+  const one = (diagram: string, stereotype?: string): PsyumlModel =>
+    parseModel({
+      version: '0.1.0',
+      diagram,
+      meta: { title: 't', disclaimer: 'Not a diagnosis.' },
+      nodes: [
+        {
+          id: 'x',
+          kind: 'state',
+          ...(stereotype === undefined ? {} : { stereotype }),
+          label: { clinician: { en: 'Synthetic item' } },
+          properties: { intensity: 0.6 },
+        },
+      ],
+    });
+  const rule = (m: PsyumlModel): ValidationIssue[] =>
+    validate(m).issues.filter((i) => i.rule === 'render.stereotype-unknown');
+
+  it('warns on an unknown schema-grid domain with a did-you-mean hint (the issue repro)', () => {
+    const issues = rule(one('schema-grid', 'impaired-limits'));
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warn');
+    expect(issues[0].nodeId).toBe('x');
+    expect(issues[0].message).toContain('did you mean "limits"');
+    expect(issues[0].message).toContain('disconnection');
+  });
+
+  it('warns when a zone-placed node has no stereotype at all', () => {
+    expect(rule(one('schema-grid'))).toHaveLength(1);
+    expect(rule(one('tree-of-life'))).toHaveLength(1);
+  });
+
+  it('accepts every documented key of every stereotype-placed diagram', () => {
+    for (const [diagram, p] of Object.entries(STEREOTYPE_PLACEMENT)) {
+      for (const key of p.keys) expect(rule(one(diagram, key)), `${diagram}/${key}`).toEqual([]);
+    }
+  });
+
+  it('covers the other stereotype-placed layouts named in the issue', () => {
+    expect(rule(one('tree-of-life', 'root'))[0].message).toContain('did you mean "roots"');
+    expect(rule(one('decisional-balance', 'benefit-change'))[0].message).toContain(
+      'did you mean "change-benefit"',
+    );
+    expect(rule(one('secure-base', 'explorer'))[0].message).toContain('did you mean "explore"');
+    expect(rule(one('three-circles', 'soothe'))[0].message).toContain('did you mean "soothing"');
+    expect(rule(one('venn', 'wise-mind'))[0].message).toContain('did you mean "wise"');
+  });
+
+  it('body-map: an unknown region warns (placed by pos) and a plural hints both sides', () => {
+    const issues = rule(one('body-map', 'feet'));
+    expect(issues).toHaveLength(1);
+    expect(issues[0].message).toContain('"foot-left"');
+    expect(issues[0].message).toContain('"foot-right"');
+    expect(rule(one('body-map', 'sensation'))).toEqual([]);
+    expect(rule(one('body-map'))).toEqual([]);
+    expect(rule(one('body-map', 'whole-body'))).toEqual([]);
+  });
+
+  it('is a warning, never a block, and other diagram types are unaffected', () => {
+    expect(validate(one('schema-grid', 'impaired-limits')).ok).toBe(true);
+    expect(rule(one('state-map', 'anything'))).toEqual([]);
+  });
+});
+
 // CI corpus lint: every committed example must validate clean in both layers.
 const corpus = readdirSync(new URL('../../examples/', import.meta.url)).filter((f) =>
   f.endsWith('.psyuml'),
@@ -320,5 +387,7 @@ describe('examples corpus lint', () => {
     const m = read(name);
     expect(validate(m, { layer: 'clinician' }).ok).toBe(true);
     expect(validate(m, { layer: 'client' }).ok).toBe(true);
+    // every committed example uses only documented placement keys (issue #7)
+    expect(validate(m).issues.filter((i) => i.rule === 'render.stereotype-unknown')).toEqual([]);
   });
 });

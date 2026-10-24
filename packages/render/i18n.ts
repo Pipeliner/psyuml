@@ -95,6 +95,7 @@ const EN = {
   // Body map
   'body.caption':
     'Marker size = intensity (number shown). Body sensations are meaningful but not self-explanatory — pace and titrate.',
+  'body.wholeBody': 'Whole body',
 
   // Two triangles
   'twoTriangles.legend':
@@ -137,7 +138,7 @@ const EN = {
   'schema.otherDirected': 'Other-Directedness',
   'schema.overvigilance': 'Overvigilance & Inhibition',
   'schema.legend':
-    "Columns are Young's 5 schema domains; a bold-outlined cell (▟) is a schema active for this person.",
+    "Columns: Young's 5 schema domains. Outline weight and bar = intensity (number shown); wedge (▟) + bold name = active (≥ 0.5).",
 
   // Decisional balance
   'balance.change': 'Making the change',
@@ -249,6 +250,7 @@ const RU: ChromeCatalog = {
 
   'body.caption':
     'Размер метки = интенсивность (число указано). Телесные ощущения значимы, но не объясняют себя сами — соблюдайте темп и дозируйте.',
+  'body.wholeBody': 'Всё тело',
 
   'twoTriangles.legend':
     'сплошная = связь внутри треугольника · пунктир = перенос (тот же конфликт, новые отношения)',
@@ -284,7 +286,7 @@ const RU: ChromeCatalog = {
   'schema.otherDirected': 'Направленность на других',
   'schema.overvigilance': 'Сверхбдительность и подавление',
   'schema.legend':
-    'Столбцы — 5 доменов схем Янга; ячейка с жирной рамкой (▟) — схема, активная у этого человека.',
+    'Столбцы — 5 доменов схем Янга. Толщина рамки и полоса = интенсивность (число указано); уголок (▟) и жирное имя = активна (≥ 0,5).',
 
   'balance.change': 'Изменить',
   'balance.stay': 'Оставить как есть',
