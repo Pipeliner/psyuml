@@ -30,11 +30,14 @@ import { routeToPath, type RouterObstacle } from './router';
 import { BespokeRouter } from './router-bespoke';
 import { layeredLayout } from './layered';
 import { attrs, boxesFromSvg, edgeCrossings, edgeSegments, textLineBox } from './introspect';
+import { chromeText, type ChromeKey, translator } from './i18n';
 
 // Edge routing (REQ-EDGE-ROUTER, ADR-0023/0024): export the EdgeRouter interface + both backends.
 export * from './router';
 export { BespokeRouter } from './router-bespoke';
 export { LibavoidRouter } from './router-libavoid';
+// Renderer-chrome i18n (issue #3, ADR-0059): the message catalog every renderer uses.
+export * from './i18n';
 
 /** Shared bespoke router for in-renderer obstacle avoidance — deterministic, sync, zero-dependency
  * (the libavoid backend stays available for callers but needs async `init`, so renderers use this).
@@ -449,6 +452,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
   const monochrome = options.monochrome ?? true;
 
   const bands = [...model.bands].sort((a, b) => a.order - b.order);
@@ -474,7 +478,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
   const edgeText = (e: MEdge): string => {
     const src = e.trigger ?? e.label;
     let txt = src ? getText(src, layer, lang) : '';
-    if (e.kind === 'exit') txt = txt ? `${txt} (EXIT)` : 'EXIT';
+    if (e.kind === 'exit') txt = txt ? `${txt} (${tr('edge.exit')})` : tr('edge.exit');
     return txt;
   };
 
@@ -706,18 +710,13 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
   const noteX = Math.min(320, innerL + 300);
   parts.push(
     `<line x1="28" y1="${ly}" x2="60" y2="${ly}" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
-    `<text x="68" y="${ly + 4}" font-family="sans-serif" font-size="11">transition (what leads here)</text>`,
+    `<text x="68" y="${ly + 4}" font-family="sans-serif" font-size="11">${esc(tr('state.legend.transition'))}</text>`,
     `<line x1="28" y1="${ly + 20}" x2="60" y2="${ly + 20}" stroke="#000" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)" />`,
-    `<text x="68" y="${ly + 24}" font-family="sans-serif" font-size="11">exit — a way out</text>`,
-    fitText(
-      'Bands are ordered top → bottom; patterns (not colour) mark the zones.',
-      noteX,
-      ly + 4,
-      {
-        size: 11,
-        maxWidth: width - noteX - 16,
-      },
-    ),
+    `<text x="68" y="${ly + 24}" font-family="sans-serif" font-size="11">${esc(tr('state.legend.exit'))}</text>`,
+    fitText(tr('state.legend.bands'), noteX, ly + 4, {
+      size: 11,
+      maxWidth: width - noteX - 16,
+    }),
   );
   if (model.meta.disclaimer) {
     parts.push(
@@ -763,7 +762,7 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r1(width)} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'State map')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.stateMap'))}</title><desc>${esc(altText)}</desc>` +
     defs +
     `<rect x="0" y="0" width="${r1(width)}" height="${height}" fill="#fff" />` +
     titleText +
@@ -772,6 +771,20 @@ export function renderStateMap(model: PsyumlModel, options: RenderOptions = {}):
 
   return { svg, altText };
 }
+
+/** Parts-map stereotypes whose caption has a catalog entry (others print the raw stereotype). */
+const STEREOTYPE_CAPTION = new Map<string, ChromeKey>([
+  ['manager', 'stereotype.manager'],
+  ['firefighter', 'stereotype.firefighter'],
+  ['exile', 'stereotype.exile'],
+]);
+
+/** CAT loop-topology → its uppercase centre word. */
+const TOPO_KEY: Record<'trap' | 'dilemma' | 'snag', ChromeKey> = {
+  trap: 'loop.trap',
+  dilemma: 'loop.dilemma',
+  snag: 'loop.snag',
+};
 
 const PARTS_W = 680;
 const PARTS_H = 470;
@@ -782,6 +795,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
   // v0.2 §2/§3: the client/picture profiles hide the clinician-analytic surface here — the
   // school-provenance tags and the cross-school contested-origin (⚖) marker. Default shown.
   const showInterpretive = options.showInterpretive ?? true;
@@ -878,7 +892,9 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       return np;
     }
     if (node.stereotype) {
-      const roleTerm = options.roleLabels?.[node.stereotype] ?? node.stereotype;
+      const stKey = STEREOTYPE_CAPTION.get(node.stereotype);
+      const roleTerm =
+        options.roleLabels?.[node.stereotype] ?? (stKey ? tr(stKey) : node.stereotype);
       np.push(
         `<text data-el="nodelabel:${esc(node.id)}" x="${p.x}" y="${p.y - nodeR - 5}" font-family="sans-serif" font-size="9" text-anchor="middle" fill="#333">${esc(roleTerm)}</text>`,
       );
@@ -898,7 +914,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
       // ("⚖ … vs …"), don't merge it into one bland slash-list. Matches the validator's
       // `provenance.node-mixed-school` and the alt-text below.
       np.push(
-        wrapLabel(`⚖ ${claims.join(' vs ')}`, p.x, p.y + nodeR + 13, {
+        wrapLabel(`⚖ ${claims.join(` ${tr('parts.contestedVs')} `)}`, p.x, p.y + nodeR + 13, {
           size: 8,
           anchor: 'middle',
           maxWidth: 124,
@@ -1023,7 +1039,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
     parts.push(
       `<line x1="${r1(cx - 75)}" y1="${by - 3}" x2="${r1(cx + 75)}" y2="${by - 3}" stroke="#000" stroke-width="2.5" />`,
       `<line x1="${r1(cx - 75)}" y1="${by + 3}" x2="${r1(cx + 75)}" y2="${by + 3}" stroke="#000" stroke-width="2.5" />`,
-      `<text x="${r1(cx)}" y="${by - 8}" font-family="sans-serif" font-size="10" text-anchor="middle">dissociative barrier</text>`,
+      `<text x="${r1(cx)}" y="${by - 8}" font-family="sans-serif" font-size="10" text-anchor="middle">${esc(tr('parts.barrier'))}</text>`,
     );
   }
 
@@ -1044,14 +1060,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
   });
 
   // Legend (chrome).
-  parts.push(
-    fitText(
-      '◎ Self · ○ part · ( ) containment orbit · ═ dissociative barrier · dotted = protects · zigzag = conflict',
-      20,
-      partsH - 16,
-      { size: 11, maxWidth: PARTS_W2 - 40 },
-    ),
-  );
+  parts.push(fitText(tr('parts.legend'), 20, partsH - 16, { size: 11, maxWidth: PARTS_W2 - 40 }));
   if (model.meta.disclaimer) {
     parts.push(
       fitText(model.meta.disclaimer, 20, partsH - 2, {
@@ -1088,7 +1097,7 @@ export function renderPartsMap(model: PsyumlModel, options: RenderOptions = {}):
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r1(PARTS_W2)} ${r1(partsH)}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Parts map')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.partsMap'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${r1(PARTS_W2)}" height="${r1(partsH)}" fill="#fff" />` +
     titleText +
     parts.join('') +
@@ -1130,6 +1139,7 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
   const nodes = model.nodes;
   const edges = model.edges;
 
@@ -1201,9 +1211,7 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
 
   // The crisis line, shown BOTH under the crisis node (at the point of need) and in the
   // always-visible banner — a layperson on the "unsafe" branch shouldn't have to hunt for it.
-  const crisis =
-    model.meta.crisisResources ??
-    'If you are in danger now, call your local emergency number or a crisis line.';
+  const crisis = model.meta.crisisResources ?? tr('crisis.default');
 
   // Edges. A back-edge (loop-back) points UP (route from the source's top to the target's
   // bottom); forward edges go top→bottom. Branch labels sit in the inter-row GAP (clear of both
@@ -1361,7 +1369,7 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   const by = maxNodeBottom + 16;
   parts.push(
     `<rect data-el="banner:crisis" x="${r1(minX)}" y="${r1(by)}" width="${r1(drawW)}" height="${DBANNER_H}" fill="#fff" stroke="#000" stroke-width="2" />`,
-    `<text x="${r1(minX + 14)}" y="${r1(by + 19)}" font-family="sans-serif" font-size="12" font-weight="700">Crisis resources (always available):</text>`,
+    `<text x="${r1(minX + 14)}" y="${r1(by + 19)}" font-family="sans-serif" font-size="12" font-weight="700">${esc(tr('decision.crisisHeader'))}</text>`,
     fitText(crisis, minX + 14, by + 37, { size: 11, maxWidth: drawW - 28 }),
   );
 
@@ -1404,7 +1412,7 @@ export function renderDecisionChart(model: PsyumlModel, options: RenderOptions =
   const fh = r1(height);
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fx} 0 ${fw} ${fh}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Crisis chart')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.decisionNav'))}</title><desc>${esc(altText)}</desc>` +
     defs +
     `<rect x="${fx}" y="0" width="${fw}" height="${fh}" fill="#fff" />` +
     titleText +
@@ -1422,6 +1430,7 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const categories = model.nodes.filter((n) => n.stereotype === 'category');
   const itemsOf = (catId: string) => {
@@ -1472,9 +1481,7 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
 
   const height = 86 + maxItems * 28 + 50;
   const fy = height - 26;
-  parts.push(
-    `<text x="16" y="${fy}" font-family="sans-serif" font-size="11">CFT systems: Threat · Drive · Soothing — grow the soothing system.</text>`,
-  );
+  parts.push(chromeLine(tr('resource.legend'), 16, fy, RES_W, { size: 11 }));
   if (model.meta.disclaimer) {
     parts.push(chromeLine(model.meta.disclaimer, 16, fy + 16, RES_W, { size: 10, fill: '#333' }));
   }
@@ -1489,7 +1496,7 @@ export function renderResourceMap(model: PsyumlModel, options: RenderOptions = {
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${RES_W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Resource map')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.resourceAnchor'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${RES_W}" height="${height}" fill="#fff" />` +
     titleText +
     parts.join('') +
@@ -1562,6 +1569,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
   // v0.2 §2/§3: the client/picture profiles hide the clinician-analytic surface (contested ⚖,
   // as-if, provenance/confidence text) while keeping the structural loop + topology + the
   // honest dashed border. Defaults to shown (the v0.1 + clinician behaviour).
@@ -1627,7 +1635,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     if (loopEdge) badgeObstacles.push({ x: badgeCx - 20, y: badgeCy - 20, w: 40, h: 40 });
     if (topoMark) {
       const ty = badgeCy + (loopEdge ? 36 : 0);
-      const ww = Math.max(40, textWidth(topoMark.toUpperCase(), 11) + 8);
+      const ww = Math.max(40, textWidth(tr(TOPO_KEY[topoMark]), 11) + 8);
       badgeObstacles.push({ x: badgeCx - ww / 2, y: ty - 16, w: ww, h: 48 });
     }
   }
@@ -1638,7 +1646,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     if (!s || !t) continue;
     const src = e.trigger ?? e.label;
     let txt = src ? getText(src, layer, lang) : '';
-    if (e.kind === 'exit') txt = txt ? `${txt} (EXIT)` : 'EXIT';
+    if (e.kind === 'exit') txt = txt ? `${txt} (${tr('edge.exit')})` : tr('edge.exit');
     if (!txt) continue;
     const w = textWidth(txt, 10);
     loopLabels.push({ id: e.id, x: (s.x + t.x) / 2 - w / 2, y: (s.y + t.y) / 2 - 3 - 8, w, h: 10 });
@@ -1668,7 +1676,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     loopEdgeStrings.push(ePath);
     const lblSrc = e.trigger ?? e.label;
     let txt = lblSrc ? getText(lblSrc, layer, lang) : '';
-    if (isExit) txt = txt ? `${txt} (EXIT)` : 'EXIT';
+    if (isExit) txt = txt ? `${txt} (${tr('edge.exit')})` : tr('edge.exit');
     if (txt) {
       const off = loopLblOff.get(e.id) ?? { dx: 0, dy: 0 };
       parts.push(
@@ -1699,7 +1707,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
       const ty = by + (loopEdge ? 36 : 0);
       parts.push(
         loopTopologyGlyph(topoMark, bx, ty),
-        `<text x="${bx}" y="${ty + 28}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">${esc(topoMark.toUpperCase())}</text>`,
+        `<text x="${bx}" y="${ty + 28}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" letter-spacing="0.5">${esc(tr(TOPO_KEY[topoMark]))}</text>`,
       );
     }
   }
@@ -1750,7 +1758,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
     let labelText = getText(node.label, layer, lang);
     if (showInterpretive && node.properties.epistemicStatus === 'contested')
       labelText = `⚖ ${labelText}`;
-    if (showInterpretive && node.properties.asIf) labelText += ' (as-if)';
+    if (showInterpretive && node.properties.asIf) labelText += ` (${tr('node.asIf')})`;
     if (isDiamond) {
       // A short label fits ON one line within the rhombus' widest band (≈100px at the cap-height
       // offset from centre), so it sits INSIDE the diamond — filling the glyph as a normal node.
@@ -1912,7 +1920,7 @@ export function renderLoopMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${fx} ${fy} ${fw} ${fh}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Loop map')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.processLoop'))}</title><desc>${esc(altText)}</desc>` +
     defs +
     `<rect x="${fx}" y="${fy}" width="${fw}" height="${fh}" fill="#fff" />` +
     titleText +
@@ -1933,6 +1941,7 @@ export function renderTimeline(model: PsyumlModel, options: RenderOptions = {}):
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const bands = [...model.bands].sort((a, b) => a.order - b.order);
   const cols = Math.max(1, bands.length);
@@ -1961,8 +1970,8 @@ export function renderTimeline(model: PsyumlModel, options: RenderOptions = {}):
     );
   });
   parts.push(
-    `<text x="12" y="${TL_ROW.action + 4}" font-family="sans-serif" font-size="11" font-weight="700">ACTION</text>`,
-    `<text x="12" y="${TL_ROW.identity + 4}" font-family="sans-serif" font-size="11" font-weight="700">IDENTITY</text>`,
+    `<text x="12" y="${TL_ROW.action + 4}" font-family="sans-serif" font-size="11" font-weight="700">${esc(tr('timeline.action'))}</text>`,
+    `<text x="12" y="${TL_ROW.identity + 4}" font-family="sans-serif" font-size="11" font-weight="700">${esc(tr('timeline.identity'))}</text>`,
   );
 
   // Trajectory edges (left → right within a row)
@@ -1995,8 +2004,8 @@ export function renderTimeline(model: PsyumlModel, options: RenderOptions = {}):
   const fy = TL_ROW.identity + 56;
   parts.push(
     `<line x1="${TL_GUTTER}" y1="${fy}" x2="${TL_W - 16}" y2="${fy}" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
-    `<text x="${TL_GUTTER}" y="${fy - 6}" font-family="sans-serif" font-size="11">problem-saturated past</text>`,
-    `<text x="${TL_W - 16}" y="${fy - 6}" text-anchor="end" font-family="sans-serif" font-size="11">preferred future →</text>`,
+    `<text x="${TL_GUTTER}" y="${fy - 6}" font-family="sans-serif" font-size="11">${esc(tr('timeline.past'))}</text>`,
+    `<text x="${TL_W - 16}" y="${fy - 6}" text-anchor="end" font-family="sans-serif" font-size="11">${esc(tr('timeline.future'))}</text>`,
   );
   const height = fy + 28;
 
@@ -2019,7 +2028,7 @@ export function renderTimeline(model: PsyumlModel, options: RenderOptions = {}):
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${TL_W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Timeline')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.timeline'))}</title><desc>${esc(altText)}</desc>` +
     defs +
     `<rect x="0" y="0" width="${TL_W}" height="${height}" fill="#fff" />` +
     titleText +
@@ -2042,6 +2051,7 @@ export function renderInterventionSeq(
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const lanes = [...model.bands].sort((a, b) => a.order - b.order);
   const laneN = Math.max(1, lanes.length);
@@ -2159,7 +2169,7 @@ export function renderInterventionSeq(
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SEQ_W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Intervention sequence')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.interventionSequence'))}</title><desc>${esc(altText)}</desc>` +
     defs +
     `<rect x="0" y="0" width="${SEQ_W}" height="${height}" fill="#fff" />` +
     titleText +
@@ -2179,6 +2189,7 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const phases = [...model.bands].sort((a, b) => a.order - b.order);
   const cols = Math.max(1, phases.length);
@@ -2274,9 +2285,9 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
   const framing = model.meta.ritual?.framing ?? '';
   const secular = model.meta.ritual?.secularVariant ?? '';
   parts.push(
-    `<text x="12" y="${footerY + 6}" font-family="sans-serif" font-size="11" font-weight="700">Honest framing:</text>`,
+    `<text x="12" y="${footerY + 6}" font-family="sans-serif" font-size="11" font-weight="700">${esc(tr('ritual.framing'))}</text>`,
     `<text x="120" y="${footerY + 6}" font-family="sans-serif" font-size="10">${esc(framing)}</text>`,
-    `<text x="12" y="${footerY + 24}" font-family="sans-serif" font-size="11" font-weight="700">Secular variant:</text>`,
+    `<text x="12" y="${footerY + 24}" font-family="sans-serif" font-size="11" font-weight="700">${esc(tr('ritual.secular'))}</text>`,
     `<text x="120" y="${footerY + 24}" font-family="sans-serif" font-size="10">${esc(secular)}</text>`,
   );
 
@@ -2293,7 +2304,7 @@ export function renderRitual(model: PsyumlModel, options: RenderOptions = {}): R
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${RIT_W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Ritual structure')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.ritual'))}</title><desc>${esc(altText)}</desc>` +
     defs +
     `<rect x="0" y="0" width="${RIT_W}" height="${height}" fill="#fff" />` +
     titleText +
@@ -2389,6 +2400,7 @@ export function renderRelationalField(
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
   const nodes = model.nodes;
 
   const pos = new Map<string, { x: number; y: number }>();
@@ -2403,8 +2415,7 @@ export function renderRelationalField(
   }
   // The legend is a fixed reference strip wider than the node spread; grow the frame to fit it (and
   // the title) at full size rather than squeezing a glyph legend (ADR-0052).
-  const RF_LEGEND =
-    '□ male · ○ female · ◇ other · ▭ system · ═ fused · zigzag = conflict · dashed = distant · ‖ cutoff · ⋯○ = origin (nested)';
+  const RF_LEGEND = tr('relational.legend');
   const width = Math.max(
     560,
     maxX + 90,
@@ -2484,7 +2495,7 @@ export function renderRelationalField(
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Relational field')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.relationalField'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />` +
     titleText +
     parts.join('') +
@@ -2502,6 +2513,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
   const nodes = model.nodes;
 
   const pos = new Map<string, { x: number; y: number }>();
@@ -2568,7 +2580,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     if (isHealthy) {
       parts.push(
         `<circle cx="${p.x}" cy="${p.y}" r="${r1(r - 4)}" fill="none" stroke="#000" stroke-width="2" />`,
-        `<text x="${p.x}" y="${r1(p.y - r - 6)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" stroke="#fff" stroke-width="3" paint-order="stroke">↑ grow</text>`,
+        `<text x="${p.x}" y="${r1(p.y - r - 6)}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" stroke="#fff" stroke-width="3" paint-order="stroke">${esc(tr('mode.grow'))}</text>`,
       );
     }
     const st = n.stereotype ?? '';
@@ -2598,21 +2610,13 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
     const dom = n.properties.dominance;
     if (dom !== undefined) {
       parts.push(
-        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${r1(nameCy + ((nameLines.length - 1) * 13) / 2 + 14)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">dom ${dom.toFixed(2)}</text>`,
+        `<text data-el="nodelabel:${esc(n.id)}" x="${p.x}" y="${r1(nameCy + ((nameLines.length - 1) * 13) / 2 + 14)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#555" stroke="#fff" stroke-width="2.5" paint-order="stroke">${esc(tr('mode.dominance', { value: dom.toFixed(2) }))}</text>`,
       );
     }
   }
 
   const ly = height - 24;
-  parts.push(
-    chromeLine(
-      'Circle size = mode dominance (number shown). Goal: grow the Healthy Adult, shrink maladaptive modes.',
-      12,
-      ly,
-      width,
-      { size: 10 },
-    ),
-  );
+  parts.push(chromeLine(tr('mode.legend'), 12, ly, width, { size: 10 }));
   if (model.meta.disclaimer) {
     parts.push(chromeLine(model.meta.disclaimer, 12, ly + 14, width, { size: 9, fill: '#333' }));
   }
@@ -2631,7 +2635,7 @@ export function renderModeMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Schema mode map')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.modeMap'))}</title><desc>${esc(altText)}</desc>` +
     defs +
     `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />` +
     titleText +
@@ -2650,6 +2654,7 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const parts: string[] = [
     // Silhouette
@@ -2724,11 +2729,7 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
   // compressed by `fitText` below for the same reason).
   const CHROME_W = BODY_W - 24;
   const capChars = Math.max(8, Math.floor(CHROME_W / (10 * CHAR_W)));
-  const capLines = wrapLines(
-    'Marker size = intensity (number shown). Body sensations are meaningful but not self-explanatory — pace and titrate.',
-    capChars,
-    3,
-  );
+  const capLines = wrapLines(tr('body.caption'), capChars, 3);
   const discChars = Math.max(8, Math.floor(CHROME_W / (9 * CHAR_W)));
   const discLines = model.meta.disclaimer ? wrapLines(model.meta.disclaimer, discChars, 2) : [];
   const fy = BODY_H - 30;
@@ -2765,7 +2766,7 @@ export function renderBodyMap(model: PsyumlModel, options: RenderOptions = {}): 
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BODY_W} ${bodyH}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Body map')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.bodyMap'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${BODY_W}" height="${bodyH}" fill="#fff" />` +
     titleText +
     parts.join('') +
@@ -2798,9 +2799,10 @@ interface DiffRow {
 export function renderDiff(
   before: PsyumlModel,
   after: PsyumlModel,
-  options: { layer?: Layer } = {},
+  options: { layer?: Layer; lang?: string } = {},
 ): RenderResult {
   const layer = options.layer ?? 'clinician';
+  const tr = translator(options.lang ?? after.language ?? 'en');
   const diff: ModelDiff = diffModels(before, after, { layer });
 
   const rows: DiffRow[] = [];
@@ -2820,7 +2822,10 @@ export function renderDiff(
           solidified: d.after === 'consolidated',
         });
       } else if (d.field === 'label') {
-        rows.push({ glyph: '✎', text: `Renamed “${d.before}” → “${d.after}”` });
+        rows.push({
+          glyph: '✎',
+          text: tr('diff.renamed', { before: String(d.before), after: String(d.after) }),
+        });
       } else {
         rows.push({ glyph: 'Δ', text: `${c.label}: ${d.field} ${d.before} → ${d.after}` });
       }
@@ -2828,17 +2833,21 @@ export function renderDiff(
   }
   for (const c of diff.edges.changed)
     for (const d of c.deltas)
-      rows.push({ glyph: 'Δ', text: `link ${c.id}: ${d.field} ${d.before} → ${d.after}` });
-  for (const e of diff.edges.added) rows.push({ glyph: '＋', text: `${e.kind} link` });
+      rows.push({
+        glyph: 'Δ',
+        text: `${tr('diff.link', { id: c.id })}: ${d.field} ${d.before} → ${d.after}`,
+      });
+  for (const e of diff.edges.added)
+    rows.push({ glyph: '＋', text: tr('diff.kindLink', { kind: e.kind }) });
   for (const n of diff.nodes.removed)
     rows.push({ glyph: '−', text: `${n.kind} “${getText(n.label, layer)}”`, strike: true });
   for (const e of diff.edges.removed)
-    rows.push({ glyph: '−', text: `${e.kind} link`, strike: true });
+    rows.push({ glyph: '−', text: tr('diff.kindLink', { kind: e.kind }), strike: true });
 
-  const titleText = `Progress${after.meta.title ? `: ${after.meta.title}` : ''}`;
+  const titleText = `${tr('diff.title')}${after.meta.title ? `: ${after.meta.title}` : ''}`;
   const altText =
     `${titleText}. ` +
-    (rows.length === 0 ? 'No tracked changes.' : `${rows.map((r) => r.text).join('; ')}.`);
+    (rows.length === 0 ? tr('diff.none') : `${rows.map((r) => r.text).join('; ')}.`);
 
   const parts: string[] = [
     `<text x="16" y="24" font-family="sans-serif" font-size="16" font-weight="700">${esc(titleText)}</text>`,
@@ -2846,7 +2855,7 @@ export function renderDiff(
   let y = 52;
   if (rows.length === 0) {
     parts.push(
-      `<text x="16" y="${y}" font-family="sans-serif" font-size="13">No tracked changes.</text>`,
+      `<text x="16" y="${y}" font-family="sans-serif" font-size="13">${esc(tr('diff.none'))}</text>`,
     );
     y += DIFF_ROW_H;
   } else {
@@ -2908,6 +2917,7 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const pos = new Map<string, { x: number; y: number }>();
   model.nodes.forEach((n, i) => {
@@ -2977,9 +2987,7 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
   }
 
   const ly = height - 12;
-  parts.push(
-    `<text x="12" y="${ly}" font-family="sans-serif" font-size="10">solid = within-triangle link · dotted = transference (same conflict, new relationship)</text>`,
-  );
+  parts.push(chromeLine(tr('twoTriangles.legend'), 12, ly, width, { size: 10 }));
 
   const groupAlt = bands.map((b) => {
     const ns = model.nodes
@@ -2997,7 +3005,7 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Two triangles')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.twoTriangles'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />` +
     titleText +
     parts.join('') +
@@ -3006,32 +3014,36 @@ export function renderTwoTriangles(model: PsyumlModel, options: RenderOptions = 
   return { svg, altText };
 }
 
-/** Per-kind fill-in prompt for blank printable templates. */
-const KIND_PROMPT: Record<string, string> = {
-  state: '(state…)',
-  agent: '(part…)',
-  self: '(Self / centre)',
-  resource: '(resource…)',
-  intervention: '(step…)',
-  context: '(context…)',
-  temporal: '(when…)',
-};
+/** Per-kind fill-in prompt (catalog key) for blank printable templates. */
+const KIND_PROMPT = new Map<string, ChromeKey>([
+  ['state', 'template.state'],
+  ['agent', 'template.agent'],
+  ['self', 'template.self'],
+  ['resource', 'template.resource'],
+  ['intervention', 'template.intervention'],
+  ['context', 'template.context'],
+  ['temporal', 'template.temporal'],
+]);
 
 /**
  * Turn a model into a **blank printable template**: keep the structure (bands, positions,
  * node kinds, edges) but replace every node label with a fill-in prompt and clear edge
  * labels/triggers, so a clinician can print the scaffold and write it in by hand in session
  * (REQ-TEMPLATES). The model's disclaimer / crisis line are kept (they belong on the print);
- * the title becomes a generic "… (blank template)". Render it with the normal `render*` for
+ * the title becomes a generic "… (blank template)". Prompts + title are in `model.language` (chrome
+ * catalog, en fallback) and stored under that language so `getText` finds them. Render it with the normal `render*` for
  * the diagram type. Pure; never mutates the input.
  */
 export function blankTemplate(model: PsyumlModel): PsyumlModel {
+  const lang = model.language || 'en';
   return parseModel({
     ...model,
-    meta: { ...model.meta, title: `${model.diagram} (blank template)` },
+    meta: { ...model.meta, title: chromeText(lang, 'template.title', { diagram: model.diagram }) },
     nodes: model.nodes.map((n) => ({
       ...n,
-      label: { clinician: { en: KIND_PROMPT[n.kind] ?? '(…)' } },
+      label: {
+        clinician: { [lang]: chromeText(lang, KIND_PROMPT.get(n.kind) ?? 'template.other') },
+      },
     })),
     edges: model.edges.map((e) => {
       // keep the structure (id/kind/source/target/loop/properties); drop label + trigger
@@ -3100,6 +3112,7 @@ const COMPOSITE_W = 720;
  * ≥2 views) are listed at the top and tagged for cross-navigation. The model is never mutated.
  */
 export function renderComposite(models: PsyumlModel[], options: RenderOptions = {}): RenderResult {
+  const tr = translator(options.lang ?? models[0]?.language ?? 'en');
   const pad = 16;
   const gap = 16;
   const titleH = 24;
@@ -3113,12 +3126,14 @@ export function renderComposite(models: PsyumlModel[], options: RenderOptions = 
   // Shared-threads index (the cross-navigation key).
   const threads = sharedNodeIds(models, options);
   const idxLines = threads.length
-    ? threads.map((t) => `• ${t.label} (${t.id}) — in ${t.views.join(', ')}`)
-    : ['(no shared threads across these views)'];
+    ? threads.map((t) =>
+        tr('composite.threadLine', { label: t.label, id: t.id, views: t.views.join(', ') }),
+      )
+    : [tr('composite.noThreads')];
   const idxH = titleH + 6 + idxLines.length * 14 + 8;
   parts.push(frame(idxH));
   parts.push(
-    `<text x="${pad + 8}" y="${r1(y + 16)}" font-family="sans-serif" font-size="13" font-weight="700">Shared threads (cross-navigation)</text>`,
+    `<text x="${pad + 8}" y="${r1(y + 16)}" font-family="sans-serif" font-size="13" font-weight="700">${esc(tr('composite.threads'))}</text>`,
   );
   idxLines.forEach((ln, i) =>
     parts.push(
@@ -3167,7 +3182,7 @@ export function renderComposite(models: PsyumlModel[], options: RenderOptions = 
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${COMPOSITE_W} ${totalH}" role="img" aria-label="${esc(altText)}">` +
-    `<title>Composite board</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(tr('title.composite'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${COMPOSITE_W}" height="${totalH}" fill="#fff" />` +
     parts.join('') +
     '</svg>';
@@ -3185,6 +3200,7 @@ export function renderLadder(model: PsyumlModel, options: RenderOptions = {}): R
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   // Rungs hardest-first (top). A missing rating sinks to the bottom but keeps input order among ties.
   const rungs = model.nodes
@@ -3230,20 +3246,12 @@ export function renderLadder(model: PsyumlModel, options: RenderOptions = {}): R
   const bottom = top + Math.max(1, rungs.length) * (ROW_H + GAP);
   parts.push(
     `<line x1="${axisX}" y1="${bottom - 6}" x2="${axisX}" y2="${top + 12}" stroke="#000" stroke-width="2" marker-end="url(#arrow)" />`,
-    `<text x="${axisX}" y="${top + 6}" font-family="sans-serif" font-size="9" text-anchor="middle">harder</text>`,
-    `<text x="${axisX}" y="${bottom + 4}" font-family="sans-serif" font-size="9" text-anchor="middle">easier</text>`,
+    `<text x="${axisX}" y="${top + 6}" font-family="sans-serif" font-size="9" text-anchor="middle">${esc(tr('ladder.harder'))}</text>`,
+    `<text x="${axisX}" y="${bottom + 4}" font-family="sans-serif" font-size="9" text-anchor="middle">${esc(tr('ladder.easier'))}</text>`,
   );
 
   const footY = bottom + 22;
-  parts.push(
-    chromeLine(
-      'Climb at your own pace — master a rung before moving up; the bottom rung is where to start.',
-      boxX,
-      footY,
-      LADDER_W,
-      { size: 11 },
-    ),
-  );
+  parts.push(chromeLine(tr('ladder.footer'), boxX, footY, LADDER_W, { size: 11 }));
   let h = footY + 10;
   if (model.meta.disclaimer) {
     parts.push(
@@ -3262,7 +3270,7 @@ export function renderLadder(model: PsyumlModel, options: RenderOptions = {}): R
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${LADDER_W} ${h}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Ranked ladder')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.ladder'))}</title><desc>${esc(altText)}</desc>` +
     `<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>` +
     `<rect x="0" y="0" width="${LADDER_W}" height="${h}" fill="#fff" />` +
     title +
@@ -3285,6 +3293,7 @@ export function renderThreeCircles(model: PsyumlModel, options: RenderOptions = 
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const POS: Record<string, { x: number; y: number }> = {
     threat: { x: 165, y: 170 },
@@ -3292,9 +3301,9 @@ export function renderThreeCircles(model: PsyumlModel, options: RenderOptions = 
     soothing: { x: 310, y: 385 },
   };
   const SUB: Record<string, string> = {
-    threat: 'protect',
-    drive: 'pursue',
-    soothing: 'rest & connect',
+    threat: tr('threeCircles.threat'),
+    drive: tr('threeCircles.drive'),
+    soothing: tr('threeCircles.soothing'),
   };
   const order = ['threat', 'drive', 'soothing'];
   const systems = order
@@ -3344,15 +3353,7 @@ export function renderThreeCircles(model: PsyumlModel, options: RenderOptions = 
   }
 
   const height = 560;
-  parts.push(
-    chromeLine(
-      'Three systems (Gilbert): grow the soothing system — it balances threat and drive.',
-      20,
-      height - 26,
-      TC_W,
-      { size: 11 },
-    ),
-  );
+  parts.push(chromeLine(tr('threeCircles.legend'), 20, height - 26, TC_W, { size: 11 }));
   if (model.meta.disclaimer) {
     parts.push(
       chromeLine(model.meta.disclaimer, 20, height - 10, TC_W, { size: 10, fill: '#333' }),
@@ -3369,7 +3370,7 @@ export function renderThreeCircles(model: PsyumlModel, options: RenderOptions = 
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${TC_W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Three circles (CFT)')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.threeCircles'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${TC_W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
@@ -3391,6 +3392,7 @@ export function renderVenn(model: PsyumlModel, options: RenderOptions = {}): Ren
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   // Identify the three regions; fall back to document order if the canonical stereotypes are absent.
   const pick = (...keys: string[]): (typeof model.nodes)[number] | undefined =>
@@ -3444,15 +3446,7 @@ export function renderVenn(model: PsyumlModel, options: RenderOptions = {}): Ren
   }
 
   const height = 470;
-  parts.push(
-    chromeLine(
-      'Two circles, one overlap: the middle region is what both share.',
-      20,
-      height - 26,
-      VENN_W,
-      { size: 11 },
-    ),
-  );
+  parts.push(chromeLine(tr('venn.legend'), 20, height - 26, VENN_W, { size: 11 }));
   if (model.meta.disclaimer) {
     parts.push(
       chromeLine(model.meta.disclaimer, 20, height - 10, VENN_W, { size: 10, fill: '#333' }),
@@ -3469,7 +3463,7 @@ export function renderVenn(model: PsyumlModel, options: RenderOptions = {}): Ren
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VENN_W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Overlapping circles')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.venn'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${VENN_W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
@@ -3493,6 +3487,7 @@ export function renderBullseye(model: PsyumlModel, options: RenderOptions = {}):
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const W = BULLSEYE_W;
   const cx = 325;
@@ -3550,9 +3545,7 @@ export function renderBullseye(model: PsyumlModel, options: RenderOptions = {}):
   });
 
   const height = cy + R + labelGap + 60;
-  parts.push(
-    `<text x="20" y="${height - 28}" font-family="sans-serif" font-size="11">Each dot is a life area; closer to the centre = living more like that value matters to you.</text>`,
-  );
+  parts.push(chromeLine(tr('bullseye.legend'), 20, height - 28, W, { size: 11 }));
   if (model.meta.disclaimer) {
     parts.push(
       `<text x="20" y="${height - 12}" font-family="sans-serif" font-size="10" fill="#333">${esc(model.meta.disclaimer)}</text>`,
@@ -3569,7 +3562,7 @@ export function renderBullseye(model: PsyumlModel, options: RenderOptions = {}):
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? "Values bull's-eye")}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.bullseye'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
@@ -3593,17 +3586,18 @@ export function renderTreeOfLife(model: PsyumlModel, options: RenderOptions = {}
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const W = TREE_W;
   const cx = Math.round(W / 2);
 
   const ZONES: { key: string; header: string; canopy: boolean }[] = [
-    { key: 'branches', header: 'Branches — my hopes, dreams & wishes', canopy: true },
-    { key: 'leaves', header: 'Leaves — the important people in my life', canopy: true },
-    { key: 'fruits', header: "Fruits — gifts I've been given", canopy: true },
-    { key: 'trunk', header: 'Trunk — my skills & values', canopy: false },
-    { key: 'ground', header: 'Ground — my present, day to day', canopy: false },
-    { key: 'roots', header: 'Roots — where I come from', canopy: false },
+    { key: 'branches', header: tr('tree.branches'), canopy: true },
+    { key: 'leaves', header: tr('tree.leaves'), canopy: true },
+    { key: 'fruits', header: tr('tree.fruits'), canopy: true },
+    { key: 'trunk', header: tr('tree.trunk'), canopy: false },
+    { key: 'ground', header: tr('tree.ground'), canopy: false },
+    { key: 'roots', header: tr('tree.roots'), canopy: false },
   ];
 
   const inZone = (key: string): typeof model.nodes =>
@@ -3691,9 +3685,7 @@ export function renderTreeOfLife(model: PsyumlModel, options: RenderOptions = {}
   }
 
   let h = (bands.length ? bands[bands.length - 1].bottom : y) + 14;
-  body.push(
-    `<text x="22" y="${h}" font-family="sans-serif" font-size="11">A strengths-based life portrait, co-created — what's here is what you chose to put here.</text>`,
-  );
+  body.push(chromeLine(tr('tree.footer'), 22, h, W, { size: 11 }));
   h += 16;
   if (model.meta.disclaimer) {
     body.push(
@@ -3713,7 +3705,7 @@ export function renderTreeOfLife(model: PsyumlModel, options: RenderOptions = {}
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Tree of Life')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.treeOfLife'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +
     deco.join('') +
@@ -3738,14 +3730,15 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const W = SCHEMA_W;
   const DOMAINS: { key: string; name: string }[] = [
-    { key: 'disconnection', name: 'Disconnection & Rejection' },
-    { key: 'autonomy', name: 'Impaired Autonomy & Performance' },
-    { key: 'limits', name: 'Impaired Limits' },
-    { key: 'other-directed', name: 'Other-Directedness' },
-    { key: 'overvigilance', name: 'Overvigilance & Inhibition' },
+    { key: 'disconnection', name: tr('schema.disconnection') },
+    { key: 'autonomy', name: tr('schema.autonomy') },
+    { key: 'limits', name: tr('schema.limits') },
+    { key: 'other-directed', name: tr('schema.otherDirected') },
+    { key: 'overvigilance', name: tr('schema.overvigilance') },
   ];
 
   const leftPad = 16;
@@ -3806,15 +3799,7 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
   });
 
   let h = maxBottom + 18;
-  parts.push(
-    chromeLine(
-      "Columns are Young's 5 schema domains; a bold-outlined cell (▟) is a schema active for this person.",
-      leftPad,
-      h,
-      W,
-      { size: 11 },
-    ),
-  );
+  parts.push(chromeLine(tr('schema.legend'), leftPad, h, W, { size: 11 }));
   h += 16;
   if (model.meta.disclaimer) {
     parts.push(chromeLine(model.meta.disclaimer, leftPad, h, W, { size: 10, fill: '#333' }));
@@ -3832,7 +3817,7 @@ export function renderSchemaGrid(model: PsyumlModel, options: RenderOptions = {}
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Schema-domains grid')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.schemaGrid'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
@@ -3858,6 +3843,7 @@ export function renderDecisionalBalance(
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const W = MATRIX_W;
   const QUAD: { key: string; col: 0 | 1; row: 0 | 1 }[] = [
@@ -3866,8 +3852,8 @@ export function renderDecisionalBalance(
     { key: 'change-cost', col: 0, row: 1 },
     { key: 'stay-cost', col: 1, row: 1 },
   ];
-  const colHeaders = ['Making the change', 'Staying the same'];
-  const rowHeaders = ['Benefits / hopes', 'Costs / worries'];
+  const colHeaders = [tr('balance.change'), tr('balance.stay')];
+  const rowHeaders = [tr('balance.benefits'), tr('balance.costs')];
 
   const leftHdr = 92;
   const titleH = model.meta.title ? 34 : 12;
@@ -3941,15 +3927,7 @@ export function renderDecisionalBalance(
   }
 
   let h = gridBottom + 20;
-  parts.push(
-    chromeLine(
-      'Use when genuinely weighing both sides — dwelling on reasons to stay can deepen ambivalence (MI-3), so it is not a persuasion tool.',
-      gridLeft,
-      h,
-      W,
-      { size: 10, fill: '#333' },
-    ),
-  );
+  parts.push(chromeLine(tr('balance.caveat'), gridLeft, h, W, { size: 10, fill: '#333' }));
   h += 15;
   if (model.meta.disclaimer) {
     parts.push(chromeLine(model.meta.disclaimer, gridLeft, h, W, { size: 10, fill: '#333' }));
@@ -3967,7 +3945,7 @@ export function renderDecisionalBalance(
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Decisional balance')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.decisionalBalance'))}</title><desc>${esc(altText)}</desc>` +
     `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +
     parts.join('') +
@@ -3991,6 +3969,7 @@ export function renderSecureBase(model: PsyumlModel, options: RenderOptions = {}
   model = withoutHidden(model);
   const layer = options.layer ?? 'clinician';
   const lang = options.lang ?? model.language ?? 'en';
+  const tr = translator(lang);
 
   const W = SECURE_W;
   const cx = Math.round(W / 2);
@@ -4013,14 +3992,14 @@ export function renderSecureBase(model: PsyumlModel, options: RenderOptions = {}
     // Cycle: up the right (out to explore), down the left (back for comfort).
     `<path d="M ${r1(cx + 0.55 * R)},${r1(cy + 0.62 * R)} Q ${cx + R + 8},${cy} ${r1(cx + 0.55 * R)},${r1(cy - 0.62 * R)}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
     `<path d="M ${r1(cx - 0.55 * R)},${r1(cy - 0.62 * R)} Q ${cx - R - 8},${cy} ${r1(cx - 0.55 * R)},${r1(cy + 0.62 * R)}" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arrow)" />`,
-    fitText('SECURE BASE — support me going out to explore', cx, cy - R + 34, {
+    fitText(tr('secureBase.base'), cx, cy - R + 34, {
       size: 12,
       weight: 700,
       anchor: 'middle',
       maxWidth: 2 * R - 24,
       halo: 4,
     }),
-    fitText('SAFE HAVEN — welcome me back for comfort', cx, cy + R - 20, {
+    fitText(tr('secureBase.haven'), cx, cy + R - 20, {
       size: 12,
       weight: 700,
       anchor: 'middle',
@@ -4060,15 +4039,7 @@ export function renderSecureBase(model: PsyumlModel, options: RenderOptions = {}
   });
 
   let h = baseY + Math.max(1, base.length) * 22 + 30;
-  body.push(
-    chromeLine(
-      'A trusted caregiver is both — somewhere safe to go FROM, and somewhere safe to come BACK to.',
-      20,
-      h,
-      W,
-      { size: 10, fill: '#333' },
-    ),
-  );
+  body.push(chromeLine(tr('secureBase.footer'), 20, h, W, { size: 10, fill: '#333' }));
   h += 15;
   if (model.meta.disclaimer) {
     body.push(chromeLine(model.meta.disclaimer, 20, h, W, { size: 10, fill: '#333' }));
@@ -4089,7 +4060,7 @@ export function renderSecureBase(model: PsyumlModel, options: RenderOptions = {}
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(altText)}">` +
-    `<title>${esc(model.meta.title ?? 'Secure base & safe haven')}</title><desc>${esc(altText)}</desc>` +
+    `<title>${esc(model.meta.title ?? tr('title.secureBase'))}</title><desc>${esc(altText)}</desc>` +
     `<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#000" /></marker></defs>` +
     `<rect x="0" y="0" width="${W}" height="${height}" fill="#fff" />` +
     title +

@@ -113,6 +113,10 @@ describe('overlap invariant — corpus (ADR-0012)', () => {
         assertNoOverlap(`${f}/${layer}`, renderer(model, { layer }).svg, scope3);
       });
     }
+    // Localized chrome (issue #3) is often longer than English; it must not break the invariant.
+    it('nothing overlaps (clinician, ru chrome)', () => {
+      assertNoOverlap(`${f}/ru`, renderer(model, { layer: 'clinician', lang: 'ru' }).svg, scope3);
+    });
   });
 });
 
