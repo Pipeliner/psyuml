@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { DiagramType } from '@psyuml/model';
-import { FAMILIES } from '@psyuml/profiles';
+import { FAMILIES, NOTATION_SYMBOLS } from '@psyuml/profiles';
 
 const TYPE_COUNT = DiagramType.options.length; // the single source of truth
 const FAMILY_COUNT = FAMILIES.length;
@@ -93,5 +93,28 @@ describe('docs ↔ system conformance (REQ-DOC-CONFORMANCE, ADR-0043)', () => {
     for (const t of DiagramType.options) {
       expect(examples, `missing showcase-${t}.psyuml`).toContain(`showcase-${t}.psyuml`);
     }
+  });
+});
+
+describe('symbol ledger ↔ notation registry (REQ-NOTATION-TESTING)', () => {
+  // The Instrument-D ledger is the record a comprehension study fills in. It must name EXACTLY the
+  // symbols `auditNotation` checks — a symbol added to the language (e.g. the ADR-0065 role-procedure
+  // marks) can't silently skip the study — and no Tier-B cell may claim a result while no study has
+  // run (results are never fabricated; an LLM dry-run is not a sample).
+  const doc = read('docs/adoption/comprehension-instruments.md');
+  const start = doc.indexOf('### Symbol comprehension ledger');
+  const end = doc.indexOf('###', start + 4);
+  const rows = doc
+    .slice(start, end)
+    .split('\n')
+    .filter((l) => /^\| \*{0,2}`[\w-]+`/.test(l));
+
+  it('lists exactly the registered symbols, once each', () => {
+    const ids = rows.map((l) => /`([\w-]+)`/.exec(l)![1]);
+    expect([...ids].sort()).toEqual(NOTATION_SYMBOLS.map((s) => s.id).sort());
+  });
+
+  it('keeps every Tier-B (human) cell pending until a real study runs', () => {
+    for (const l of rows) expect(l.trim().endsWith('⏳ pending |'), l).toBe(true);
   });
 });

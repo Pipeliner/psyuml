@@ -211,7 +211,8 @@ asset library**, using a validated method (ISO 9186), and design them *with* nov
 
 **Symbols under test.** The set is enumerated in code as `NOTATION_SYMBOLS` (`@psyuml/profiles`) — the
 core element glyphs, the connectors (incl. the safety-critical **exit / way-out**), the parts markers,
-and the CAT loop-topology marks (trap/dilemma/snag). The same list drives the **Tier-A harness** and
+the CAT loop-topology marks (trap/dilemma/snag), and the role-procedure marks (message card,
+internalization, self-relation, presented self, need, lens — ADR-0065). The same list drives the **Tier-A harness** and
 the **ledger** below, so "every picture-profile symbol" is a closed, checkable set.
 
 **Tier A first (automated, runs in CI — `auditNotation()`).** Before any human sees a symbol, the
@@ -266,6 +267,12 @@ A symbol that misses its bar is **iterated and re-tested, not shipped** (and nev
 | `trap` (+ "TRAP") | a self-confirming loop | ≥67% | ✅ pass | ⏳ pending |
 | `dilemma` (+ "DILEMMA") | a false-binary either/or | ≥67% | ✅ pass | ⏳ pending |
 | `snag` (+ "SNAG") | self-sabotage of success | ≥67% | ✅ pass | ⏳ pending |
+| `message-card` (quoted card + "INJUNCTION/DRIVER/ATTRIBUTION") | words someone said to you, remembered | ≥67% | ✅ pass | ⏳ pending |
+| `internalizes` (dash-dot →) | what was said became how you treat yourself | ≥67% | ✅ pass | ⏳ pending |
+| `self-relation` (loop ↺) | how you treat yourself | ≥67% | ✅ pass | ⏳ pending |
+| `presented-self` (dotted shell + "PRESENTED SELF") | the face shown to others | ≥67% | ✅ pass | ⏳ pending |
+| `need` (needs strip + "UNDERLYING NEEDS") | a need underneath the pattern | ≥67% | ✅ pass | ⏳ pending |
+| `lens` ("lens:") | a condition a plane is lived under | ≥67% | ✅ pass | ⏳ pending |
 
 ### Picture-profile pictograph ledger (status: PENDING — no study has been run)
 

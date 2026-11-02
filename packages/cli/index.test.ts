@@ -185,6 +185,7 @@ describe('psyuml cli', () => {
                 'schema-grid',
                 'decisional-balance',
                 'secure-base',
+                'role-procedure',
               ].map((t) => [t, 'ok']),
             ),
           },
