@@ -98,7 +98,7 @@ describe('grammar specifics', () => {
     expect(() => fromDSL('wibble foo bar')).toThrow();
   });
 
-  it('round-trips an edge stereotype (ADR-0059)', () => {
+  it('round-trips an edge stereotype (ADR-0065)', () => {
     const src = [
       'diagram role-procedure',
       'node a state label="A"',

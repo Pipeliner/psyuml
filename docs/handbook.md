@@ -181,7 +181,10 @@ and a shipped **example** to open in the editor. Notation details are in the
 
 ### Body Map — `examples/body-map.psyuml`
 - **When:** somatic / trauma / affect work — where distress is felt.
-- **How:** place sensations on the body with `intensity`; labels sit beside their dots.
+- **How:** place sensations on the body with `intensity`; labels sit beside their dots. Use a named
+  region (`stereotype=chest`, `foot-left`, …) or a `pos` in the documented frame (see the format
+  reference, "Body Map coordinate frame + regions"); `stereotype=whole-body` for something felt
+  everywhere (fatigue), which is listed beside the figure rather than pinned to one spot.
 - **In session:** track sensation, not interpretation; let the client name it.
 - **Pitfall:** over-reading bodily signs as diagnosis.
 

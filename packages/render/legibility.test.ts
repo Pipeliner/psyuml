@@ -66,10 +66,10 @@ describe('legibility: every edge label is haloed so its connector never strikes 
 });
 
 describe('legibility: a loop-map resource label never straddles its diamond edges (ADR-0049 follow-up)', () => {
-  // A process-loop resource node is a flat 140×44 rhombus. A multi-line label drawn INSIDE it would
-  // poke the slanted edges (the rhombus has almost no usable width off its centre line), and the
-  // diamond can't grow without breaking the ring spacing. So the renderer keeps a SHORT label on one
-  // line inside the widest band and lifts a LONG label fully OUTSIDE the glyph. This guards that:
+  // A rhombus has almost no usable width off its centre line, so a label drawn inside it can poke the
+  // slanted edges. Since ADR-0064 the resource diamond is a satellite off the ring, sized to hold its
+  // label INSIDE (ADR-0050's lift-it-outside rule was needed only while it held a fixed ring slot).
+  // This guard still holds either way:
   // every resource-node label line is either wholly inside the rhombus or wholly clear of the
   // diamond's box — never half-in, cutting across an edge.
   const CW = 0.58; // the one text metric (≈0.58em/char), matching the renderer

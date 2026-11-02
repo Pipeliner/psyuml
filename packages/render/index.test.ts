@@ -1135,7 +1135,7 @@ describe('renderComposite — the Composite board (v0.2 §2)', () => {
   });
 });
 
-describe('parallel edges + self-loops (ADR-0059)', () => {
+describe('parallel edges + self-loops (ADR-0065)', () => {
   const rel = parseModel({
     version: '0.1.0',
     diagram: 'relational-field',
@@ -1173,9 +1173,12 @@ describe('parallel edges + self-loops (ADR-0059)', () => {
 
   it('fans an anti-parallel relation pair apart so neither label hides the other', () => {
     const { svg } = renderRelationalField(rel);
-    // one label above the pair, one below — no longer stacked on one segment
-    expect(Math.abs(labelY(svg, 'ab') - labelY(svg, 'ba'))).toBeGreaterThan(20);
-    expect(svg).toContain('rf-arrow'); // direction is readable on a fanned pair
+    // each label rides its own fanned line — no longer stacked on one segment (9px text)
+    expect(Math.abs(labelY(svg, 'ab') - labelY(svg, 'ba'))).toBeGreaterThanOrEqual(12);
+    // direction is readable on a fanned pair: a filled arrowhead per tie
+    expect((svg.match(/<path d="M [^"]+ z" fill="#000" \/>/g) ?? []).length).toBeGreaterThanOrEqual(
+      2,
+    );
   });
 
   it('draws a self-relation as a loop instead of dropping it', () => {
@@ -1185,9 +1188,9 @@ describe('parallel edges + self-loops (ADR-0059)', () => {
     expect(altText).toContain('B (distant) B');
   });
 
-  it('keeps a lone edge byte-identical (no offset, no arrow defs)', () => {
+  it('keeps a lone tie undirected (no arrowhead added)', () => {
     const lone = parseModel({ ...rel, edges: [rel.edges[0]] });
-    expect(renderRelationalField(lone).svg).not.toContain('rf-arrow');
+    expect(renderRelationalField(lone).svg).not.toMatch(/<path d="M [^"]+ z" fill="#000" \/>/);
   });
 
   it('draws a self-loop on the process-loop ring', () => {
@@ -1210,7 +1213,7 @@ describe('parallel edges + self-loops (ADR-0059)', () => {
   });
 });
 
-describe('renderRoleProcedure (ADR-0059, Pattern family)', () => {
+describe('renderRoleProcedure (ADR-0065, Pattern family)', () => {
   const rp = parseModel(read('showcase-role-procedure.psyuml'));
   const box = (svg: string, id: string): { x: number; y: number; w: number; h: number } => {
     const m = svg.match(

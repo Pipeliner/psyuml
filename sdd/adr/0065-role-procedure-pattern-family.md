@@ -1,4 +1,4 @@
-# ADR-0059: a `role-procedure` diagram for the Pattern family, edge stereotypes, and visible parallel / reflexive edges
+# ADR-0065: a `role-procedure` diagram for the Pattern family, edge stereotypes, and visible parallel / reflexive edges
 
 - **Status:** accepted
 - **Date:** 2026-10-20

@@ -23,6 +23,7 @@ import { parseModel, type PsyumlModel } from '@psyuml/model';
 import * as render from '@psyuml/render';
 import { overlaps } from './layout';
 import { boxesFromSvg, idOf, kindOf, viewBoxOf } from './introspect';
+import { loopRepro, partsRepro } from './issue-repros';
 
 /** Tolerance: the shared metric is an estimate, so allow <=1px of slop before calling it overlap. */
 const SLOP = 1;
@@ -82,30 +83,8 @@ function assertNoOverlap(label: string, svg: string, scopeLabelLabel = true): vo
   }
 }
 
-type Renderer = (m: PsyumlModel, o?: { layer?: 'clinician' | 'client' }) => { svg: string };
-const RENDERERS: Record<string, Renderer> = {
-  'state-map': render.renderStateMap,
-  'parts-map': render.renderPartsMap,
-  'mode-map': render.renderModeMap,
-  'relational-field': render.renderRelationalField,
-  'body-map': render.renderBodyMap,
-  'process-loop': render.renderLoopMap,
-  timeline: render.renderTimeline,
-  'intervention-sequence': render.renderInterventionSeq,
-  ritual: render.renderRitual,
-  'decision-nav': render.renderDecisionChart,
-  'resource-anchor': render.renderResourceMap,
-  'two-triangles': render.renderTwoTriangles,
-  ladder: render.renderLadder,
-  'three-circles': render.renderThreeCircles,
-  venn: render.renderVenn,
-  bullseye: render.renderBullseye,
-  'tree-of-life': render.renderTreeOfLife,
-  'schema-grid': render.renderSchemaGrid,
-  'decisional-balance': render.renderDecisionalBalance,
-  'secure-base': render.renderSecureBase,
-  'role-procedure': render.renderRoleProcedure,
-};
+// The shared registry (issue #2) — never a private copy that can drift from `render()`.
+const RENDERERS = render.DIAGRAM_RENDERERS;
 
 const load = (f: string): PsyumlModel =>
   parseModel(readFileSync(new URL(`../../examples/${f}`, import.meta.url), 'utf8'));
@@ -135,6 +114,10 @@ describe('overlap invariant — corpus (ADR-0012)', () => {
         assertNoOverlap(`${f}/${layer}`, renderer(model, { layer }).svg, scope3);
       });
     }
+    // Localized chrome (issue #3) is often longer than English; it must not break the invariant.
+    it('nothing overlaps (clinician, ru chrome)', () => {
+      assertNoOverlap(`${f}/ru`, renderer(model, { layer: 'clinician', lang: 'ru' }).svg, scope3);
+    });
   });
 });
 
@@ -304,4 +287,64 @@ describe('overlap invariant — stress models (ADR-0012)', () => {
     // stress case keeps every label clear.
     assertNoOverlap('stress/parts-map', render.renderPartsMap(partsStress()).svg);
   });
+  it('body-map: every named region, stacked regions, off-figure pos, whole-body (issue #9)', () => {
+    const regions = Object.keys(render.BODY_REGION_ANCHORS);
+    const node = (id: string, extra: Record<string, unknown>): Record<string, unknown> => ({
+      id,
+      kind: 'state',
+      label: { clinician: { en: `Sensation ${id}` } },
+      properties: { intensity: 0.6 },
+      ...extra,
+    });
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'body-map',
+      meta: { title: 'Body map stress (synthetic)', disclaimer: 'Synthetic. Not care.' },
+      nodes: [
+        ...regions.map((r) => node(r, { stereotype: r })),
+        node('abdomen2', { stereotype: 'abdomen' }),
+        node('below', { position: { x: 230, y: 470 } }),
+        node('wide', { position: { x: 900, y: 300 } }),
+        node('whole1', { stereotype: 'whole-body' }),
+        node('whole2', { stereotype: 'whole-body', properties: { intensity: 1 } }),
+      ],
+    });
+    // All four assertions, label↔label included, with each of the 15 regions used once.
+    for (const layer of ['clinician', 'client'] as const) {
+      assertNoOverlap(`stress/body-map/${layer}`, render.renderBodyMap(m, { layer }).svg, true);
+    }
+  });
+  it('schema-grid: every cell scored, long names (issue #7)', () => {
+    const m = parseModel({
+      version: '0.1.0',
+      diagram: 'schema-grid',
+      meta: { title: 'Schema grid stress (synthetic)', disclaimer: 'Synthetic.' },
+      nodes: Array.from({ length: 15 }, (_, i) => ({
+        id: `s${i}`,
+        kind: 'state',
+        stereotype: ['disconnection', 'autonomy', 'limits', 'other-directed', 'overvigilance'][
+          i % 5
+        ],
+        label: long(`Synthetic schema with a fairly long name number ${i}`),
+        properties: { intensity: (i % 10) / 9 },
+      })),
+    });
+    assertNoOverlap('stress/schema-grid', render.renderSchemaGrid(m).svg);
+  });
+  // The issue repros (#4 long Self/part labels + a labelled barrier; #5 a loop with a reciprocal
+  // role, an observing eye and an exit sharing one state) — all four assertions, both layers.
+  for (const layer of ['clinician', 'client'] as const) {
+    it(`parts-map: issue #4 repro (${layer})`, () => {
+      assertNoOverlap(
+        `repro/parts-map/${layer}`,
+        render.renderPartsMap(partsRepro(), { layer }).svg,
+      );
+    });
+    it(`process-loop: issue #5 repro (${layer})`, () => {
+      assertNoOverlap(
+        `repro/process-loop/${layer}`,
+        render.renderLoopMap(loopRepro(), { layer }).svg,
+      );
+    });
+  }
 });

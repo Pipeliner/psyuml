@@ -237,6 +237,33 @@ export function deCollide(
   return out;
 }
 
+/**
+ * Candidate-scan label placement (issues #4/#5, ADR-0063/0064): given candidate CENTRES in the
+ * caller's order of preference (e.g. points along the label's own edge, nearest the midpoint first),
+ * return the first one whose `w×h` box (grown by `gap`) overlaps no `obstacles` box AND crosses no
+ * `avoid` segment (another edge's line); failing that, the first that only clears the obstacles;
+ * `null` when none does (the caller then falls back to `deCollide`). Unlike `deCollide`, which nudges
+ * a label to wherever the overlap is smallest, this keeps the label ON its own edge, so it can't
+ * drift next to a different one. Pure and deterministic.
+ */
+export function placeLabel(
+  candidates: Pt[],
+  w: number,
+  h: number,
+  obstacles: Box[],
+  avoid: [Pt, Pt][] = [],
+  gap = 2,
+): Pt | null {
+  let fallback: Pt | null = null;
+  for (const c of candidates) {
+    const box = { x: c.x - w / 2, y: c.y - h / 2, w, h };
+    if (obstacles.some((o) => overlaps(box, o, gap))) continue;
+    if (!avoid.some(([p, q]) => segIntersectsBox(p, q, box, gap))) return c;
+    fallback ??= c;
+  }
+  return fallback;
+}
+
 /** An item on one axis: a center coordinate and the half-extent of its box on that axis. */
 export interface Span1D {
   center: number;

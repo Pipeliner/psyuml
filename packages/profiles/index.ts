@@ -359,7 +359,7 @@ export const CFT_PROFILE: ExtensionProfile = ExtensionProfile.parse({
 });
 
 /**
- * Transactional Analysis message types (ADR-0059) — the parental messages a Role Procedure draws as
+ * Transactional Analysis message types (ADR-0065) — the parental messages a Role Procedure draws as
  * quoted "cards": Goulding & Goulding's **injunctions** ("Don't be", "Don't be close", "Don't
  * feel", "Don't need"…), Kahler's **drivers** ("Please others", "Try hard", "Be strong", "Be
  * perfect", "Hurry up") and **attributions** (what the child is told they are / were). Each
@@ -407,7 +407,7 @@ export const TA_PROFILE: ExtensionProfile = ExtensionProfile.parse({
 });
 
 /**
- * Pattern-family stereotypes (ADR-0059), school-neutral: **internalizes** (an edge — a relational
+ * Pattern-family stereotypes (ADR-0065), school-neutral: **internalizes** (an edge — a relational
  * message becoming a self-to-self stance; drawn dash-dot), **need** (an unmet need the procedure
  * stands in for; the Role Procedure's bottom strip) and **presented-self** (the face shown to
  * others, as distinct from the self experienced — drawn as a dotted shell; the reading of it —
@@ -509,7 +509,7 @@ export interface FamilyInfo {
   archetype: string;
 }
 
-/** All eight families. Pattern has its own diagram type, `role-procedure` (ADR-0059: a reciprocal
+/** All eight families. Pattern has its own diagram type, `role-procedure` (ADR-0065: a reciprocal
  *  role pair and the planes it is enacted in); a single CAT loop still renders as a process-loop
  *  (the cat-sdr example). Composite (a multi-view board) is future — defined for the taxonomy. */
 export const FAMILIES: readonly FamilyInfo[] = [

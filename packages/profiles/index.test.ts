@@ -84,7 +84,7 @@ describe('extension mechanism (§K)', () => {
     expect(r.issues.some((i) => i.severity === 'error')).toBe(false);
   });
 
-  it('accepts the TA-messages and Pattern profiles (ADR-0059) with no errors', () => {
+  it('accepts the TA-messages and Pattern profiles (ADR-0065) with no errors', () => {
     for (const p of [TA_PROFILE, PATTERN_PROFILE]) {
       const r = validateProfile(p);
       expect(r.issues.filter((i) => i.severity !== 'info')).toEqual([]);
@@ -223,7 +223,7 @@ describe('diagram families + audience profiles (v0.2 §2)', () => {
       'schema-grid',
       'venn',
     ]);
-    // Pattern gained its own type in ADR-0059; composite still has none
+    // Pattern gained its own type in ADR-0065; composite still has none
     expect(diagramsInFamily('pattern')).toEqual(['role-procedure']);
     expect(diagramsInFamily('composite')).toEqual([]);
   });

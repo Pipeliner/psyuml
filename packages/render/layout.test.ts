@@ -9,6 +9,7 @@ import {
   clipToBox,
   contains,
   overlaps,
+  placeLabel,
   segIntersectsBox,
   separate1D,
   textWidth,
@@ -169,5 +170,30 @@ describe('separate1D (VPSC / Fast Node Overlap Removal, 1-D)', () => {
       expect(meanOut).toBeGreaterThanOrEqual(lo - totalHalf);
       expect(meanOut).toBeLessThanOrEqual(hi + totalHalf);
     }
+  });
+});
+
+describe('placeLabel (ADR-0063/0064)', () => {
+  const box = { x: 0, y: 0, w: 20, h: 20 };
+  it('takes the first candidate clear of obstacles and other edges, in order', () => {
+    const c = [
+      { x: 10, y: 10 },
+      { x: 50, y: 10 },
+      { x: 100, y: 10 },
+    ];
+    expect(placeLabel(c, 10, 10, [box])).toEqual({ x: 50, y: 10 });
+    const line: [{ x: number; y: number }, { x: number; y: number }] = [
+      { x: 50, y: -50 },
+      { x: 50, y: 50 },
+    ];
+    expect(placeLabel(c, 10, 10, [box], [line])).toEqual({ x: 100, y: 10 });
+  });
+  it('falls back to an obstacle-free candidate that touches a line, else null', () => {
+    const line: [{ x: number; y: number }, { x: number; y: number }] = [
+      { x: 50, y: -50 },
+      { x: 50, y: 50 },
+    ];
+    expect(placeLabel([{ x: 50, y: 10 }], 10, 10, [box], [line])).toEqual({ x: 50, y: 10 });
+    expect(placeLabel([{ x: 10, y: 10 }], 10, 10, [box])).toBeNull();
   });
 });
