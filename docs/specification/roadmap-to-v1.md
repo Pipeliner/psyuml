@@ -8,7 +8,7 @@ and the acceptance criteria to close each gap. Tracked by the `REQ-…` rows tha
 > `REQ-PICTURE-PICTOGRAPHS` (M20); `REQ-EXPORT-RASTER`, `REQ-CASE-FILE`, `REQ-LIVE-PROFILES`,
 > `REQ-PROVENANCE-NARRATIVE`, `REQ-I18N-LOCALIZATION` (M21) — see ADR-0023–0042. `sdd/traceability.json`
 > + `docs/ROADMAP.md` carry the live status; the per-REQ "planned" wording below is historical. The
-> **only** REQs still open are the validation-gate ones — `REQ-STUDY-PREREG` (planned) + the gated
+> **only** REQs still open are the validation-gate ones — `REQ-STUDY-PREREG` (in-progress: protocol drafted, not registered) + the gated
 > eval REQs (`REQ-EVAL-SUITE`, `REQ-NOTATION-TESTING`, in-progress) — exactly as the honesty clause
 > predicted: the dominant remaining gap is validation, not features.
 
