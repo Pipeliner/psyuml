@@ -43,6 +43,7 @@ const RENDERERS: Record<string, Renderer> = {
   'schema-grid': render.renderSchemaGrid,
   'decisional-balance': render.renderDecisionalBalance,
   'secure-base': render.renderSecureBase,
+  'role-procedure': render.renderRoleProcedure,
 };
 
 /** Count proper crossings between NON-incident edges (edges sharing a node meet, they don't cross). */

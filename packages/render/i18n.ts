@@ -46,6 +46,7 @@ const EN = {
   'title.decisionalBalance': 'Decisional balance',
   'title.secureBase': 'Secure base & safe haven',
   'title.composite': 'Composite board',
+  'title.roleProcedure': 'Role procedure',
 
   // State map
   'state.legend.transition': 'transition (what leads here)',
@@ -154,6 +155,25 @@ const EN = {
   'secureBase.footer':
     'A trusted caregiver is both — somewhere safe to go FROM, and somewhere safe to come BACK to.',
 
+  // Role procedure (Pattern family, ADR-0065)
+  'role.corePair': 'RECIPROCAL ROLE PAIR',
+  'role.defaultLane': 'Enactments',
+  'role.context': 'Context: {items}',
+  'role.lens': 'lens: {label}',
+  'role.needs': 'UNDERLYING NEEDS',
+  'role.quote': '“{text}”',
+  'role.tag.injunction': 'INJUNCTION',
+  'role.tag.driver': 'DRIVER',
+  'role.tag.attribution': 'ATTRIBUTION',
+  'role.tag.message': 'MESSAGE',
+  'role.tag.presentedSelf': 'PRESENTED SELF',
+  'role.legend.message': '“card” = a message heard (injunction / driver / attribution)',
+  'role.legend.internalized': 'dash-dot arrow = internalized',
+  'role.legend.presented': 'dotted shell = the self presented to others',
+  'role.legend.interpretive': 'dashed border = interpretive (a hypothesis)',
+  'role.legend.contested': '⚖ = contested origin',
+  'role.legend.exit': 'dashed arrow = EXIT, a way out',
+
   // Blank printable template (fill-in prompts)
   'template.title': '{diagram} (blank template)',
   'template.state': '(state…)',
@@ -210,6 +230,7 @@ const RU: ChromeCatalog = {
   'title.decisionalBalance': 'Баланс решения',
   'title.secureBase': 'Надёжная база и тихая гавань',
   'title.composite': 'Сводная доска',
+  'title.roleProcedure': 'Ролевая процедура',
 
   'state.legend.transition': 'переход (что ведёт сюда)',
   'state.legend.exit': 'выход — путь наружу',
@@ -299,6 +320,24 @@ const RU: ChromeCatalog = {
   'secureBase.haven': 'ТИХАЯ ГАВАНЬ — прими меня обратно, чтобы утешить',
   'secureBase.footer':
     'Надёжный взрослый — и то и другое: безопасное место, ОТКУДА можно уйти, и безопасное место, КУДА можно вернуться.',
+
+  'role.corePair': 'ПАРА ВЗАИМНЫХ РОЛЕЙ',
+  'role.defaultLane': 'Разыгрывания',
+  'role.context': 'Контекст: {items}',
+  'role.lens': 'линза: {label}',
+  'role.needs': 'ГЛУБИННЫЕ ПОТРЕБНОСТИ',
+  'role.quote': '«{text}»',
+  'role.tag.injunction': 'ЗАПРЕТ',
+  'role.tag.driver': 'ДРАЙВЕР',
+  'role.tag.attribution': 'АТРИБУЦИЯ',
+  'role.tag.message': 'ПОСЛАНИЕ',
+  'role.tag.presentedSelf': 'ПОКАЗЫВАЕМОЕ «Я»',
+  'role.legend.message': '«карточка» — услышанное послание (запрет / драйвер / атрибуция)',
+  'role.legend.internalized': 'штрих-пунктирная стрелка — интернализовано',
+  'role.legend.presented': 'пунктирная оболочка — «я», показываемое другим',
+  'role.legend.interpretive': 'пунктирная рамка — интерпретация (гипотеза)',
+  'role.legend.contested': '⚖ — спорное происхождение',
+  'role.legend.exit': 'пунктирная стрелка — ВЫХОД, путь наружу',
 
   'template.title': '{diagram} (пустой шаблон)',
   'template.state': '(состояние…)',

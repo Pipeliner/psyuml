@@ -14,7 +14,7 @@
  *   ritual framing="…" secular="…"
  *   band <id> order=<n> [pattern=<p>] label="…"
  *   node <id> <kind> [stereotype=… tier=… band=… pos=x,y hidden=true <prop>=… ] label="…" [client="…"]
- *   edge <id> <src> <kind> <tgt> [loop=R|B topology=trap|dilemma|snag <prop>=… trigger="…" ] [label="…" client="…"]
+ *   edge <id> <src> <kind> <tgt> [stereotype=… loop=R|B topology=trap|dilemma|snag <prop>=… trigger="…" ] [label="…" client="…"]
  * Free text is double-quoted (with \" and \\ escapes); a label that is not single-language
  * in the model's `lang` falls back to `labeljson="<json>"` so any label stays lossless.
  *
@@ -201,6 +201,7 @@ export function toDSL(model: PsyumlModel): string {
   if (model.edges.length > 0) lines.push('');
   for (const e of model.edges) {
     let l = `edge ${e.id} ${e.source} ${e.kind} ${e.target}`;
+    if (e.stereotype) l += ` stereotype=${e.stereotype}`;
     if (e.loop) l += ` loop=${e.loop}`;
     if (e.loopTopology) l += ` topology=${e.loopTopology}`;
     l += propTokens(e.properties);
@@ -358,6 +359,7 @@ export function fromDSL(text: string): PsyumlModel {
           kind: toks[3],
           target: toks[4],
         };
+        if (o.stereotype !== undefined) edge.stereotype = o.stereotype;
         if (o.loop !== undefined) edge.loop = o.loop;
         if (o.topology !== undefined) edge.loopTopology = o.topology;
         const props = readProps(o);

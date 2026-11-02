@@ -19,7 +19,7 @@ and the acceptance criteria to close each gap. Tracked by the `REQ-…` rows tha
 > claims "validated" is impossible until the human studies run. Building more renderers does not move
 > the project toward validity; running the studies does. This document keeps that ordering explicit.
 
-The current build (v0.x): 20 diagram types in 8 families × 3 audience profiles; a deterministic
+The current build (v0.x): 21 diagram types in 8 families × 3 audience profiles; a deterministic
 SVG renderer with machine-checked non-overlap (ADR-0012) + layout-quality (ADR-0021) invariants; a
 browser editor that *is* the help site (74 examples + a 59-entry catalogue); text-DSL + CLI; §K
 validated profiles; lossy FHIR **export**; privacy de-identification. What follows is what it is

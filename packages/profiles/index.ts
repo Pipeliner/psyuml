@@ -359,6 +359,99 @@ export const CFT_PROFILE: ExtensionProfile = ExtensionProfile.parse({
 });
 
 /**
+ * Transactional Analysis message types (ADR-0065) — the parental messages a Role Procedure draws as
+ * quoted "cards": Goulding & Goulding's **injunctions** ("Don't be", "Don't be close", "Don't
+ * feel", "Don't need"…), Kahler's **drivers** ("Please others", "Try hard", "Be strong", "Be
+ * perfect", "Hurry up") and **attributions** (what the child is told they are / were). Each
+ * specializes a `state` (the message as held), so it renders in any diagram, and as a speech-card
+ * with its tag in `role-procedure`.
+ */
+export const TA_PROFILE: ExtensionProfile = ExtensionProfile.parse({
+  id: 'ta-messages',
+  title: 'Transactional Analysis — injunctions, drivers, attributions',
+  version: '0.1.0',
+  school: 'ta',
+  stereotypes: [
+    {
+      id: 'injunction',
+      base: 'state',
+      tier: 3,
+      glyph: '⊘',
+      hand: 'speech-card with a struck circle',
+      nonColor: 'speech-card + "INJUNCTION" tag + quoted label',
+      synonyms: ['injunction', "don't-message"],
+      compat: compatAll({ 'two-triangles': 'n/a', ladder: 'n/a', bullseye: 'n/a' }),
+    },
+    {
+      id: 'driver',
+      base: 'state',
+      tier: 3,
+      glyph: '»',
+      hand: 'speech-card with a double chevron',
+      nonColor: 'speech-card + "DRIVER" tag + quoted label',
+      synonyms: ['driver', 'counter-injunction'],
+      compat: compatAll({ 'two-triangles': 'n/a', ladder: 'n/a', bullseye: 'n/a' }),
+    },
+    {
+      id: 'attribution',
+      base: 'state',
+      tier: 3,
+      glyph: '❝',
+      hand: 'speech-card with an open quote mark',
+      nonColor: 'speech-card + "ATTRIBUTION" tag + quoted label',
+      synonyms: ['attribution', 'parental definition'],
+      compat: compatAll({ 'two-triangles': 'n/a', ladder: 'n/a', bullseye: 'n/a' }),
+    },
+  ],
+  translations: [{ concept: 'Self', terms: { ta: 'Adult' } }],
+});
+
+/**
+ * Pattern-family stereotypes (ADR-0065), school-neutral: **internalizes** (an edge — a relational
+ * message becoming a self-to-self stance; drawn dash-dot), **need** (an unmet need the procedure
+ * stands in for; the Role Procedure's bottom strip) and **presented-self** (the face shown to
+ * others, as distinct from the self experienced — drawn as a dotted shell; the reading of it —
+ * false self, a role pole, autistic masking — is left to provenance, never fixed by the symbol).
+ */
+export const PATTERN_PROFILE: ExtensionProfile = ExtensionProfile.parse({
+  id: 'pattern',
+  title: 'Pattern family — internalization, needs, presented self',
+  version: '0.1.0',
+  stereotypes: [
+    {
+      id: 'internalizes',
+      base: 'sequential',
+      tier: 3,
+      glyph: '⤳',
+      hand: 'dash-dot arrow',
+      nonColor: 'dash-dot line pattern + arrowhead + legend entry',
+      synonyms: ['internalized', 'introjected'],
+      compat: compatAll({ 'relational-field': 'n/a', ladder: 'n/a', bullseye: 'n/a' }),
+    },
+    {
+      id: 'need',
+      base: 'state',
+      tier: 3,
+      glyph: '◌',
+      hand: 'thin box in a strip labelled "needs"',
+      nonColor: 'thin outline + "UNDERLYING NEEDS" strip heading',
+      synonyms: ['need', 'unmet need'],
+      compat: compatAll({ 'two-triangles': 'caution' }),
+    },
+    {
+      id: 'presented-self',
+      base: 'state',
+      tier: 3,
+      glyph: '⬚',
+      hand: 'box inside a dotted outer shell',
+      nonColor: 'dotted outer shell + "PRESENTED SELF" tag',
+      synonyms: ['presented self', 'self-presentation'],
+      compat: compatAll({ 'two-triangles': 'caution', ladder: 'n/a' }),
+    },
+  ],
+});
+
+/**
  * A worked **cultural-extension pack** (v0.2 §6) showing the cultural-permission flag in use: a rite
  * from a closed / initiatory tradition is declared `restricted` and carries an explicit
  * permission/attribution declaration, so `validateProfile` accepts it (and would **error** if the
@@ -416,8 +509,9 @@ export interface FamilyInfo {
   archetype: string;
 }
 
-/** All eight families. Pattern is realized today via the process-loop renderer (the cat-sdr
- *  example); Composite (a multi-view board) is future — both are defined for the taxonomy. */
+/** All eight families. Pattern has its own diagram type, `role-procedure` (ADR-0065: a reciprocal
+ *  role pair and the planes it is enacted in); a single CAT loop still renders as a process-loop
+ *  (the cat-sdr example). Composite (a multi-view board) is future — defined for the taxonomy. */
 export const FAMILIES: readonly FamilyInfo[] = [
   {
     id: 'field',
@@ -491,6 +585,7 @@ export const FAMILY_OF: Record<DiagramType, DiagramFamily> = {
   'decisional-balance': 'change',
   'secure-base': 'field',
   ritual: 'ritual',
+  'role-procedure': 'pattern',
 };
 
 /** The family a diagram type belongs to. */
@@ -745,6 +840,59 @@ export const NOTATION_SYMBOLS: readonly NotationSymbol[] = [
     safetyCritical: false,
     tier: 2,
     role: 'pattern',
+  },
+  // Role procedure (ADR-0065) — the Pattern family's own marks. Untested like the rest.
+  {
+    id: 'message-card',
+    concept: 'words someone said to you, remembered (a rule, a push, a label)',
+    glyph: 'svg: quoted speech-card',
+    redundantWord: 'INJUNCTION / DRIVER / ATTRIBUTION',
+    safetyCritical: false,
+    tier: 3,
+    role: 'pattern',
+  },
+  {
+    id: 'internalizes',
+    concept: 'what was said to you became how you treat yourself',
+    glyph: 'svg: dash-dot arrow',
+    safetyCritical: false,
+    tier: 3,
+    role: 'connector',
+  },
+  {
+    id: 'self-relation',
+    concept: 'how you treat yourself (a loop back to the same box)',
+    glyph: 'svg: loop arrow',
+    safetyCritical: false,
+    tier: 2,
+    role: 'connector',
+  },
+  {
+    id: 'presented-self',
+    concept: 'the face you show others, not how you feel inside',
+    glyph: 'svg: dotted outer shell',
+    redundantWord: 'PRESENTED SELF',
+    safetyCritical: false,
+    tier: 3,
+    role: 'marker',
+  },
+  {
+    id: 'need',
+    concept: 'a need underneath the whole pattern, often where the way out starts',
+    glyph: 'svg: thin box in the needs strip',
+    redundantWord: 'UNDERLYING NEEDS',
+    safetyCritical: false,
+    tier: 3,
+    role: 'pattern',
+  },
+  {
+    id: 'lens',
+    concept: 'a condition this part of life is lived under (not a problem item)',
+    glyph: 'svg: lane sub-heading',
+    redundantWord: 'lens:',
+    safetyCritical: false,
+    tier: 3,
+    role: 'marker',
   },
 ];
 
