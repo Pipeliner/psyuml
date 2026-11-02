@@ -177,8 +177,8 @@ demands before any 1.0.
 > every renderer below and still be a v0.x *unvalidated* tool. These REQs are `planned`: specified,
 > not built.
 
-### M19 · Phase 8 — Validation gate (the only path to v1.0) *(planned)*
-- **The dominant gap.** The comprehension / collaborative-validity / editability / clinical-utility studies have **never run with real participants** (only blind LLM dry-runs, which are not evidence). The harness + ISO-9186 instruments exist (REQ-EVAL-SUITE, REQ-NOTATION-TESTING, in-progress; every Tier-B cell `pending`).
+### M19 · Phase 8 — Validation gate (the only path to v1.0) *(in progress — protocol drafted; studies not run)*
+- **The dominant gap.** The comprehension / collaborative-validity / editability / clinical-utility studies have **never run with real participants** (only blind LLM dry-runs, which are not evidence). The harness + ISO-9186 instruments exist (REQ-EVAL-SUITE, REQ-NOTATION-TESTING, in-progress; every Tier-B cell `pending`), and the definitive studies S1–S6 are written up as a ready-to-file pre-registration + ethics pack (`adoption/preregistration-protocol.md` — **draft, not registered, no data**). What remains needs people and institutions outside the repo: register it, obtain ethics approval, run the studies, publish the report.
 - **Spec:** pre-register protocols; samples = clients/trainees/laypeople/clinicians, N≥30/audience, with consent + distress-safety; measures = ISO-9186 comprehension + comprehensibility, collaborative validity, editability, clinical utility, sharing-harm probe; pre-stated stop/revise rules (sub-threshold symbol → revised, never shipped); + the human assistive-tech/WCAG audit. **REQ:** REQ-STUDY-PREREG.
 
 ### M20 · Phase 9 — Notation + expressiveness completeness *(landed)*

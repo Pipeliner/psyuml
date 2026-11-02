@@ -368,6 +368,9 @@ These mirror the [evaluation suite's v1.0 go/no-go gate](../evaluation-suite.md#
   blind format where possible and keep framing neutral.
 - **Coder bias** in free-recall/formulation coding — use ≥2 coders and report agreement.
 
+The **definitive** studies these instruments feed are written up as a ready-to-file pre-registration
+in [preregistration-protocol.md](preregistration-protocol.md) (draft, not registered).
+
 ### Outputs of the pilot
 
 1. Refined instruments (items, scoring, thresholds) ready to **pre-register**.

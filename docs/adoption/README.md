@@ -19,6 +19,10 @@ parts:
    comprehension test, an inter-rater formulation-reliability task, a multi-school (Delphi)
    consensus-round sketch, and a small pilot-study design with go/no-go thresholds tied to the
    Stage-4 gate.
+4. **[preregistration-protocol.md](preregistration-protocol.md)** — the **definitive** Tier-B studies
+   (S1–S6) as a ready-to-file pre-registration: hypotheses, sample sizes with their power basis, the
+   analysis plan, safety and revise-don't-ship rules fixed in advance, plus the ethics / IRB pack.
+   **Draft — not registered, no data.**
 
 > **Unvalidated v0.x — read this before you run a workshop or a study.** PsyUML is a
 > *formulation-support notation*, not a validated clinical instrument. Adoption is for **supervised
